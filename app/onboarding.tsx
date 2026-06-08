@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -14,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: W, height: H } = Dimensions.get('window');
 
-// Phone frame sizing
-const PHONE_W = W * 0.62;
+// Phone frame sizing — kept modest so all slide content fits on small screens
+const PHONE_W = Math.min(W * 0.56, 220);
 const PHONE_H = PHONE_W * 2.09;
 const SCREEN_W = PHONE_W - 6;
 const SCREEN_H = PHONE_H - 6;
@@ -455,13 +456,62 @@ const SLIDES = [
     body: 'Complete each phase and move closer to your next offer.',
     caption: 'One platform. One\npath forward.',
   },
+  {
+    id: '6',
+    num: '06',
+    Screen: null,
+    icon: null,
+    title: 'Ready To Build\nYour Future?',
+    body: 'Thousands of athletes dream about playing at the next level. Start building the plan.',
+    caption: '',
+    cta: true,
+  },
 ];
 
-type Slide = typeof SLIDES[0];
+type Slide = {
+  id: string;
+  num: string;
+  Screen: React.ComponentType | null;
+  icon: React.ComponentProps<typeof Ionicons>['name'] | null;
+  title: string;
+  body: string;
+  caption: string;
+  cta?: boolean;
+};
 
 // ── Slide component ───────────────────────────────────────────────────────────
 
-function SlideItem({ item }: { item: Slide }) {
+function SlideItem({ item, onFinish, onLogin }: { item: Slide; onFinish: () => void; onLogin: () => void }) {
+  if (item.cta) {
+    return (
+      <View style={[s.slide, s.ctaSlide, { width: W }]}>
+        <Text style={s.num}>{item.num}</Text>
+        <Image
+          source={require('../assets/logo-mark.png')}
+          style={s.ctaLogo}
+          resizeMode="contain"
+        />
+        <View style={s.textBlock}>
+          <Text style={[s.title, s.ctaTitle]}>{item.title}</Text>
+          <Text style={s.body}>{item.body}</Text>
+        </View>
+        <Pressable onPress={onFinish}>
+          <LinearGradient
+            colors={['#E1306C', '#833AB4']}
+            style={s.ctaBtn}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={s.ctaBtnText}>Get My V1 Score</Text>
+          </LinearGradient>
+        </Pressable>
+        <Pressable onPress={onLogin} style={s.signInBtn}>
+          <Text style={s.signInText}>Already have an account? <Text style={s.signInLink}>Sign In</Text></Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   const { Screen } = item;
   return (
     <View style={[s.slide, { width: W }]}>
@@ -476,13 +526,13 @@ function SlideItem({ item }: { item: Slide }) {
 
       {/* Phone frame */}
       <PhoneFrame>
-        <Screen />
+        {Screen ? <Screen /> : null}
       </PhoneFrame>
 
       {/* Icon + caption */}
       <View style={s.captionWrap}>
         <View style={s.iconCircle}>
-          <Ionicons name={item.icon} size={18} color="#833AB4" />
+          <Ionicons name={item.icon ?? 'star-outline'} size={18} color="#833AB4" />
         </View>
         <Text style={s.caption}>{item.caption}</Text>
       </View>
@@ -502,6 +552,11 @@ export default function OnboardingScreen() {
   const finish = async () => {
     await AsyncStorage.setItem('v1portal_onboarding_seen', '1');
     router.replace('/(tabs)');
+  };
+
+  const goLogin = async () => {
+    await AsyncStorage.setItem('v1portal_onboarding_seen', '1');
+    router.replace('/(auth)/login');
   };
 
   const goNext = () => {
@@ -525,43 +580,41 @@ export default function OnboardingScreen() {
         onMomentumScrollEnd={e => {
           setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
         }}
-        renderItem={({ item }) => <SlideItem item={item} />}
+        renderItem={({ item }) => <SlideItem item={item} onFinish={finish} onLogin={goLogin} />}
         style={{ flex: 1 }}
       />
 
-      {/* Bottom bar: dots + button */}
-      <View style={s.bottomBar}>
-        <View style={s.dots}>
-          {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[s.dot, i === index ? s.dotActive : s.dotInactive]}
-            />
-          ))}
-        </View>
+      {/* Bottom bar: dots + nav (hidden on CTA slide which has its own buttons) */}
+      {!isLast && (
+        <View style={s.bottomBar}>
+          <View style={s.dots}>
+            {SLIDES.map((_, i) => (
+              <View
+                key={i}
+                style={[s.dot, i === index ? s.dotActive : s.dotInactive]}
+              />
+            ))}
+          </View>
 
-        <View style={s.btnRow}>
-          {!isLast ? (
+          <View style={s.btnRow}>
             <Pressable onPress={finish} style={s.skipBtn}>
               <Text style={s.skipTxt}>Skip</Text>
             </Pressable>
-          ) : (
-            <View style={{ flex: 1 }} />
-          )}
 
-          <Pressable onPress={goNext}>
-            <LinearGradient
-              colors={['#833AB4', '#E1306C']}
-              style={s.nextBtn}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={s.nextTxt}>{isLast ? 'Get Started' : 'Next'}</Text>
-              <Ionicons name={isLast ? 'rocket' : 'arrow-forward'} size={15} color="#fff" />
-            </LinearGradient>
-          </Pressable>
+            <Pressable onPress={goNext}>
+              <LinearGradient
+                colors={['#833AB4', '#E1306C']}
+                style={s.nextBtn}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={s.nextTxt}>Next</Text>
+                <Ionicons name="arrow-forward" size={15} color="#fff" />
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -636,4 +689,43 @@ const s = StyleSheet.create({
     paddingHorizontal: 26, paddingVertical: 14, borderRadius: 100,
   },
   nextTxt: { fontSize: 15, fontWeight: '800', color: '#fff' },
+
+  // CTA slide (slide 6)
+  ctaSlide: {
+    justifyContent: 'center',
+    gap: 20,
+  },
+  ctaLogo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+  },
+  ctaTitle: {
+    textAlign: 'center',
+    fontSize: 30,
+  },
+  ctaBtn: {
+    borderRadius: 100,
+    paddingVertical: 17,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  ctaBtnText: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 0.2,
+  },
+  signInBtn: {
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  signInText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.4)',
+  },
+  signInLink: {
+    color: '#fff',
+    fontWeight: '700',
+  },
 });

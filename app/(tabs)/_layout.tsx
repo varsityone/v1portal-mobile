@@ -34,7 +34,7 @@ export default function DrawerLayout() {
   const { theme: scheme } = useTheme();
   const C = useColors();
 
-  const headerBg    = scheme === 'light' ? '#ffffff' : C.background;
+  const headerBg    = C.background;
   const headerBorder = scheme === 'light' ? 'rgba(0,0,0,0.08)' : C.border;
   const iconColor   = scheme === 'light' ? '#1a1b1d' : C.textMuted;
   const drawerBg    = scheme === 'light' ? '#f0f0f0' : C.background;
