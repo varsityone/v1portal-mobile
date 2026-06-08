@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "V1Portal",
+    "slug": "v1portal",
+    "version": "1.0.0",
+    "scheme": "v1portal",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.varsityone.v1portal",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "V1Portal sends recruiting task reminders and coach reply alerts.",
+        "NSCameraUsageDescription": "Used to upload your highlight film thumbnail.",
+        "NSPhotoLibraryUsageDescription": "Used to select your highlight film thumbnail from your photo library."
+      }
+    },
+    "android": {
+      "package": "com.varsityone.v1portal",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "backgroundColor": "#0A0A0A"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Allow V1Portal to use Face ID for secure authentication."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0057FF",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bf2344ee-3d9f-4775-8f23-023ea94de655"
+      },
+      "router": {}
+    },
+    "owner": "v1portal-app"
+  }
+}

@@ -1,0 +1,1333 @@
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../../hooks/useAuth';
+import { useAthleteData } from '../../hooks/useAthleteData';
+import { supabase } from '../../lib/supabase';
+import { Colors, GRADIENT } from '../../constants/Colors';
+import { PHASES } from '../../constants/Phases';
+
+// ── Score helpers ─────────────────────────────────────────────────────────────
+
+function getScoreColor(score: number): string {
+  const t = Math.min(score / 99.9, 1);
+  if (t <= 0.5) {
+    const p = t / 0.5;
+    return `rgb(0,${Math.round(106 + 74 * p)},255)`;
+  }
+  const p = (t - 0.5) / 0.5;
+  return `rgb(0,${Math.round(180 + 75 * p)},${Math.round(255 - 225 * p)})`;
+}
+
+function getRecruitingLevel(score: number): string {
+  if (score >= 80) return 'FBS LEVEL';
+  if (score >= 75) return 'FCS LEVEL';
+  if (score >= 70) return 'FCS / D2 LEVEL';
+  if (score >= 60) return 'D2 / D3 LEVEL';
+  if (score >= 50) return 'NAIA / JUCO LEVEL';
+  return 'JUCO / PREP LEVEL';
+}
+
+function getRecruitingLevelFromScore(score: number | null): string {
+  if (!score) return '';
+  if (score >= 80) return 'FBS Prospect';
+  if (score >= 75) return 'FCS Prospect';
+  if (score >= 70) return 'D2 Prospect';
+  if (score >= 60) return 'D3/NAIA Prospect';
+  if (score >= 50) return 'NAIA/JUCO Prospect';
+  return 'JUCO/Prep School Prospect';
+}
+
+function getActiveTierIndex(score: number): number {
+  if (score >= 80) return 4;
+  if (score >= 75) return 3;
+  if (score >= 60) return 2;
+  if (score >= 50) return 1;
+  return 0;
+}
+
+const TIERS = [
+  { label: 'Dev',  color: '#006aff' },
+  { label: 'Emrg', color: '#00b4ff' },
+  { label: 'Comp', color: '#00ff1e' },
+  { label: 'Cont', color: '#4040dd' },
+  { label: 'Elite', color: '#6020ff' },
+];
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+export default function DashboardScreen() {
+  const { session } = useAuth();
+  const router = useRouter();
+  const { athlete, assessment, isPremium, loading, refresh } = useAthleteData();
+
+  const [matchCount, setMatchCount] = useState(0);
+  const [outreachCount, setOutreachCount] = useState(0);
+  const [profileViews, setProfileViews] = useState(0);
+  const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
+  const [displayScore, setDisplayScore] = useState(0);
+
+  // Fetch match, outreach, and profile view counts — mirrors web analytics API logic
+  const fetchCounts = useCallback(async () => {
+    if (!athlete?.id) return;
+    const [
+      { data: matchData },
+      { data: outData },
+      { count: pv },
+    ] = await Promise.all([
+      supabase.from('matches').select('id').eq('athlete_id', athlete.id).limit(5),
+      supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
+      supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
+    ]);
+    setMatchCount(matchData?.length ?? 0);
+    // Web counts status in ['sent','opened','bounced'] as "emails sent"
+    const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
+    setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
+    setProfileViews(pv ?? 0);
+  }, [athlete?.id]);
+
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+
+  // Animated score counter
+  const score = athlete?.v1_score != null
+    ? Math.round(Number(athlete.v1_score))
+    : assessment?.v1_score
+    ? Math.round(assessment.v1_score)
+    : null;
+
+  useEffect(() => {
+    if (!score) { setDisplayScore(0); return; }
+    const duration = 1500;
+    const start = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 2);
+      setDisplayScore(Math.round(score * eased));
+      if (progress >= 1) clearInterval(timer);
+    }, 16);
+    return () => clearInterval(timer);
+  }, [score]);
+
+  // Derived values
+  // Matches web exactly: athlete.full_name → split first word, fall back to 'Athlete'
+  const fullName  = athlete?.full_name || '';
+  const firstName = fullName ? fullName.split(' ')[0].trim() : 'Athlete';
+  const initials  = fullName
+    ? fullName.trim().split(' ').filter(Boolean).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()
+    : (session?.user?.email ?? '??').slice(0, 2).toUpperCase();
+  const isElite = athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite';
+  const activeTierIdx = getActiveTierIndex(displayScore);
+  const numColor = score ? getScoreColor(displayScore) : Colors.textDim;
+
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const tierDisplay = (() => {
+    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Elite' : 'Pro';
+    if (athlete?.subscription_status === 'trial') return 'Pro Trial';
+    return 'Free';
+  })();
+  const tierColor = (() => {
+    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? '#10b981' : Colors.primary;
+    if (athlete?.subscription_status === 'trial') return '#F59E0B';
+    return Colors.textMuted;
+  })();
+
+  // Phase completion (data-driven)
+  const phaseComplete = [
+    !!assessment?.v1_score,
+    !!(athlete?.full_name && athlete?.position && athlete?.high_school &&
+       athlete?.graduation_year && athlete?.height && athlete?.weight &&
+       athlete?.gpa && athlete?.hudl_video_link),
+    matchCount > 0,
+    outreachCount > 0,
+    outreachCount >= 3,
+    outreachCount >= 5,
+  ];
+
+  // Phase lock: tier gate + sequential gate
+  const phaseLocked = PHASES.map((_, i): boolean => {
+    let locked = false;
+    if (i === 0) locked = false;
+    else if (i >= 1 && i <= 3) locked = !isPremium;
+    else locked = !isElite;
+    if (!locked && i > 0 && !phaseComplete[i - 1]) locked = true;
+    return locked;
+  });
+
+  const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
+  const curPhaseIdx = phaseComplete.findIndex(c => !c);
+  const activePhaseIdx = curPhaseIdx === -1 ? 5 : curPhaseIdx;
+  const completedCount = phaseEffectiveDone.filter(Boolean).length;
+  const progressPct = (completedCount / 6) * 100;
+
+  const statusMsg = completedCount === 0
+    ? "Let's get you recruited. Start with Phase 1 below."
+    : completedCount === 6
+    ? "You've completed all 6 phases. Stay active and keep pushing."
+    : `You're on Phase ${activePhaseIdx + 1} of 6. Keep the momentum going.`;
+
+  const handleRefresh = async () => {
+    await Promise.all([refresh(), fetchCounts()]);
+  };
+
+  return (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={Colors.primary} />
+      }
+    >
+      {/* ── Greeting header ── */}
+      <View style={styles.welcomeCard}>
+        <Text style={styles.eyebrow}>THE GAMEPLAN</Text>
+        <Text style={styles.welcomeTitle}>
+          {timeGreeting}{firstName ? `, ${firstName}` : ''}.
+        </Text>
+        <Text style={styles.welcomeSub}>{statusMsg}</Text>
+        <View style={styles.badgeRow}>
+          <Text style={styles.tierLabel}>Tier:</Text>
+          <View style={[
+            styles.tierBadge,
+            { backgroundColor: tierColor + '28', borderColor: tierColor + '55' },
+          ]}>
+            <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── V1 Score card (gradient border) ── */}
+      <LinearGradient
+        colors={['#833AB4', '#E1306C', '#FCAF45']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.scoreGradient}
+      >
+        <View style={styles.scoreInner}>
+          <Text style={styles.scoreLabel}>V1 SCORE</Text>
+
+          <Text style={[styles.scoreNumber, { color: numColor }]}>
+            {score !== null ? displayScore : '––'}
+          </Text>
+
+          {score !== null ? (
+            <Text style={styles.recruitingLevel}>{getRecruitingLevel(displayScore)}</Text>
+          ) : (
+            <Text style={styles.noScoreHint}>
+              Complete your assessment to unlock your score
+            </Text>
+          )}
+
+          <View style={styles.tierRow}>
+            {TIERS.map((tier, i) => {
+              const active = score !== null && i <= activeTierIdx;
+              return (
+                <View key={tier.label} style={styles.tierItem}>
+                  <View style={[styles.tierBar, { backgroundColor: active ? tier.color : 'rgba(255,255,255,0.08)' }]} />
+                  <Text style={[
+                    styles.tierBarLabel,
+                    {
+                      color: (active && i === activeTierIdx) ? tier.color : 'rgba(255,255,255,0.22)',
+                      fontWeight: (active && i === activeTierIdx) ? '800' : '400',
+                    },
+                  ]}>
+                    {tier.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {score === null && !loading && (
+            <Pressable
+              style={styles.assessmentBtn}
+              onPress={() => router.push('/(tabs)/gameplan' as any)}
+            >
+              <Text style={styles.assessmentBtnText}>Start Your Assessment →</Text>
+            </Pressable>
+          )}
+        </View>
+      </LinearGradient>
+
+      {/* ── Overall Progress ── */}
+      <View style={styles.progressCard}>
+        <View style={styles.progressTop}>
+          <Text style={styles.progressLabel}>Overall Progress</Text>
+          <Text style={styles.progressCount}>{completedCount}/6 phases complete</Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <LinearGradient
+            colors={GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.progressFill, { width: `${progressPct}%` }]}
+          />
+        </View>
+        <View style={styles.phaseDots}>
+          {PHASES.map((p, i) => {
+            const isDone = phaseEffectiveDone[i];
+            const isActive = i === activePhaseIdx && !isDone;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.phaseDot,
+                  isDone && styles.phaseDotDone,
+                  isActive && styles.phaseDotActive,
+                ]}
+              >
+                {isDone ? (
+                  <Ionicons name="checkmark" size={10} color={Colors.background} />
+                ) : (
+                  <Text style={[styles.phaseDotNum, isActive && styles.phaseDotNumActive]}>
+                    {p.number}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── Upgrade banner (free/trial users) ── */}
+      {!isPremium && (
+        <LinearGradient
+          colors={['#833AB4', '#C13584', '#E1306C']}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.upgradeBanner}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.upgradeEyebrow}>LIMITED ACCESS</Text>
+            <Text style={styles.upgradeTitle}>Unlock Pro or Elite</Text>
+            <Text style={styles.upgradeDesc}>
+              Get program matches, coach contacts, outreach tools & more gameplan phases.
+            </Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.upgradeBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push('/upgrade' as any)}
+          >
+            <Text style={styles.upgradeBtnText}>Upgrade →</Text>
+          </Pressable>
+        </LinearGradient>
+      )}
+
+      {/* ── Phase cards ── */}
+      <View style={styles.phaseList}>
+        {PHASES.map((phase, i) => {
+          const locked = phaseLocked[i];
+          const done = phaseEffectiveDone[i];
+          const active = i === activePhaseIdx && !locked;
+          const isExpanded = expandedPhase === i;
+          const canExpand = !locked;
+
+          const badgeLabel = done ? 'Completed' : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next';
+          const badgeBg = done ? Colors.surfaceAlt : active ? 'rgba(131,58,180,0.12)' : locked ? 'rgba(245,158,11,0.10)' : Colors.surfaceAlt;
+          const badgeColor = done ? Colors.textMuted : active ? Colors.primary : locked ? '#F59E0B' : Colors.textDim;
+
+          let hint = '';
+          if (done) {
+            hint = 'Complete';
+          } else if (active) {
+            if (i === 0) hint = 'Takes ~12 minutes';
+            else if (i === 1) {
+              const fields = [
+                athlete?.full_name, athlete?.position, athlete?.high_school,
+                athlete?.graduation_year, athlete?.height, athlete?.weight,
+                athlete?.gpa, athlete?.hudl_video_link,
+              ];
+              const left = fields.filter(f => !f).length;
+              hint = left > 0 ? `${left} field${left !== 1 ? 's' : ''} left` : 'Ready to complete';
+            } else if (i === 2) hint = 'Programs matched to your score';
+            else if (i === 3) hint = 'Email templates ready';
+            else if (i === 4) hint = 'Track every coach';
+            else hint = 'Final phase';
+          } else if (locked && i > 1) {
+            hint = i <= 3 ? 'Pro required' : 'Elite required';
+          } else if (!locked && !done) {
+            hint = `Complete Phase ${i} first`;
+          }
+
+          return (
+            <View
+              key={i}
+              style={[
+                styles.phaseCard,
+                done && styles.phaseCardDone,
+                active && styles.phaseCardActive,
+                locked && styles.phaseCardLocked,
+                locked && { filter: [{ blur: 1.5 }, { grayscale: 0.85 }] } as any,
+              ]}
+            >
+              <Pressable
+                style={styles.phaseInner}
+                onPress={() => canExpand && setExpandedPhase(isExpanded ? null : i)}
+                disabled={!canExpand}
+              >
+                {/* Icon */}
+                <View style={[
+                  styles.phaseIcon,
+                  done ? styles.phaseIconDone : active ? styles.phaseIconActive : styles.phaseIconMuted,
+                ]}>
+                  {done ? (
+                    <Ionicons name="checkmark" size={16} color={Colors.background} />
+                  ) : locked ? (
+                    <Ionicons name="lock-closed" size={14} color={Colors.textDim} />
+                  ) : (
+                    <Text style={[styles.phaseIconNum, active && { color: Colors.primary }]}>
+                      {phase.number}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Content */}
+                <View style={styles.phaseContent}>
+                  <Text style={[
+                    styles.phaseEyebrow,
+                    done && { color: Colors.textMuted },
+                    (locked || (!active && !done)) && { color: Colors.textDim },
+                  ]}>
+                    Phase {phase.number}
+                  </Text>
+                  <Text style={[
+                    styles.phaseTitle,
+                    locked && { color: Colors.textMuted },
+                  ]}>
+                    {phase.title}
+                  </Text>
+                  <Text style={[styles.phaseDesc, locked && { color: Colors.textDim }]}>
+                    {phase.description}
+                  </Text>
+                  {hint ? (
+                    <View style={[
+                      styles.hintChip,
+                      active && { backgroundColor: 'rgba(131,58,180,0.08)', borderColor: 'rgba(131,58,180,0.25)' },
+                    ]}>
+                      <Text style={[styles.hintChipText, active && { color: Colors.primary }]}>{hint}</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Right: badge + chevron */}
+                <View style={styles.phaseRight}>
+                  <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
+                    <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badgeLabel}</Text>
+                  </View>
+                  {canExpand && (
+                    <Ionicons
+                      name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                      size={14}
+                      color={active ? Colors.primary : Colors.textDim}
+                    />
+                  )}
+                </View>
+              </Pressable>
+
+              {/* Expanded checklist */}
+              {isExpanded && canExpand && (
+                <View style={styles.phaseBody}>
+                  {(active || done) ? (
+                    <>
+                      {phase.items.map((item, j) => {
+                        const checked = done || (active && j === 0 && i === 0 && !!assessment);
+                        return (
+                          <Pressable
+                            key={j}
+                            style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: Colors.surfaceAlt }]}
+                            onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
+                          >
+                            <View style={[styles.checkBox, checked && styles.checkBoxDone]}>
+                              {checked && <Ionicons name="checkmark" size={10} color={Colors.background} />}
+                            </View>
+                            <Text style={[styles.checkLabel, checked && { opacity: 0.6 }]}>{item.label}</Text>
+                            <Ionicons name="arrow-forward" size={12} color={Colors.textDim} />
+                          </Pressable>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <View style={styles.upcomingMsg}>
+                      <Text style={styles.upcomingMsgText}>
+                        Complete Phase {phase.number - 1} to unlock this phase
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Locked footer */}
+              {locked && (
+                <View style={styles.lockedRow}>
+                  <Text style={styles.lockedText}>
+                    {i > 1
+                      ? `Upgrade to ${i <= 3 ? 'Pro' : 'Elite'} to access Phase ${phase.number}`
+                      : `Complete Phase ${phase.number - 1} to unlock`}
+                  </Text>
+                  {i > 1 && !isElite && (
+                    <Pressable onPress={() => router.push('/upgrade' as any)}>
+                      <Text style={styles.lockedUpgradeLink}>Upgrade →</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      {/* ── Stats row ── */}
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Profile Views', value: profileViews, icon: 'eye-outline' as const },
+          { label: 'Emails Sent', value: outreachCount, icon: 'mail-outline' as const },
+          { label: 'Programs', value: matchCount, icon: 'school-outline' as const },
+        ].map((stat, i) => (
+          <View key={i} style={styles.statCard}>
+            <Ionicons name={stat.icon} size={16} color={Colors.textMuted} />
+            <Text style={styles.statValue}>{stat.value}</Text>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* ── Profile card ── */}
+      <View style={styles.profileCard}>
+        {/* Avatar ring */}
+        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarRing}>
+          <View style={styles.avatarInner}>
+            {athlete?.profile_photo_url ? (
+              <Image
+                source={{ uri: athlete.profile_photo_url }}
+                style={styles.avatarPhoto}
+              />
+            ) : (
+              <Text style={styles.avatarInitials}>{initials}</Text>
+            )}
+          </View>
+        </LinearGradient>
+
+        <Text style={styles.profileName}>{fullName || athlete?.email || 'Complete your profile'}</Text>
+        <Text style={styles.profileLevel}>
+          {score !== null ? getRecruitingLevelFromScore(score) : 'Complete assessment to see your tier'}
+        </Text>
+
+        {/* Score breakdown bars — matches web: gradient fill, bg box */}
+        {assessment?.score_breakdown && (
+          <View style={styles.scoreBars}>
+            {[
+              { label: 'Athletic',    val: (assessment.score_breakdown.athletic    ?? assessment.score_breakdown.physical    ?? 0) as number },
+              { label: 'Academic',    val: (assessment.score_breakdown.academic    ?? 0) as number },
+              { label: 'Production',  val: (assessment.score_breakdown.production  ?? 0) as number },
+              { label: 'Intangibles', val: (assessment.score_breakdown.intangibles ?? 0) as number },
+            ].map(bar => (
+              <View key={bar.label} style={styles.barRow}>
+                <Text style={styles.barLabel}>{bar.label}</Text>
+                <View style={styles.barTrack}>
+                  <LinearGradient
+                    colors={['#833AB4', '#C13584', '#E1306C', '#FCAF45']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.barFill, { width: `${bar.val}%` }]}
+                  />
+                </View>
+                <Text style={styles.barValue}>{bar.val}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Profile action buttons — matches web: subtle bg2 style */}
+        <View style={styles.profileActions}>
+          <Pressable
+            style={({ pressed }) => [styles.profileBtn, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push('/(tabs)/profile' as any)}
+          >
+            <Text style={styles.profileBtnText}>Edit Profile</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.profileBtn, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push('/(tabs)/analytics' as any)}
+          >
+            <Text style={styles.profileBtnText}>View Analytics</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* ── Tier / features card ── */}
+      <View style={[styles.tierFeaturesCard, {
+        backgroundColor: Colors.surface,
+      }]}>
+        {/* Tier header — matches web: icon circle + title + subscription desc */}
+        <View style={styles.tierFeaturesHeader}>
+          <View style={[styles.tierIconCircle, { backgroundColor: tierColor + '22' }]}>
+            <Ionicons name="checkmark-circle" size={16} color={tierColor} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.tierFeaturesTitle, { color: tierColor }]}>
+              {tierDisplay} Tier
+            </Text>
+            <Text style={styles.tierFeaturesSub}>
+              {athlete?.subscription_status === 'active'
+                ? (athlete?.subscription_tier === 'elite' ? 'One-time access' : 'Monthly plan')
+                : 'Limited access'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Feature checklist */}
+        <View style={styles.featureList}>
+          {[
+            { label: 'Full V1 Score Breakdown', unlocked: !!assessment },
+            { label: 'Program Matches',          unlocked: isPremium },
+            { label: 'Coach Contacts',           unlocked: isPremium },
+            { label: 'Gameplan Phases 1–4',      unlocked: isPremium },
+            { label: 'Phase 5 (Timeline)',        unlocked: isElite  },
+            { label: 'Outreach Templates',        unlocked: isElite  },
+          ].map((feat, i) => (
+            <View key={i} style={styles.featureRow}>
+              <Ionicons
+                name="checkmark"
+                size={13}
+                color={feat.unlocked ? tierColor : Colors.textDim}
+              />
+              <Text style={[styles.featureLabel, !feat.unlocked && { color: Colors.textDim, opacity: 0.5 }]}>
+                {feat.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {!isPremium && (
+          <Pressable
+            style={({ pressed }) => [styles.seeUpgradeBtn, { backgroundColor: tierColor }, pressed && { opacity: 0.8 }]}
+            onPress={() => router.push('/upgrade' as any)}
+          >
+            <Text style={[styles.seeUpgradeBtnText, { color: Colors.white }]}>See Upgrade Options</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* ── Program matches preview ── */}
+      <View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Program Matches</Text>
+          {matchCount > 0 && isPremium && (
+            <Pressable onPress={() => router.push('/(tabs)/programs' as any)}>
+              <Text style={styles.sectionLink}>See all →</Text>
+            </Pressable>
+          )}
+        </View>
+        {!isPremium ? (
+          <View style={styles.matchGate}>
+            <Ionicons name="lock-closed" size={20} color={Colors.textDim} />
+            <Text style={styles.matchGateText}>Upgrade to Pro to see your matched programs</Text>
+            <Pressable
+              style={styles.matchGateBtn}
+              onPress={() => router.push('/upgrade' as any)}
+            >
+              <Text style={styles.matchGateBtnText}>Unlock Programs →</Text>
+            </Pressable>
+          </View>
+        ) : matchCount === 0 ? (
+          <View style={styles.matchGate}>
+            <Ionicons name="school-outline" size={22} color={Colors.textDim} />
+            <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
+            <Pressable
+              style={styles.matchGateBtn}
+              onPress={() => router.push('/assessment' as any)}
+            >
+              <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={styles.matchViewAll}
+            onPress={() => router.push('/(tabs)/programs' as any)}
+          >
+            <Ionicons name="school-outline" size={18} color={Colors.primary} />
+            <Text style={styles.matchViewAllText}>View {matchCount} matched program{matchCount !== 1 ? 's' : ''}</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.textDim} />
+          </Pressable>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  container: {
+    paddingTop: 20,
+    paddingBottom: 36,
+    paddingHorizontal: 20,
+    gap: 14,
+  },
+
+  // Greeting
+  welcomeCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    padding: 22,
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: Colors.white,
+    marginBottom: 6,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: Colors.text,
+    letterSpacing: -0.5,
+    marginBottom: 6,
+    lineHeight: 30,
+  },
+  welcomeSub: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tierLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tierBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 100,
+    borderWidth: 1,
+  },
+  tierBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Score card
+  scoreGradient: {
+    borderRadius: 17,
+    padding: 1.5,
+  },
+  scoreInner: {
+    backgroundColor: Colors.scoreCard,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.35)',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+  },
+  scoreNumber: {
+    fontSize: 96,
+    fontWeight: '900',
+    letterSpacing: -6,
+    lineHeight: 92,
+    marginBottom: 12,
+  },
+  recruitingLevel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 1.2,
+    marginBottom: 22,
+  },
+  noScoreHint: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 22,
+    lineHeight: 20,
+  },
+  tierRow: {
+    flexDirection: 'row',
+    gap: 6,
+    width: '100%',
+  },
+  tierItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 5,
+  },
+  tierBar: {
+    height: 3,
+    width: '100%',
+    borderRadius: 2,
+  },
+  tierBarLabel: {
+    fontSize: 9,
+    letterSpacing: 0.3,
+  },
+  assessmentBtn: {
+    marginTop: 20,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+  },
+  assessmentBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Progress
+  progressCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 18,
+  },
+  progressTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  progressLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  progressCount: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  progressTrack: {
+    height: 15,
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  phaseDots: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  phaseDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phaseDotDone: {
+    backgroundColor: Colors.text,
+    borderColor: Colors.border,
+  },
+  phaseDotActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  phaseDotNum: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textDim,
+  },
+  phaseDotNumActive: {
+    color: Colors.white,
+  },
+
+  // Upgrade banner
+  upgradeBanner: {
+    borderRadius: 14,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  upgradeEyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 3,
+  },
+  upgradeTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.white,
+    marginBottom: 3,
+  },
+  upgradeDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 17,
+  },
+  upgradeBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: '#a3ff47',
+    flexShrink: 0,
+  },
+  upgradeBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#000',
+  },
+
+  // Phase list
+  phaseList: {
+    gap: 8,
+  },
+  phaseCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderColor: Colors.border,
+    borderLeftColor: 'transparent',
+    overflow: 'hidden',
+  },
+  phaseCardActive: {
+    borderLeftColor: Colors.primary,
+  },
+  phaseCardDone: {
+    opacity: 0.72,
+    borderLeftColor: 'rgba(5,166,19,0.4)',
+  },
+  phaseCardLocked: {
+    opacity: 0.28,
+  },
+  phaseInner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+  },
+  phaseIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  phaseIconActive: {
+    backgroundColor: 'rgba(131,58,180,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(131,58,180,0.25)',
+  },
+  phaseIconDone: {
+    backgroundColor: Colors.text,
+  },
+  phaseIconMuted: {
+    backgroundColor: Colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  phaseIconNum: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.textMuted,
+  },
+  phaseContent: {
+    flex: 1,
+    gap: 3,
+  },
+  phaseEyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: Colors.primary,
+  },
+  phaseTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.text,
+    lineHeight: 18,
+  },
+  phaseDesc: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    lineHeight: 17,
+  },
+  hintChip: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 100,
+    backgroundColor: Colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  hintChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  phaseRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+    paddingTop: 2,
+    flexShrink: 0,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 100,
+  },
+  statusBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+
+  // Expanded body
+  phaseBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 2,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  checkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  checkBox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: Colors.border2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  checkBoxDone: {
+    backgroundColor: Colors.success,
+    borderColor: Colors.success,
+  },
+  checkLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.text,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  upcomingMsg: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  upcomingMsgText: {
+    fontSize: 12,
+    color: Colors.textDim,
+    textAlign: 'center',
+  },
+
+  // Locked footer
+  lockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.surfaceAlt,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  lockedText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textDim,
+  },
+  lockedUpgradeLink: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+
+  // Stats row
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: Colors.text,
+    letterSpacing: -1,
+    lineHeight: 28,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+
+  // Profile card
+  profileCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 18,
+    padding: 22,
+    alignItems: 'center',
+    gap: 6,
+  },
+  avatarRing: {
+    borderRadius: 44,
+    padding: 2.5,
+    marginBottom: 8,
+  },
+  avatarInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPhoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarInitials: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  profileName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  profileLevel: {
+    fontSize: 11,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginBottom: 14,
+    lineHeight: 16,
+  },
+  scoreBars: {
+    width: '100%',
+    gap: 7,
+    marginBottom: 14,
+    padding: 12,
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 10,
+  },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  barLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: Colors.textDim,
+    width: 68,
+  },
+  barTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  barValue: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.textMuted,
+    width: 22,
+    textAlign: 'right',
+  },
+  profileActions: {
+    flexDirection: 'row',
+    gap: 6,
+    width: '100%',
+  },
+  profileBtn: {
+    flex: 1,
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  profileBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+
+  // Tier features card
+  tierFeaturesCard: {
+    borderRadius: 18,
+    padding: 20,
+    gap: 14,
+  },
+  tierFeaturesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  tierIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  tierFeaturesTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  tierFeaturesSub: {
+    fontSize: 11,
+    color: Colors.textDim,
+    marginTop: 1,
+  },
+  featureList: {
+    gap: 10,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  featureLabel: {
+    fontSize: 13,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  seeUpgradeBtn: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  seeUpgradeBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  // Program matches preview
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: Colors.text,
+    letterSpacing: -0.2,
+  },
+  sectionLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  matchGate: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 22,
+    alignItems: 'center',
+    gap: 10,
+  },
+  matchGateText: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  matchGateBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 100,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    marginTop: 4,
+  },
+  matchGateBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  matchViewAll: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  matchViewAllText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+});
