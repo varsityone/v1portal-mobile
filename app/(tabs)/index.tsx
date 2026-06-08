@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -14,7 +14,8 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
-import { Colors, GRADIENT } from '../../constants/Colors';
+import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 import { PHASES } from '../../constants/Phases';
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
@@ -70,6 +71,8 @@ export default function DashboardScreen() {
   const { session } = useAuth();
   const router = useRouter();
   const { athlete, assessment, isPremium, loading, refresh } = useAthleteData();
+  const C = useColors();
+  const styles = useMemo(() => createStyles(C), [C]);
 
   const [matchCount, setMatchCount] = useState(0);
   const [outreachCount, setOutreachCount] = useState(0);
@@ -77,7 +80,6 @@ export default function DashboardScreen() {
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
 
-  // Fetch match, outreach, and profile view counts — mirrors web analytics API logic
   const fetchCounts = useCallback(async () => {
     if (!athlete?.id) return;
     const [
@@ -90,7 +92,6 @@ export default function DashboardScreen() {
       supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
     setMatchCount(matchData?.length ?? 0);
-    // Web counts status in ['sent','opened','bounced'] as "emails sent"
     const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
     setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
     setProfileViews(pv ?? 0);
@@ -98,7 +99,6 @@ export default function DashboardScreen() {
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
-  // Animated score counter
   const score = athlete?.v1_score != null
     ? Math.round(Number(athlete.v1_score))
     : assessment?.v1_score
@@ -119,8 +119,6 @@ export default function DashboardScreen() {
     return () => clearInterval(timer);
   }, [score]);
 
-  // Derived values
-  // Matches web exactly: athlete.full_name → split first word, fall back to 'Athlete'
   const fullName  = athlete?.full_name || '';
   const firstName = fullName ? fullName.split(' ')[0].trim() : 'Athlete';
   const initials  = fullName
@@ -128,7 +126,7 @@ export default function DashboardScreen() {
     : (session?.user?.email ?? '??').slice(0, 2).toUpperCase();
   const isElite = athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite';
   const activeTierIdx = getActiveTierIndex(displayScore);
-  const numColor = score ? getScoreColor(displayScore) : Colors.textDim;
+  const numColor = score ? getScoreColor(displayScore) : C.textDim;
 
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -139,12 +137,11 @@ export default function DashboardScreen() {
     return 'Free';
   })();
   const tierColor = (() => {
-    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? '#10b981' : Colors.primary;
+    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? '#10b981' : C.primary;
     if (athlete?.subscription_status === 'trial') return '#F59E0B';
-    return Colors.textMuted;
+    return C.textMuted;
   })();
 
-  // Phase completion (data-driven)
   const phaseComplete = [
     !!assessment?.v1_score,
     !!(athlete?.full_name && athlete?.position && athlete?.high_school &&
@@ -156,7 +153,6 @@ export default function DashboardScreen() {
     outreachCount >= 5,
   ];
 
-  // Phase lock: tier gate + sequential gate
   const phaseLocked = PHASES.map((_, i): boolean => {
     let locked = false;
     if (i === 0) locked = false;
@@ -188,7 +184,7 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={Colors.primary} />
+        <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={C.primary} />
       }
     >
       {/* ── Greeting header ── */}
@@ -236,11 +232,11 @@ export default function DashboardScreen() {
               const active = score !== null && i <= activeTierIdx;
               return (
                 <View key={tier.label} style={styles.tierItem}>
-                  <View style={[styles.tierBar, { backgroundColor: active ? tier.color : 'rgba(255,255,255,0.08)' }]} />
+                  <View style={[styles.tierBar, { backgroundColor: active ? tier.color : C.surfaceAlt }]} />
                   <Text style={[
                     styles.tierBarLabel,
                     {
-                      color: (active && i === activeTierIdx) ? tier.color : 'rgba(255,255,255,0.22)',
+                      color: (active && i === activeTierIdx) ? tier.color : C.textDim,
                       fontWeight: (active && i === activeTierIdx) ? '800' : '400',
                     },
                   ]}>
@@ -290,7 +286,7 @@ export default function DashboardScreen() {
                 ]}
               >
                 {isDone ? (
-                  <Ionicons name="checkmark" size={10} color={Colors.background} />
+                  <Ionicons name="checkmark" size={10} color={C.background} />
                 ) : (
                   <Text style={[styles.phaseDotNum, isActive && styles.phaseDotNumActive]}>
                     {p.number}
@@ -336,8 +332,8 @@ export default function DashboardScreen() {
           const canExpand = !locked;
 
           const badgeLabel = done ? 'Completed' : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next';
-          const badgeBg = done ? Colors.surfaceAlt : active ? 'rgba(131,58,180,0.12)' : locked ? 'rgba(245,158,11,0.10)' : Colors.surfaceAlt;
-          const badgeColor = done ? Colors.textMuted : active ? Colors.primary : locked ? '#F59E0B' : Colors.textDim;
+          const badgeBg = done ? C.surfaceAlt : active ? 'rgba(131,58,180,0.12)' : locked ? 'rgba(245,158,11,0.10)' : C.surfaceAlt;
+          const badgeColor = done ? C.textMuted : active ? C.primary : locked ? '#F59E0B' : C.textDim;
 
           let hint = '';
           if (done) {
@@ -384,11 +380,11 @@ export default function DashboardScreen() {
                   done ? styles.phaseIconDone : active ? styles.phaseIconActive : styles.phaseIconMuted,
                 ]}>
                   {done ? (
-                    <Ionicons name="checkmark" size={16} color={Colors.background} />
+                    <Ionicons name="checkmark" size={16} color={C.background} />
                   ) : locked ? (
-                    <Ionicons name="lock-closed" size={14} color={Colors.textDim} />
+                    <Ionicons name="lock-closed" size={14} color={C.textDim} />
                   ) : (
-                    <Text style={[styles.phaseIconNum, active && { color: Colors.primary }]}>
+                    <Text style={[styles.phaseIconNum, active && { color: C.primary }]}>
                       {phase.number}
                     </Text>
                   )}
@@ -398,18 +394,18 @@ export default function DashboardScreen() {
                 <View style={styles.phaseContent}>
                   <Text style={[
                     styles.phaseEyebrow,
-                    done && { color: Colors.textMuted },
-                    (locked || (!active && !done)) && { color: Colors.textDim },
+                    done && { color: C.textMuted },
+                    (locked || (!active && !done)) && { color: C.textDim },
                   ]}>
                     Phase {phase.number}
                   </Text>
                   <Text style={[
                     styles.phaseTitle,
-                    locked && { color: Colors.textMuted },
+                    locked && { color: C.textMuted },
                   ]}>
                     {phase.title}
                   </Text>
-                  <Text style={[styles.phaseDesc, locked && { color: Colors.textDim }]}>
+                  <Text style={[styles.phaseDesc, locked && { color: C.textDim }]}>
                     {phase.description}
                   </Text>
                   {hint ? (
@@ -417,7 +413,7 @@ export default function DashboardScreen() {
                       styles.hintChip,
                       active && { backgroundColor: 'rgba(131,58,180,0.08)', borderColor: 'rgba(131,58,180,0.25)' },
                     ]}>
-                      <Text style={[styles.hintChipText, active && { color: Colors.primary }]}>{hint}</Text>
+                      <Text style={[styles.hintChipText, active && { color: C.primary }]}>{hint}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -431,7 +427,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                       size={14}
-                      color={active ? Colors.primary : Colors.textDim}
+                      color={active ? C.primary : C.textDim}
                     />
                   )}
                 </View>
@@ -447,14 +443,14 @@ export default function DashboardScreen() {
                         return (
                           <Pressable
                             key={j}
-                            style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: Colors.surfaceAlt }]}
+                            style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: C.surfaceAlt }]}
                             onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
                           >
                             <View style={[styles.checkBox, checked && styles.checkBoxDone]}>
-                              {checked && <Ionicons name="checkmark" size={10} color={Colors.background} />}
+                              {checked && <Ionicons name="checkmark" size={10} color={C.background} />}
                             </View>
                             <Text style={[styles.checkLabel, checked && { opacity: 0.6 }]}>{item.label}</Text>
-                            <Ionicons name="arrow-forward" size={12} color={Colors.textDim} />
+                            <Ionicons name="arrow-forward" size={12} color={C.textDim} />
                           </Pressable>
                         );
                       })}
@@ -497,7 +493,7 @@ export default function DashboardScreen() {
           { label: 'Programs', value: matchCount, icon: 'school-outline' as const },
         ].map((stat, i) => (
           <View key={i} style={styles.statCard}>
-            <Ionicons name={stat.icon} size={16} color={Colors.textMuted} />
+            <Ionicons name={stat.icon} size={16} color={C.textMuted} />
             <Text style={styles.statValue}>{stat.value}</Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
@@ -506,7 +502,6 @@ export default function DashboardScreen() {
 
       {/* ── Profile card ── */}
       <View style={styles.profileCard}>
-        {/* Avatar ring */}
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarRing}>
           <View style={styles.avatarInner}>
             {athlete?.profile_photo_url ? (
@@ -525,7 +520,6 @@ export default function DashboardScreen() {
           {score !== null ? getRecruitingLevelFromScore(score) : 'Complete assessment to see your tier'}
         </Text>
 
-        {/* Score breakdown bars — matches web: gradient fill, bg box */}
         {assessment?.score_breakdown && (
           <View style={styles.scoreBars}>
             {[
@@ -550,7 +544,6 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Profile action buttons — matches web: subtle bg2 style */}
         <View style={styles.profileActions}>
           <Pressable
             style={({ pressed }) => [styles.profileBtn, pressed && { opacity: 0.75 }]}
@@ -568,10 +561,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ── Tier / features card ── */}
-      <View style={[styles.tierFeaturesCard, {
-        backgroundColor: Colors.surface,
-      }]}>
-        {/* Tier header — matches web: icon circle + title + subscription desc */}
+      <View style={styles.tierFeaturesCard}>
         <View style={styles.tierFeaturesHeader}>
           <View style={[styles.tierIconCircle, { backgroundColor: tierColor + '22' }]}>
             <Ionicons name="checkmark-circle" size={16} color={tierColor} />
@@ -588,7 +578,6 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Feature checklist */}
         <View style={styles.featureList}>
           {[
             { label: 'Full V1 Score Breakdown', unlocked: !!assessment },
@@ -602,9 +591,9 @@ export default function DashboardScreen() {
               <Ionicons
                 name="checkmark"
                 size={13}
-                color={feat.unlocked ? tierColor : Colors.textDim}
+                color={feat.unlocked ? tierColor : C.textDim}
               />
-              <Text style={[styles.featureLabel, !feat.unlocked && { color: Colors.textDim, opacity: 0.5 }]}>
+              <Text style={[styles.featureLabel, !feat.unlocked && { color: C.textDim, opacity: 0.5 }]}>
                 {feat.label}
               </Text>
             </View>
@@ -616,7 +605,7 @@ export default function DashboardScreen() {
             style={({ pressed }) => [styles.seeUpgradeBtn, { backgroundColor: tierColor }, pressed && { opacity: 0.8 }]}
             onPress={() => router.push('/upgrade' as any)}
           >
-            <Text style={[styles.seeUpgradeBtnText, { color: Colors.white }]}>See Upgrade Options</Text>
+            <Text style={[styles.seeUpgradeBtnText, { color: C.white }]}>See Upgrade Options</Text>
           </Pressable>
         )}
       </View>
@@ -633,7 +622,7 @@ export default function DashboardScreen() {
         </View>
         {!isPremium ? (
           <View style={styles.matchGate}>
-            <Ionicons name="lock-closed" size={20} color={Colors.textDim} />
+            <Ionicons name="lock-closed" size={20} color={C.textDim} />
             <Text style={styles.matchGateText}>Upgrade to Pro to see your matched programs</Text>
             <Pressable
               style={styles.matchGateBtn}
@@ -644,7 +633,7 @@ export default function DashboardScreen() {
           </View>
         ) : matchCount === 0 ? (
           <View style={styles.matchGate}>
-            <Ionicons name="school-outline" size={22} color={Colors.textDim} />
+            <Ionicons name="school-outline" size={22} color={C.textDim} />
             <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
             <Pressable
               style={styles.matchGateBtn}
@@ -658,9 +647,9 @@ export default function DashboardScreen() {
             style={styles.matchViewAll}
             onPress={() => router.push('/(tabs)/programs' as any)}
           >
-            <Ionicons name="school-outline" size={18} color={Colors.primary} />
+            <Ionicons name="school-outline" size={18} color={C.primary} />
             <Text style={styles.matchViewAllText}>View {matchCount} matched program{matchCount !== 1 ? 's' : ''}</Text>
-            <Ionicons name="chevron-forward" size={14} color={Colors.textDim} />
+            <Ionicons name="chevron-forward" size={14} color={C.textDim} />
           </Pressable>
         )}
       </View>
@@ -670,664 +659,138 @@ export default function DashboardScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    paddingTop: 20,
-    paddingBottom: 36,
-    paddingHorizontal: 20,
-    gap: 14,
-  },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingTop: 20, paddingBottom: 36, paddingHorizontal: 20, gap: 14 },
 
-  // Greeting
-  welcomeCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 18,
-    padding: 22,
-  },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    color: Colors.white,
-    marginBottom: 6,
-  },
-  welcomeTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: Colors.text,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-    lineHeight: 30,
-  },
-  welcomeSub: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tierLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  tierBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 100,
-    borderWidth: 1,
-  },
-  tierBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
+    // Greeting
+    welcomeCard: { backgroundColor: C.surface, borderRadius: 18, padding: 22 },
+    eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: C.primary, marginBottom: 6 },
+    welcomeTitle: { fontSize: 26, fontWeight: '700', color: C.text, letterSpacing: -0.5, marginBottom: 6, lineHeight: 30 },
+    welcomeSub: { fontSize: 13, color: C.textMuted, lineHeight: 18, marginBottom: 14 },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    tierLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, borderWidth: 1 },
+    tierBadgeText: { fontSize: 12, fontWeight: '700' },
 
-  // Score card
-  scoreGradient: {
-    borderRadius: 17,
-    padding: 1.5,
-  },
-  scoreInner: {
-    backgroundColor: Colors.scoreCard,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  scoreLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.35)',
-    letterSpacing: 1.5,
-    marginBottom: 12,
-  },
-  scoreNumber: {
-    fontSize: 96,
-    fontWeight: '900',
-    letterSpacing: -6,
-    lineHeight: 92,
-    marginBottom: 12,
-  },
-  recruitingLevel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.65)',
-    letterSpacing: 1.2,
-    marginBottom: 22,
-  },
-  noScoreHint: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginBottom: 22,
-    lineHeight: 20,
-  },
-  tierRow: {
-    flexDirection: 'row',
-    gap: 6,
-    width: '100%',
-  },
-  tierItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 5,
-  },
-  tierBar: {
-    height: 3,
-    width: '100%',
-    borderRadius: 2,
-  },
-  tierBarLabel: {
-    fontSize: 9,
-    letterSpacing: 0.3,
-  },
-  assessmentBtn: {
-    marginTop: 20,
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 13,
-  },
-  assessmentBtnText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '700',
-  },
+    // Score card
+    scoreGradient: { borderRadius: 17, padding: 1.5 },
+    scoreInner: { backgroundColor: C.scoreCard, borderRadius: 16, padding: 24, alignItems: 'center' },
+    scoreLabel: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.5, marginBottom: 12 },
+    scoreNumber: { fontSize: 96, fontWeight: '900', letterSpacing: -6, lineHeight: 92, marginBottom: 12 },
+    recruitingLevel: { fontSize: 13, fontWeight: '700', color: C.textMuted, letterSpacing: 1.2, marginBottom: 22 },
+    noScoreHint: { fontSize: 14, color: C.textMuted, textAlign: 'center', marginBottom: 22, lineHeight: 20 },
+    tierRow: { flexDirection: 'row', gap: 6, width: '100%' },
+    tierItem: { flex: 1, alignItems: 'center', gap: 5 },
+    tierBar: { height: 3, width: '100%', borderRadius: 2 },
+    tierBarLabel: { fontSize: 9, letterSpacing: 0.3 },
+    assessmentBtn: { marginTop: 20, backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 13 },
+    assessmentBtnText: { color: C.white, fontSize: 15, fontWeight: '700' },
 
-  // Progress
-  progressCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
-  },
-  progressTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  progressLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  progressCount: {
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-  progressTrack: {
-    height: 15,
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: 15,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  phaseDots: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  phaseDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phaseDotDone: {
-    backgroundColor: Colors.text,
-    borderColor: Colors.border,
-  },
-  phaseDotActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  phaseDotNum: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textDim,
-  },
-  phaseDotNumActive: {
-    color: Colors.white,
-  },
+    // Progress
+    progressCard: { backgroundColor: C.surface, borderRadius: 14, padding: 18 },
+    progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    progressLabel: { fontSize: 13, fontWeight: '700', color: C.text },
+    progressCount: { fontSize: 12, color: C.textMuted },
+    progressTrack: { height: 15, backgroundColor: C.surfaceAlt, borderRadius: 15, overflow: 'hidden', marginBottom: 14 },
+    progressFill: { height: '100%', borderRadius: 3 },
+    phaseDots: { flexDirection: 'row', gap: 8 },
+    phaseDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+    phaseDotDone: { backgroundColor: C.text, borderColor: C.border },
+    phaseDotActive: { backgroundColor: C.primary, borderColor: C.primary },
+    phaseDotNum: { fontSize: 11, fontWeight: '700', color: C.textDim },
+    phaseDotNumActive: { color: C.white },
 
-  // Upgrade banner
-  upgradeBanner: {
-    borderRadius: 14,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  upgradeEyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 3,
-  },
-  upgradeTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.white,
-    marginBottom: 3,
-  },
-  upgradeDesc: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: 17,
-  },
-  upgradeBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 100,
-    backgroundColor: '#a3ff47',
-    flexShrink: 0,
-  },
-  upgradeBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#000',
-  },
+    // Upgrade banner
+    upgradeBanner: { borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
+    upgradeEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 },
+    upgradeTitle: { fontSize: 15, fontWeight: '800', color: C.white, marginBottom: 3 },
+    upgradeDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
+    upgradeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, backgroundColor: '#a3ff47', flexShrink: 0 },
+    upgradeBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
 
-  // Phase list
-  phaseList: {
-    gap: 8,
-  },
-  phaseCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderLeftWidth: 3,
-    borderColor: Colors.border,
-    borderLeftColor: 'transparent',
-    overflow: 'hidden',
-  },
-  phaseCardActive: {
-    borderLeftColor: Colors.primary,
-  },
-  phaseCardDone: {
-    opacity: 0.72,
-    borderLeftColor: 'rgba(5,166,19,0.4)',
-  },
-  phaseCardLocked: {
-    opacity: 0.28,
-  },
-  phaseInner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 16,
-  },
-  phaseIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  phaseIconActive: {
-    backgroundColor: 'rgba(131,58,180,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(131,58,180,0.25)',
-  },
-  phaseIconDone: {
-    backgroundColor: Colors.text,
-  },
-  phaseIconMuted: {
-    backgroundColor: Colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  phaseIconNum: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.textMuted,
-  },
-  phaseContent: {
-    flex: 1,
-    gap: 3,
-  },
-  phaseEyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: Colors.primary,
-  },
-  phaseTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.text,
-    lineHeight: 18,
-  },
-  phaseDesc: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    lineHeight: 17,
-  },
-  hintChip: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 100,
-    backgroundColor: Colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  hintChipText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    letterSpacing: 0.3,
-  },
-  phaseRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-    paddingTop: 2,
-    flexShrink: 0,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 100,
-  },
-  statusBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
+    // Phase list
+    phaseList: { gap: 8 },
+    phaseCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderLeftWidth: 3, borderColor: C.border, borderLeftColor: 'transparent', overflow: 'hidden' },
+    phaseCardActive: { borderLeftColor: C.primary },
+    phaseCardDone: { opacity: 0.72, borderLeftColor: 'rgba(5,166,19,0.4)' },
+    phaseCardLocked: { opacity: 0.28 },
+    phaseInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16 },
+    phaseIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    phaseIconActive: { backgroundColor: 'rgba(131,58,180,0.14)', borderWidth: 1, borderColor: 'rgba(131,58,180,0.25)' },
+    phaseIconDone: { backgroundColor: C.text },
+    phaseIconMuted: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    phaseIconNum: { fontSize: 15, fontWeight: '800', color: C.textMuted },
+    phaseContent: { flex: 1, gap: 3 },
+    phaseEyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: C.primary },
+    phaseTitle: { fontSize: 14, fontWeight: '800', color: C.text, lineHeight: 18 },
+    phaseDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
+    hintChip: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    hintChipText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.3 },
+    phaseRight: { alignItems: 'flex-end', gap: 8, paddingTop: 2, flexShrink: 0 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100 },
+    statusBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
 
-  // Expanded body
-  phaseBody: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    paddingTop: 2,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  checkItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  checkBox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: Colors.border2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkBoxDone: {
-    backgroundColor: Colors.success,
-    borderColor: Colors.success,
-  },
-  checkLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: Colors.text,
-    fontWeight: '500',
-    lineHeight: 18,
-  },
-  upcomingMsg: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  upcomingMsgText: {
-    fontSize: 12,
-    color: Colors.textDim,
-    textAlign: 'center',
-  },
+    // Expanded body
+    phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 2, borderTopWidth: 1, borderTopColor: C.border },
+    checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 },
+    checkBox: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    checkBoxDone: { backgroundColor: C.success, borderColor: C.success },
+    checkLabel: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 18 },
+    upcomingMsg: { marginTop: 10, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 8, alignItems: 'center' },
+    upcomingMsgText: { fontSize: 12, color: C.textDim, textAlign: 'center' },
 
-  // Locked footer
-  lockedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.surfaceAlt,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  lockedText: {
-    flex: 1,
-    fontSize: 12,
-    color: Colors.textDim,
-  },
-  lockedUpgradeLink: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
+    // Locked footer
+    lockedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.surfaceAlt, borderTopWidth: 1, borderTopColor: C.border },
+    lockedText: { flex: 1, fontSize: 12, color: C.textDim },
+    lockedUpgradeLink: { fontSize: 12, fontWeight: '700', color: C.primary },
 
-  // Stats row
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Colors.text,
-    letterSpacing: -1,
-    lineHeight: 28,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    fontWeight: '500',
-    textAlign: 'center',
-    lineHeight: 14,
-  },
+    // Stats row
+    statsRow: { flexDirection: 'row', gap: 10 },
+    statCard: { flex: 1, backgroundColor: C.surface, borderRadius: 12, padding: 14, alignItems: 'center', gap: 4 },
+    statValue: { fontSize: 24, fontWeight: '900', color: C.text, letterSpacing: -1, lineHeight: 28 },
+    statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '500', textAlign: 'center', lineHeight: 14 },
 
-  // Profile card
-  profileCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 18,
-    padding: 22,
-    alignItems: 'center',
-    gap: 6,
-  },
-  avatarRing: {
-    borderRadius: 44,
-    padding: 2.5,
-    marginBottom: 8,
-  },
-  avatarInner: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarPhoto: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-  },
-  avatarInitials: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  profileName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Colors.text,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  profileLevel: {
-    fontSize: 11,
-    color: Colors.textDim,
-    textAlign: 'center',
-    marginBottom: 14,
-    lineHeight: 16,
-  },
-  scoreBars: {
-    width: '100%',
-    gap: 7,
-    marginBottom: 14,
-    padding: 12,
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: 10,
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  barLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: Colors.textDim,
-    width: 68,
-  },
-  barTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  barValue: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: Colors.textMuted,
-    width: 22,
-    textAlign: 'right',
-  },
-  profileActions: {
-    flexDirection: 'row',
-    gap: 6,
-    width: '100%',
-  },
-  profileBtn: {
-    flex: 1,
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: 8,
-    paddingVertical: 9,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  profileBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textMuted,
-  },
+    // Profile card
+    profileCard: { backgroundColor: C.surface, borderRadius: 18, padding: 22, alignItems: 'center', gap: 6 },
+    avatarRing: { borderRadius: 44, padding: 2.5, marginBottom: 8 },
+    avatarInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+    avatarPhoto: { width: 72, height: 72, borderRadius: 36 },
+    avatarInitials: { fontSize: 24, fontWeight: '800', color: C.text },
+    profileName: { fontSize: 14, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: 4 },
+    profileLevel: { fontSize: 11, color: C.textDim, textAlign: 'center', marginBottom: 14, lineHeight: 16 },
+    scoreBars: { width: '100%', gap: 7, marginBottom: 14, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 10 },
+    barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    barLabel: { fontSize: 10, fontWeight: '500', color: C.textDim, width: 68 },
+    barTrack: { flex: 1, height: 4, backgroundColor: C.border, borderRadius: 2, overflow: 'hidden' },
+    barFill: { height: '100%', borderRadius: 2 },
+    barValue: { fontSize: 10, fontWeight: '800', color: C.textMuted, width: 22, textAlign: 'right' },
+    profileActions: { flexDirection: 'row', gap: 6, width: '100%' },
+    profileBtn: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
 
-  // Tier features card
-  tierFeaturesCard: {
-    borderRadius: 18,
-    padding: 20,
-    gap: 14,
-  },
-  tierFeaturesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
-  },
-  tierIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  tierFeaturesTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  tierFeaturesSub: {
-    fontSize: 11,
-    color: Colors.textDim,
-    marginTop: 1,
-  },
-  featureList: {
-    gap: 10,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  featureLabel: {
-    fontSize: 13,
-    color: Colors.text,
-    fontWeight: '500',
-  },
-  seeUpgradeBtn: {
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  seeUpgradeBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
+    // Tier features card
+    tierFeaturesCard: { backgroundColor: C.surface, borderRadius: 18, padding: 20, gap: 14 },
+    tierFeaturesHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+    tierIconCircle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    tierFeaturesTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+    tierFeaturesSub: { fontSize: 11, color: C.textDim, marginTop: 1 },
+    featureList: { gap: 10 },
+    featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    featureLabel: { fontSize: 13, color: C.text, fontWeight: '500' },
+    seeUpgradeBtn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+    seeUpgradeBtnText: { fontSize: 14, fontWeight: '700' },
 
-  // Program matches preview
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.2,
-  },
-  sectionLink: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  matchGate: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 22,
-    alignItems: 'center',
-    gap: 10,
-  },
-  matchGateText: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  matchGateBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 100,
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    marginTop: 4,
-  },
-  matchGateBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  matchViewAll: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  matchViewAllText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-});
+    // Program matches preview
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+    sectionTitle: { fontSize: 17, fontWeight: '800', color: C.text, letterSpacing: -0.2 },
+    sectionLink: { fontSize: 13, fontWeight: '600', color: C.primary },
+    matchGate: { backgroundColor: C.surface, borderRadius: 14, padding: 22, alignItems: 'center', gap: 10 },
+    matchGateText: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+    matchGateBtn: { backgroundColor: C.primary, borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4 },
+    matchGateBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
+    matchViewAll: { backgroundColor: C.surface, borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    matchViewAllText: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },
+  });
+}

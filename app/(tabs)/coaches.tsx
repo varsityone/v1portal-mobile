@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -14,7 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
-import { Colors } from '../../constants/Colors';
+import { ThemeColors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -74,6 +75,9 @@ function EditModal({ entry, onSave, onClose }: {
   onSave: (id: string, updates: Partial<TrackerEntry>) => Promise<void>;
   onClose: () => void;
 }) {
+  const C = useColors();
+  const em = useMemo(() => createEmStyles(C), [C]);
+
   const [status, setStatus]         = useState(entry.status);
   const [priority, setPriority]     = useState(entry.priority);
   const [notes, setNotes]           = useState(entry.notes ?? '');
@@ -107,7 +111,7 @@ function EditModal({ entry, onSave, onClose }: {
             ) : null}
           </View>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={20} color={Colors.textMuted} />
+            <Ionicons name="close" size={20} color={C.textMuted} />
           </Pressable>
         </View>
 
@@ -135,7 +139,7 @@ function EditModal({ entry, onSave, onClose }: {
                 style={[em.priorityBtn, priority === p.value && { backgroundColor: p.color + '20', borderColor: p.color }]}
                 onPress={() => setPriority(p.value)}
               >
-                <Text style={[em.priorityText, { color: priority === p.value ? p.color : Colors.textDim }]}>{p.label}</Text>
+                <Text style={[em.priorityText, { color: priority === p.value ? p.color : C.textDim }]}>{p.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -148,7 +152,7 @@ function EditModal({ entry, onSave, onClose }: {
             <View style={[em.checkbox, replied && { backgroundColor: '#71ff7e', borderColor: '#71ff7e' }]}>
               {replied && <Ionicons name="checkmark" size={11} color="#000" />}
             </View>
-            <Text style={[em.repliedText, { color: replied ? '#71ff7e' : Colors.textMuted }]}>Coach replied</Text>
+            <Text style={[em.repliedText, { color: replied ? '#71ff7e' : C.textMuted }]}>Coach replied</Text>
           </Pressable>
 
           {/* Next action */}
@@ -158,7 +162,7 @@ function EditModal({ entry, onSave, onClose }: {
             value={nextAction}
             onChangeText={setNextAction}
             placeholder="e.g. Follow up email, Attend camp..."
-            placeholderTextColor={Colors.textDim}
+            placeholderTextColor={C.textDim}
           />
 
           {/* Notes */}
@@ -168,7 +172,7 @@ function EditModal({ entry, onSave, onClose }: {
             value={notes}
             onChangeText={setNotes}
             placeholder="Anything worth remembering..."
-            placeholderTextColor={Colors.textDim}
+            placeholderTextColor={C.textDim}
             multiline
           />
 
@@ -190,61 +194,6 @@ function EditModal({ entry, onSave, onClose }: {
   );
 }
 
-const em = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 22,
-    paddingBottom: 40,
-    maxHeight: '88%',
-  },
-  handle: { width: 36, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 18 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  sheetTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
-  sheetSub: { fontSize: 12, color: Colors.textDim, marginTop: 3 },
-  fieldLabel: { fontSize: 11, fontWeight: '600', color: Colors.textMuted, letterSpacing: 0.3, marginBottom: 8, marginTop: 16 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 100, borderWidth: 1, borderColor: Colors.border,
-  },
-  chipText: { fontSize: 11, fontWeight: '700', color: Colors.textDim },
-  priorityRow: { flexDirection: 'row', gap: 8 },
-  priorityBtn: {
-    flex: 1, paddingVertical: 9, borderRadius: 10,
-    alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
-  },
-  priorityText: { fontSize: 13, fontWeight: '700' },
-  repliedRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.border,
-    backgroundColor: Colors.surfaceAlt, marginTop: 16,
-  },
-  checkbox: {
-    width: 18, height: 18, borderRadius: 4, borderWidth: 1.5,
-    borderColor: Colors.border2, alignItems: 'center', justifyContent: 'center',
-  },
-  repliedText: { fontSize: 13, fontWeight: '600' },
-  input: {
-    backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-    fontSize: 13, color: Colors.text,
-  },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  cancelBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 100,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
-  },
-  cancelText: { fontSize: 14, fontWeight: '600', color: Colors.textMuted },
-  saveBtn: {
-    flex: 2, paddingVertical: 12, borderRadius: 100,
-    backgroundColor: Colors.primary, alignItems: 'center',
-  },
-  saveText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-});
-
 // ── Add Coach Modal ───────────────────────────────────────────────────────────
 
 function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
@@ -253,6 +202,10 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
   onAdd: (coach: Coach) => void;
   onClose: () => void;
 }) {
+  const C = useColors();
+  const em = useMemo(() => createEmStyles(C), [C]);
+  const ac = useMemo(() => createAcStyles(C), [C]);
+
   const [query, setQuery]     = useState('');
   const [results, setResults] = useState<Coach[]>([]);
   const [busy, setBusy]       = useState(false);
@@ -282,7 +235,7 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
         <View style={em.sheetHeader}>
           <Text style={em.sheetTitle}>Add Coach to Tracker</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={20} color={Colors.textMuted} />
+            <Ionicons name="close" size={20} color={C.textMuted} />
           </Pressable>
         </View>
         <TextInput
@@ -290,10 +243,10 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
           value={query}
           onChangeText={setQuery}
           placeholder="Search by coach name…"
-          placeholderTextColor={Colors.textDim}
+          placeholderTextColor={C.textDim}
           autoFocus
         />
-        {busy && <ActivityIndicator color={Colors.primary} style={{ marginVertical: 12 }} />}
+        {busy && <ActivityIndicator color={C.primary} style={{ marginVertical: 12 }} />}
         <ScrollView showsVerticalScrollIndicator={false}>
           {results.map(c => {
             const already = existing.includes(c.id);
@@ -308,7 +261,7 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
                   <Text style={ac.name}>{c.name}</Text>
                   <Text style={ac.sub}>{c.programs?.name ?? '—'} · {c.title ?? 'Coach'}</Text>
                 </View>
-                <Text style={[ac.addText, already && { color: Colors.textDim }]}>
+                <Text style={[ac.addText, already && { color: C.textDim }]}>
                   {already ? 'Added' : '+ Add'}
                 </Text>
               </Pressable>
@@ -323,24 +276,14 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
   );
 }
 
-const ac = StyleSheet.create({
-  row: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 4,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-    gap: 10,
-  },
-  name: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  sub: { fontSize: 11, color: Colors.textDim, marginTop: 2 },
-  addText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  empty: { fontSize: 12, color: Colors.textDim, textAlign: 'center', paddingVertical: 20 },
-});
-
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function CoachesScreen() {
   const { athlete } = useAthleteData();
   const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
   const [entries, setEntries]     = useState<TrackerEntry[]>([]);
   const [loading, setLoading]     = useState(true);
   const [editEntry, setEditEntry] = useState<TrackerEntry | null>(null);
@@ -361,7 +304,6 @@ export default function CoachesScreen() {
 
     if (!data) { setLoading(false); return; }
 
-    // Enrich with email count from coach_outreach (matches web logic)
     const enriched = await Promise.all(data.map(async (entry: any) => {
       const programId = entry.coach?.programs?.id;
       if (!programId) return { ...entry, lastContact: null, emailCount: 0 };
@@ -406,7 +348,6 @@ export default function CoachesScreen() {
     setEntries(prev => prev.filter(e => e.id !== id));
   };
 
-  // Filter
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
     if (filterPriority !== 'all' && e.priority !== filterPriority) return false;
@@ -419,7 +360,6 @@ export default function CoachesScreen() {
     return true;
   });
 
-  // Stats — matches web exactly
   const stats = {
     total:      entries.length,
     interested: entries.filter(e => e.status === 'interested').length,
@@ -434,7 +374,7 @@ export default function CoachesScreen() {
       style={s.scroll}
       contentContainerStyle={s.container}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadTracker} tintColor={Colors.primary} />}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadTracker} tintColor={C.primary} />}
       keyboardShouldPersistTaps="handled"
     >
       {/* ── Header ── */}
@@ -449,13 +389,13 @@ export default function CoachesScreen() {
         </Pressable>
       </View>
 
-      {/* ── Stats — 2x2 grid matching web ── */}
+      {/* ── Stats 2×2 ── */}
       <View style={s.statsGrid}>
         {[
-          { label: 'Total Tracked', value: stats.total,      color: Colors.text    },
-          { label: 'Interested',    value: stats.interested, color: '#71ff7e'      },
-          { label: 'Camp Invites',  value: stats.campInvite, color: '#f1a10d'      },
-          { label: 'Offers',        value: stats.offer,      color: '#a3ff47'      },
+          { label: 'Total Tracked', value: stats.total,      color: C.text    },
+          { label: 'Interested',    value: stats.interested, color: '#71ff7e' },
+          { label: 'Camp Invites',  value: stats.campInvite, color: '#f1a10d' },
+          { label: 'Offers',        value: stats.offer,      color: '#a3ff47' },
         ].map((st, i) => (
           <View key={i} style={s.statCard}>
             <Text style={[s.statValue, { color: st.color }]}>{st.value}</Text>
@@ -467,21 +407,21 @@ export default function CoachesScreen() {
       {/* ── Filters ── */}
       <View style={s.filterRow}>
         <View style={s.searchWrap}>
-          <Ionicons name="search-outline" size={14} color={Colors.textDim} />
+          <Ionicons name="search-outline" size={14} color={C.textDim} />
           <TextInput
             style={s.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search coaches..."
-            placeholderTextColor={Colors.textDim}
+            placeholderTextColor={C.textDim}
           />
         </View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterPills}>
-        {['all', ...STATUSES.map(s => s.value)].map(val => {
+        {['all', ...STATUSES.map(st => st.value)].map(val => {
           const cfg = val === 'all' ? null : getStatus(val);
           const active = filterStatus === val;
-          const color = cfg ? cfg.color : Colors.primary;
+          const color = cfg ? cfg.color : C.primary;
           return (
             <Pressable
               key={val}
@@ -498,7 +438,7 @@ export default function CoachesScreen() {
         {['all', ...PRIORITIES.map(p => p.value)].map(val => {
           const cfg = val === 'all' ? null : getPriority(val);
           const active = filterPriority === val;
-          const color = cfg ? cfg.color : Colors.primary;
+          const color = cfg ? cfg.color : C.primary;
           return (
             <Pressable
               key={`pri-${val}`}
@@ -515,10 +455,10 @@ export default function CoachesScreen() {
 
       {/* ── List ── */}
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 32 }} />
+        <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
       ) : filtered.length === 0 ? (
         <View style={s.emptyCard}>
-          <Ionicons name="clipboard-outline" size={32} color={Colors.textDim} />
+          <Ionicons name="clipboard-outline" size={32} color={C.textDim} />
           <Text style={s.emptyTitle}>
             {entries.length === 0 ? 'No coaches tracked yet' : 'No coaches match your filters'}
           </Text>
@@ -546,11 +486,9 @@ export default function CoachesScreen() {
                 key={entry.id}
                 style={[s.entryCard, hasReplied && { backgroundColor: 'rgba(113,255,126,0.04)' }]}
               >
-                {/* Left: status color bar */}
                 <View style={[s.statusBar, { backgroundColor: statusCfg.color }]} />
 
                 <View style={{ flex: 1, paddingLeft: 12 }}>
-                  {/* Coach name + replied badge */}
                   <View style={s.entryNameRow}>
                     <Text style={s.entryName}>{entry.coach?.name ?? '—'}</Text>
                     {hasReplied && (
@@ -560,18 +498,15 @@ export default function CoachesScreen() {
                     )}
                   </View>
 
-                  {/* Program */}
                   <Text style={s.entrySchool}>
                     {entry.coach?.programs?.name ?? '—'}
                     {entry.coach?.programs?.division ? ` · ${entry.coach.programs.division}` : ''}
                   </Text>
 
-                  {/* Email count */}
                   {!!entry.emailCount && entry.emailCount > 0 && (
                     <Text style={s.emailCount}>{entry.emailCount} email{entry.emailCount !== 1 ? 's' : ''} sent</Text>
                   )}
 
-                  {/* Status + Priority row */}
                   <View style={s.metaRow}>
                     <View style={[s.statusBadge, { backgroundColor: statusCfg.bg }]}>
                       <Text style={[s.statusBadgeText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
@@ -579,7 +514,6 @@ export default function CoachesScreen() {
                     <Text style={[s.priorityText, { color: priorityCfg.color }]}>{priorityCfg.label}</Text>
                   </View>
 
-                  {/* Next action */}
                   {entry.next_action && (
                     <Text style={[s.nextAction, isOverdue && { color: '#e63535' }]} numberOfLines={1}>
                       {isOverdue ? '⚑ ' : ''}{entry.next_action}
@@ -587,21 +521,20 @@ export default function CoachesScreen() {
                   )}
                 </View>
 
-                {/* Right: action buttons */}
                 <View style={s.entryActions}>
                   {entry.coach?.email && (
                     <Pressable
                       style={s.actionBtn}
                       onPress={() => router.push('/(tabs)/outreach' as any)}
                     >
-                      <Ionicons name="mail-outline" size={14} color={Colors.textMuted} />
+                      <Ionicons name="mail-outline" size={14} color={C.textMuted} />
                     </Pressable>
                   )}
                   <Pressable style={s.actionBtn} onPress={() => setEditEntry(entry)}>
-                    <Ionicons name="create-outline" size={14} color={Colors.textMuted} />
+                    <Ionicons name="create-outline" size={14} color={C.textMuted} />
                   </Pressable>
                   <Pressable style={s.actionBtn} onPress={() => handleRemove(entry.id)}>
-                    <Ionicons name="trash-outline" size={14} color={Colors.error} />
+                    <Ionicons name="trash-outline" size={14} color={C.error} />
                   </Pressable>
                 </View>
               </View>
@@ -610,7 +543,6 @@ export default function CoachesScreen() {
         </View>
       )}
 
-      {/* Modals */}
       {editEntry && (
         <EditModal entry={editEntry} onSave={handleSave} onClose={() => setEditEntry(null)} />
       )}
@@ -628,89 +560,88 @@ export default function CoachesScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  container: { paddingTop: 20, paddingBottom: 48, paddingHorizontal: 20, gap: 16 },
+function createEmStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+    sheet: { backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 22, paddingBottom: 40, maxHeight: '88%' },
+    handle: { width: 36, height: 4, backgroundColor: C.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 18 },
+    sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+    sheetTitle: { fontSize: 16, fontWeight: '800', color: C.text },
+    sheetSub: { fontSize: 12, color: C.textDim, marginTop: 3 },
+    fieldLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, letterSpacing: 0.3, marginBottom: 8, marginTop: 16 },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+    chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, borderWidth: 1, borderColor: C.border },
+    chipText: { fontSize: 11, fontWeight: '700', color: C.textDim },
+    priorityRow: { flexDirection: 'row', gap: 8 },
+    priorityBtn: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    priorityText: { fontSize: 13, fontWeight: '700' },
+    repliedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt, marginTop: 16 },
+    checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center' },
+    repliedText: { fontSize: 13, fontWeight: '600' },
+    input: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 13, color: C.text },
+    actions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 100, borderWidth: 1, borderColor: C.border, alignItems: 'center' },
+    cancelText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
+    saveBtn: { flex: 2, paddingVertical: 12, borderRadius: 100, backgroundColor: C.primary, alignItems: 'center' },
+    saveText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  });
+}
 
-  // Header
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 3, lineHeight: 18 },
-  addBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 16, paddingVertical: 10,
-    borderRadius: 100,
-    flexShrink: 0, marginTop: 4,
-  },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+function createAcStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: C.border, gap: 10 },
+    name: { fontSize: 13, fontWeight: '600', color: C.text },
+    sub: { fontSize: 11, color: C.textDim, marginTop: 2 },
+    addText: { fontSize: 13, fontWeight: '700', color: C.primary },
+    empty: { fontSize: 12, color: C.textDim, textAlign: 'center', paddingVertical: 20 },
+  });
+}
 
-  // Stats 2×2 grid
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  statCard: {
-    width: '47.5%',
-    backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 12, padding: 16,
-    alignItems: 'center', gap: 4,
-  },
-  statValue: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
-  statLabel: { fontSize: 11, fontWeight: '500', color: Colors.textDim, letterSpacing: 0.2 },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingTop: 20, paddingBottom: 48, paddingHorizontal: 20, gap: 16 },
 
-  // Filters
-  filterRow: { flexDirection: 'row', gap: 8 },
-  searchWrap: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
-  },
-  searchInput: { flex: 1, fontSize: 13, color: Colors.text },
-  filterPills: { gap: 8, paddingBottom: 2 },
-  pill: {
-    paddingHorizontal: 13, paddingVertical: 7,
-    borderRadius: 100, borderWidth: 1, borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  pillText: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
-  pillDivider: { width: 1, backgroundColor: Colors.border, marginHorizontal: 2 },
+    headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+    title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+    subtitle: { fontSize: 13, color: C.textMuted, marginTop: 3, lineHeight: 18 },
+    addBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, flexShrink: 0, marginTop: 4 },
+    addBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
-  // Empty
-  emptyCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 16, padding: 32, alignItems: 'center', gap: 10,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, textAlign: 'center' },
-  emptySub: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19 },
-  emptyBtn: {
-    backgroundColor: Colors.primary + '20', borderRadius: 100,
-    paddingHorizontal: 22, paddingVertical: 10, marginTop: 4,
-    borderWidth: 1, borderColor: Colors.primary + '40',
-  },
-  emptyBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    statCard: { width: '47.5%', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 16, alignItems: 'center', gap: 4 },
+    statValue: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
+    statLabel: { fontSize: 11, fontWeight: '500', color: C.textDim, letterSpacing: 0.2 },
 
-  // List
-  list: { gap: 8 },
-  entryCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start',
-    overflow: 'hidden',
-  },
-  statusBar: { width: 4, borderRadius: 2, alignSelf: 'stretch', marginRight: -4 },
-  entryNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
-  entryName: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  repliedBadge: { backgroundColor: 'rgba(113,255,126,0.15)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  repliedBadgeText: { fontSize: 10, fontWeight: '700', color: '#71ff7e' },
-  entrySchool: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  emailCount: { fontSize: 10, color: Colors.primary, marginTop: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  statusBadge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 100 },
-  statusBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
-  priorityText: { fontSize: 12, fontWeight: '700' },
-  nextAction: { fontSize: 11, color: Colors.textDim, marginTop: 5 },
-  entryActions: { gap: 6, alignItems: 'center', paddingTop: 2 },
-  actionBtn: {
-    width: 30, height: 30, borderRadius: 8,
-    backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-});
+    filterRow: { flexDirection: 'row', gap: 8 },
+    searchWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+    searchInput: { flex: 1, fontSize: 13, color: C.text },
+    filterPills: { gap: 8, paddingBottom: 2 },
+    pill: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+    pillText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
+    pillDivider: { width: 1, backgroundColor: C.border, marginHorizontal: 2 },
+
+    emptyCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 32, alignItems: 'center', gap: 10 },
+    emptyTitle: { fontSize: 16, fontWeight: '700', color: C.text, textAlign: 'center' },
+    emptySub: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+    emptyBtn: { backgroundColor: C.primary + '20', borderRadius: 100, paddingHorizontal: 22, paddingVertical: 10, marginTop: 4, borderWidth: 1, borderColor: C.primary + '40' },
+    emptyBtnText: { fontSize: 14, fontWeight: '700', color: C.primary },
+
+    list: { gap: 8 },
+    entryCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
+    statusBar: { width: 4, borderRadius: 2, alignSelf: 'stretch', marginRight: -4 },
+    entryNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
+    entryName: { fontSize: 14, fontWeight: '700', color: C.text },
+    repliedBadge: { backgroundColor: 'rgba(113,255,126,0.15)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    repliedBadgeText: { fontSize: 10, fontWeight: '700', color: '#71ff7e' },
+    entrySchool: { fontSize: 12, color: C.textMuted, marginTop: 2 },
+    emailCount: { fontSize: 10, color: C.primary, marginTop: 2 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+    statusBadge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 100 },
+    statusBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+    priorityText: { fontSize: 12, fontWeight: '700' },
+    nextAction: { fontSize: 11, color: C.textDim, marginTop: 5 },
+    entryActions: { gap: 6, alignItems: 'center', paddingTop: 2 },
+    actionBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  });
+}

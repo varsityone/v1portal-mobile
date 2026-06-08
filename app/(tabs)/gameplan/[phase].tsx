@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,8 @@ import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useSubscription, Plan } from '../../../hooks/useSubscription';
 import { PHASES, isPhaseUnlocked, Phase } from '../../../constants/Phases';
-import { Colors, GRADIENT, TIER_BARS, scoreNumColor } from '../../../constants/Colors';
+import { Colors, GRADIENT, TIER_BARS, scoreNumColor, ThemeColors } from '../../../constants/Colors';
+import { useColors } from '../../../context/ThemeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,13 +86,30 @@ function taskGroup(task: RecruitingTask): 'Today' | 'This Week' | 'Upcoming' {
   return 'Upcoming';
 }
 
+function getMatchScoreColor(score: number): string {
+  const t = Math.min(score / 99.9, 1);
+  if (t <= 0.5) return `rgb(0,${Math.round(106 + 74 * (t / 0.5))},255)`;
+  const p = (t - 0.5) / 0.5;
+  return `rgb(0,${Math.round(180 + 75 * p)},${Math.round(255 - 225 * p)})`;
+}
+
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
 function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
+  const C = useColors();
+  const sh = useMemo(() => StyleSheet.create({
+    root: { marginBottom: 20 },
+    back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20, alignSelf: 'flex-start', paddingVertical: 4 },
+    backText: { fontSize: 15, color: C.textMuted },
+    badge: { alignSelf: 'flex-start', backgroundColor: `${C.primary}22`, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10, borderWidth: 1, borderColor: `${C.primary}44` },
+    badgeText: { fontSize: 12, fontWeight: '700', color: C.primary, letterSpacing: 0.4 },
+    title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 8 },
+    subtitle: { fontSize: 15, color: C.textMuted, lineHeight: 23 },
+  }), [C]);
   return (
     <View style={sh.root}>
       <Pressable style={sh.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={20} color={Colors.textMuted} />
+        <Ionicons name="arrow-back" size={20} color={C.textMuted} />
         <Text style={sh.backText}>The Gameplan</Text>
       </Pressable>
       <View style={sh.badge}>
@@ -102,40 +120,39 @@ function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
     </View>
   );
 }
-const sh = StyleSheet.create({
-  root: { marginBottom: 20 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20, alignSelf: 'flex-start', paddingVertical: 4 },
-  backText: { fontSize: 15, color: Colors.textMuted },
-  badge: { alignSelf: 'flex-start', backgroundColor: `${Colors.primary}22`, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10, borderWidth: 1, borderColor: `${Colors.primary}44` },
-  badgeText: { fontSize: 12, fontWeight: '700', color: Colors.primary, letterSpacing: 0.4 },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.5, marginBottom: 8 },
-  subtitle: { fontSize: 15, color: Colors.textMuted, lineHeight: 23 },
-});
 
 function SLabel({ children }: { children: string }) {
-  return <Text style={s.sLabel}>{children}</Text>;
+  const C = useColors();
+  return (
+    <Text style={{ fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.4, marginBottom: 14 }}>
+      {children}
+    </Text>
+  );
 }
 
 function Card({ children, style }: { children: React.ReactNode; style?: object }) {
-  return <View style={[s.card, style]}>{children}</View>;
+  const C = useColors();
+  return (
+    <View style={[{
+      backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+      borderRadius: 14, padding: 18,
+    }, style]}>
+      {children}
+    </View>
+  );
 }
 
 function EmptyState({
-  icon,
-  title,
-  body,
-  cta,
-  onCta,
+  icon, title, body, cta, onCta,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
-  title: string;
-  body: string;
-  cta?: string;
-  onCta?: () => void;
+  title: string; body: string; cta?: string; onCta?: () => void;
 }) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   return (
     <View style={s.empty}>
-      <Ionicons name={icon} size={32} color={Colors.textDim} />
+      <Ionicons name={icon} size={32} color={C.textDim} />
       <Text style={s.emptyTitle}>{title}</Text>
       <Text style={s.emptyBody}>{body}</Text>
       {cta && onCta && (
@@ -148,33 +165,34 @@ function EmptyState({
 }
 
 function CenteredLoader() {
+  const C = useColors();
   return (
-    <View style={s.center}>
-      <ActivityIndicator color={Colors.primary} size="large" />
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background }}>
+      <ActivityIndicator color={C.primary} size="large" />
     </View>
   );
 }
 
 function LockedView({ phase }: { phase: Phase }) {
   const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   const isElite = phase.upgradeTo === 'elite';
   return (
     <View style={[s.scroll, s.center]}>
       <View style={s.lockCircle}>
-        <Ionicons name="lock-closed" size={28} color={Colors.textMuted} />
+        <Ionicons name="lock-closed" size={28} color={C.textMuted} />
       </View>
       <Text style={s.lockTitle}>Phase {phase.number} Locked</Text>
       <Text style={s.lockDesc}>
         Requires a{' '}
-        <Text style={{ color: isElite ? '#F59E0B' : Colors.primary, fontWeight: '700' }}>
+        <Text style={{ color: isElite ? '#F59E0B' : C.primary, fontWeight: '700' }}>
           {isElite ? 'Elite' : 'Pro'}
         </Text>{' '}
         plan to access.
       </Text>
       <Pressable style={[s.upgradeBtn, isElite && { backgroundColor: '#F59E0B' }]} onPress={() => router.push('/upgrade')}>
-        <Text style={s.upgradeBtnText}>
-          Upgrade to {isElite ? 'Elite' : 'Pro'} →
-        </Text>
+        <Text style={s.upgradeBtnText}>Upgrade to {isElite ? 'Elite' : 'Pro'} →</Text>
       </Pressable>
     </View>
   );
@@ -182,15 +200,12 @@ function LockedView({ phase }: { phase: Phase }) {
 
 // ─── Phase 1: Know Your Value ─────────────────────────────────────────────────
 
-function Phase1({
-  data,
-  phase,
-  onBack,
-}: {
-  data: ReturnType<typeof useAthleteData>;
-  phase: Phase;
-  onBack: () => void;
+function Phase1({ data, phase, onBack }: {
+  data: ReturnType<typeof useAthleteData>; phase: Phase; onBack: () => void;
 }) {
+  const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   const { assessment } = data;
   const score = assessment?.v1_score ? Math.round(assessment.v1_score) : null;
   const tier = getTierInfo(score);
@@ -208,32 +223,25 @@ function Phase1({
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
 
-      {/* Score — gradient-border card matching web ScoreAnimator */}
       {score !== null ? (() => {
         const activeTier = getActiveTierIndex(score);
         return (
           <LinearGradient
             colors={['#833AB4', '#E1306C', '#FCAF45']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={s.scoreGradientBorder}
           >
             <View style={s.scoreCardInner}>
               <Text style={s.scoreCardLabel}>V1 SCORE</Text>
               <Text style={[s.bigScore, { color: scoreNumColor(score) }]}>{score}</Text>
               <Text style={s.tierChip}>{tier.level}</Text>
-              {/* Tier bars */}
               <View style={s.tierBarsRow}>
                 {TIER_BARS.map((t, i) => (
                   <View key={t.label} style={s.tierBarCol}>
-                    <View style={[
-                      s.tierBar,
-                      { backgroundColor: i <= activeTier ? t.color : 'rgba(255,255,255,0.1)' },
-                    ]} />
-                    <Text style={[
-                      s.tierBarLabel,
-                      { color: i === activeTier ? t.color : 'rgba(255,255,255,0.28)', fontWeight: i === activeTier ? '800' : '400' },
-                    ]}>{t.label}</Text>
+                    <View style={[s.tierBar, { backgroundColor: i <= activeTier ? t.color : 'rgba(255,255,255,0.1)' }]} />
+                    <Text style={[s.tierBarLabel, { color: i === activeTier ? t.color : 'rgba(255,255,255,0.28)', fontWeight: i === activeTier ? '800' : '400' }]}>
+                      {t.label}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -252,7 +260,6 @@ function Phase1({
         </Card>
       )}
 
-      {/* Breakdown */}
       {score !== null && (
         <Card>
           <SLabel>SCORE BREAKDOWN</SLabel>
@@ -264,30 +271,21 @@ function Phase1({
                   <View key={cat.label} style={s.breakRow}>
                     <Text style={s.breakLabel}>{cat.label}</Text>
                     <View style={s.breakTrack}>
-                      <LinearGradient
-                        colors={GRADIENT}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={[s.breakFill, { width: `${pct}%` }]}
-                      />
+                      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.breakFill, { width: `${pct}%` }]} />
                     </View>
                     <Text style={s.breakScore}>
-                      {cat.val}
-                      <Text style={s.breakMax}>/{cat.max}</Text>
+                      {cat.val}<Text style={s.breakMax}>/{cat.max}</Text>
                     </Text>
                   </View>
                 );
               })}
             </View>
           ) : (
-            <Text style={s.dimText}>
-              Detailed breakdown will appear after retaking your assessment.
-            </Text>
+            <Text style={s.dimText}>Detailed breakdown will appear after retaking your assessment.</Text>
           )}
         </Card>
       )}
 
-      {/* Recruiting gap */}
       {score !== null && tier.nextScore !== null && (
         <Card>
           <SLabel>RECRUITING GAP</SLabel>
@@ -299,19 +297,16 @@ function Phase1({
             <View style={s.gapDivider} />
             <View style={{ flex: 1 }}>
               <Text style={s.gapNext}>→ {tier.nextLevel}</Text>
-              <Text style={s.gapHint}>
-                Improve your athletic and production scores for the highest-leverage path to the next tier.
-              </Text>
+              <Text style={s.gapHint}>Improve your athletic and production scores for the highest-leverage path to the next tier.</Text>
             </View>
           </View>
         </Card>
       )}
 
-      {/* JUCO track */}
       {showJuco && (
         <Card style={s.jucoCard}>
           <View style={s.jucoHeader}>
-            <Ionicons name="school-outline" size={20} color={Colors.warning} />
+            <Ionicons name="school-outline" size={20} color={C.warning} />
             <Text style={s.jucoTitle}>JUCO Development Track</Text>
           </View>
           <Text style={s.jucoBody}>
@@ -320,21 +315,18 @@ function Phase1({
         </Card>
       )}
 
-      {/* Retake assessment */}
       {score !== null && (
         <Card>
           <View style={s.retakeRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.retakeTitle}>Retake Assessment</Text>
-              <Text style={s.retakeBody}>
-                Updated your stats, film, or academics? Retake to get a fresh V1 Score.
-              </Text>
+              <Text style={s.retakeBody}>Updated your stats, film, or academics? Retake to get a fresh V1 Score.</Text>
             </View>
             <Pressable
               style={({ pressed }) => [s.retakeBtn, pressed && { opacity: 0.8 }]}
               onPress={() => router.push('/assessment' as any)}
             >
-              <Ionicons name="refresh" size={14} color={Colors.primary} />
+              <Ionicons name="refresh" size={14} color={C.primary} />
               <Text style={s.retakeBtnTxt}>Retake</Text>
             </Pressable>
           </View>
@@ -346,11 +338,7 @@ function Phase1({
 
 // ─── Phase 2: Build Your Profile ──────────────────────────────────────────────
 
-const PROFILE_FIELDS: {
-  key: string;
-  label: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-}[] = [
+const PROFILE_FIELDS: { key: string; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; }[] = [
   { key: 'position',           label: 'Position',        icon: 'football-outline' },
   { key: 'graduation_year',    label: 'Graduation Year', icon: 'calendar-outline' },
   { key: 'height',             label: 'Height',          icon: 'resize-outline' },
@@ -359,16 +347,12 @@ const PROFILE_FIELDS: {
   { key: 'highlight_film_url', label: 'Highlight Film',  icon: 'videocam-outline' },
 ];
 
-function Phase2({
-  athlete,
-  phase,
-  onBack,
-}: {
-  athlete: Record<string, unknown> | null;
-  phase: Phase;
-  onBack: () => void;
+function Phase2({ athlete, phase, onBack }: {
+  athlete: Record<string, unknown> | null; phase: Phase; onBack: () => void;
 }) {
   const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   const completed = PROFILE_FIELDS.filter(f => {
     const v = athlete?.[f.key];
     return v !== null && v !== undefined && v !== '';
@@ -386,12 +370,7 @@ function Phase2({
           <Text style={s.completionDesc}>{completed} of {PROFILE_FIELDS.length} fields complete</Text>
         </View>
         <View style={s.completionTrack}>
-          <LinearGradient
-            colors={GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[s.completionFill, { width: `${pct}%` }]}
-          />
+          <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.completionFill, { width: `${pct}%` }]} />
         </View>
       </Card>
 
@@ -403,23 +382,15 @@ function Phase2({
           return (
             <Pressable
               key={field.key}
-              style={({ pressed }) => [
-                s.checkRow,
-                i < PROFILE_FIELDS.length - 1 && s.checkRowBorder,
-                pressed && { backgroundColor: Colors.surfaceAlt },
-              ]}
+              style={({ pressed }) => [s.checkRow, i < PROFILE_FIELDS.length - 1 && s.checkRowBorder, pressed && { backgroundColor: C.surfaceAlt }]}
               onPress={() => router.push('/(tabs)/profile')}
             >
               <View style={[s.checkCircle, done && s.checkCircleDone]}>
-                <Ionicons
-                  name={done ? 'checkmark' : 'ellipse-outline'}
-                  size={15}
-                  color={done ? Colors.white : Colors.textDim}
-                />
+                <Ionicons name={done ? 'checkmark' : 'ellipse-outline'} size={15} color={done ? C.white : C.textDim} />
               </View>
-              <Ionicons name={field.icon} size={16} color={done ? Colors.textMuted : Colors.textDim} />
+              <Ionicons name={field.icon} size={16} color={done ? C.textMuted : C.textDim} />
               <View style={{ flex: 1 }}>
-                <Text style={[s.checkLabel, !done && { color: Colors.textMuted }]}>{field.label}</Text>
+                <Text style={[s.checkLabel, !done && { color: C.textMuted }]}>{field.label}</Text>
                 {done ? (
                   <Text style={s.checkVal} numberOfLines={1}>
                     {field.key === 'highlight_film_url' ? 'Film added ✓' : String(val)}
@@ -428,7 +399,7 @@ function Phase2({
                   <Text style={s.checkEmpty}>Not set — tap to add</Text>
                 )}
               </View>
-              {!done && <Ionicons name="chevron-forward" size={14} color={Colors.textDim} />}
+              {!done && <Ionicons name="chevron-forward" size={14} color={C.textDim} />}
             </Pressable>
           );
         })}
@@ -436,11 +407,9 @@ function Phase2({
 
       {pct === 100 && (
         <Card style={s.successCard}>
-          <Ionicons name="trophy-outline" size={26} color={Colors.success} />
+          <Ionicons name="trophy-outline" size={26} color={C.success} />
           <Text style={s.successTitle}>Profile Complete</Text>
-          <Text style={s.successBody}>
-            Coaches can now see your full measurables, academics, and film.
-          </Text>
+          <Text style={s.successBody}>Coaches can now see your full measurables, academics, and film.</Text>
         </Card>
       )}
     </ScrollView>
@@ -454,17 +423,11 @@ const DIV_COLORS: Record<string, string> = {
   D3: '#888888', NAIA: '#F59E0B', JUCO: '#EF4444',
 };
 
-function Phase3({
-  athleteId,
-  isElite,
-  phase,
-  onBack,
-}: {
-  athleteId: string | undefined;
-  isElite: boolean;
-  phase: Phase;
-  onBack: () => void;
+function Phase3({ athleteId, isElite, phase, onBack }: {
+  athleteId: string | undefined; isElite: boolean; phase: Phase; onBack: () => void;
 }) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   const [programs, setPrograms] = useState<ProgramMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -506,14 +469,12 @@ function Phase3({
       ) : (
         <View style={s.listCard}>
           {programs.map((p, i) => {
-            const dc = DIV_COLORS[p.division] ?? Colors.textDim;
+            const dc = DIV_COLORS[p.division] ?? C.textDim;
             return (
               <View key={i} style={[s.programRow, i < programs.length - 1 && s.programRowBorder]}>
                 <View style={s.programTop}>
                   <Text style={s.programName}>{p.school_name}</Text>
-                  <Text style={[s.matchNum, { color: getScoreColor(p.match_score) }]}>
-                    {p.match_score}
-                  </Text>
+                  <Text style={[s.matchNum, { color: getMatchScoreColor(p.match_score) }]}>{p.match_score}</Text>
                 </View>
                 <View style={s.programBottom}>
                   <View style={[s.divBadge, { borderColor: dc }]}>
@@ -533,24 +494,21 @@ function Phase3({
 
 // ─── Phase 4: Intelligent Outreach ───────────────────────────────────────────
 
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  sent:       { label: 'Sent',       color: Colors.textDim },
-  opened:     { label: 'Opened',     color: Colors.primary },
-  replied:    { label: 'Replied',    color: Colors.success },
-  bounced:    { label: 'Bounced',    color: Colors.error },
-  interested: { label: 'Interested', color: Colors.warning },
-};
-
-function Phase4({
-  athleteId,
-  phase,
-  onBack,
-}: {
-  athleteId: string | undefined;
-  phase: Phase;
-  onBack: () => void;
+function Phase4({ athleteId, phase, onBack }: {
+  athleteId: string | undefined; phase: Phase; onBack: () => void;
 }) {
   const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
+  const STATUS_META = useMemo(() => ({
+    sent:       { label: 'Sent',       color: C.textDim },
+    opened:     { label: 'Opened',     color: C.primary },
+    replied:    { label: 'Replied',    color: C.success },
+    bounced:    { label: 'Bounced',    color: C.error },
+    interested: { label: 'Interested', color: C.warning },
+  }), [C]);
+
   const [contacts, setContacts] = useState<CoachContact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -570,23 +528,12 @@ function Phase4({
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
-
-      <Pressable
-        style={s.primaryBtn}
-        onPress={() => router.push('/outreach/compose')}
-      >
-        <Ionicons name="add-circle-outline" size={18} color={Colors.white} />
+      <Pressable style={s.primaryBtn} onPress={() => router.push('/outreach/compose')}>
+        <Ionicons name="add-circle-outline" size={18} color={C.white} />
         <Text style={s.primaryBtnText}>New Outreach</Text>
       </Pressable>
-
-      {loading ? (
-        <CenteredLoader />
-      ) : contacts.length === 0 ? (
-        <EmptyState
-          icon="mail-outline"
-          title="No outreach yet"
-          body="Start contacting coaches at your matched programs. Each email you send is tracked here."
-        />
+      {loading ? <CenteredLoader /> : contacts.length === 0 ? (
+        <EmptyState icon="mail-outline" title="No outreach yet" body="Start contacting coaches at your matched programs. Each email you send is tracked here." />
       ) : (
         <Card>
           <SLabel>COACH CONTACTS</SLabel>
@@ -595,9 +542,7 @@ function Phase4({
             return (
               <View key={c.id} style={[s.contactRow, i < contacts.length - 1 && s.contactRowBorder]}>
                 <View style={s.avatar}>
-                  <Text style={s.avatarText}>
-                    {(c.coach_name ?? 'C')[0].toUpperCase()}
-                  </Text>
+                  <Text style={s.avatarText}>{(c.coach_name ?? 'C')[0].toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.contactName}>{c.coach_name ?? 'Unknown Coach'}</Text>
@@ -617,22 +562,19 @@ function Phase4({
 
 // ─── Phase 5: Relationship Management ────────────────────────────────────────
 
-const PIPELINE = [
-  { key: 'sent',       label: 'Contacted',  color: Colors.textDim },
-  { key: 'opened',     label: 'Opened',     color: Colors.primary },
-  { key: 'replied',    label: 'Replied',    color: Colors.success },
-  { key: 'interested', label: 'Interested', color: Colors.warning },
-];
-
-function Phase5({
-  athleteId,
-  phase,
-  onBack,
-}: {
-  athleteId: string | undefined;
-  phase: Phase;
-  onBack: () => void;
+function Phase5({ athleteId, phase, onBack }: {
+  athleteId: string | undefined; phase: Phase; onBack: () => void;
 }) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
+  const PIPELINE = useMemo(() => [
+    { key: 'sent',       label: 'Contacted',  color: C.textDim },
+    { key: 'opened',     label: 'Opened',     color: C.primary },
+    { key: 'replied',    label: 'Replied',    color: C.success },
+    { key: 'interested', label: 'Interested', color: C.warning },
+  ], [C]);
+
   const [contacts, setContacts] = useState<CoachContact[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -662,10 +604,7 @@ function Phase5({
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
-
-      {loading ? (
-        <CenteredLoader />
-      ) : (
+      {loading ? <CenteredLoader /> : (
         <>
           <Card>
             <SLabel>RECRUITING PIPELINE</SLabel>
@@ -676,16 +615,11 @@ function Phase5({
                     <Text style={[s.pipelineStage, { color: stage.color }]}>{stage.label}</Text>
                     <Text style={s.pipelineCount}>{counts[stage.key] ?? 0}</Text>
                     <Text style={s.pipelineUnit}>schools</Text>
-                    {contacts
-                      .filter(c => c.status === stage.key)
-                      .slice(0, 3)
-                      .map(c => (
-                        <View key={c.id} style={s.pipelineItem}>
-                          <Text style={s.pipelineItemText} numberOfLines={1}>
-                            {c.school_name ?? '—'}
-                          </Text>
-                        </View>
-                      ))}
+                    {contacts.filter(c => c.status === stage.key).slice(0, 3).map(c => (
+                      <View key={c.id} style={s.pipelineItem}>
+                        <Text style={s.pipelineItemText} numberOfLines={1}>{c.school_name ?? '—'}</Text>
+                      </View>
+                    ))}
                   </View>
                 ))}
               </View>
@@ -708,11 +642,7 @@ function Phase5({
           </Card>
 
           {contacts.length === 0 && (
-            <EmptyState
-              icon="people-outline"
-              title="Pipeline empty"
-              body="Use Phase 4 to start contacting coaches. Your pipeline data will appear here."
-            />
+            <EmptyState icon="people-outline" title="Pipeline empty" body="Use Phase 4 to start contacting coaches. Your pipeline data will appear here." />
           )}
         </>
       )}
@@ -722,23 +652,20 @@ function Phase5({
 
 // ─── Phase 6: Execute the Timeline ───────────────────────────────────────────
 
-const PRIORITY_COLORS: Record<string, string> = {
-  high: Colors.error,
-  medium: Colors.warning,
-  low: Colors.textDim,
-};
-
 const GROUP_ORDER = ['Today', 'This Week', 'Upcoming'] as const;
 
-function Phase6({
-  athleteId,
-  phase,
-  onBack,
-}: {
-  athleteId: string | undefined;
-  phase: Phase;
-  onBack: () => void;
+function Phase6({ athleteId, phase, onBack }: {
+  athleteId: string | undefined; phase: Phase; onBack: () => void;
 }) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
+  const PRIORITY_COLORS = useMemo(() => ({
+    high:   C.error,
+    medium: C.warning,
+    low:    C.textDim,
+  }), [C]);
+
   const [tasks, setTasks] = useState<RecruitingTask[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -766,15 +693,8 @@ function Phase6({
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
-
-      {loading ? (
-        <CenteredLoader />
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          icon="calendar-outline"
-          title="No tasks yet"
-          body="Your recruiting tasks and deadlines will appear here once your timeline is set up."
-        />
+      {loading ? <CenteredLoader /> : tasks.length === 0 ? (
+        <EmptyState icon="calendar-outline" title="No tasks yet" body="Your recruiting tasks and deadlines will appear here once your timeline is set up." />
       ) : (
         <>
           {GROUP_ORDER.map(group => {
@@ -785,20 +705,14 @@ function Phase6({
                 <Text style={s.taskGroupLabel}>{group}</Text>
                 <Card>
                   {items.map((task, i) => (
-                    <Pressable
-                      key={task.id}
-                      style={[s.taskRow, i < items.length - 1 && s.taskRowBorder]}
-                      onPress={() => toggleTask(task.id, task.is_complete)}
-                    >
-                      <Ionicons name="ellipse-outline" size={22} color={Colors.textDim} />
+                    <Pressable key={task.id} style={[s.taskRow, i < items.length - 1 && s.taskRowBorder]} onPress={() => toggleTask(task.id, task.is_complete)}>
+                      <Ionicons name="ellipse-outline" size={22} color={C.textDim} />
                       <View style={{ flex: 1 }}>
                         <Text style={s.taskTitle}>{task.title}</Text>
                         {task.due_date && <Text style={s.taskDue}>{formatDueDate(task.due_date)}</Text>}
                       </View>
-                      <View style={[s.priorityBadge, { borderColor: PRIORITY_COLORS[task.priority] ?? Colors.textDim }]}>
-                        <Text style={[s.priorityText, { color: PRIORITY_COLORS[task.priority] ?? Colors.textDim }]}>
-                          {task.priority}
-                        </Text>
+                      <View style={[s.priorityBadge, { borderColor: PRIORITY_COLORS[task.priority] ?? C.textDim }]}>
+                        <Text style={[s.priorityText, { color: PRIORITY_COLORS[task.priority] ?? C.textDim }]}>{task.priority}</Text>
                       </View>
                     </Pressable>
                   ))}
@@ -812,12 +726,8 @@ function Phase6({
               <Text style={s.taskGroupLabel}>Completed ({done.length})</Text>
               <Card>
                 {done.map((task, i) => (
-                  <Pressable
-                    key={task.id}
-                    style={[s.taskRow, s.taskRowDone, i < done.length - 1 && s.taskRowBorder]}
-                    onPress={() => toggleTask(task.id, task.is_complete)}
-                  >
-                    <Ionicons name="checkmark-circle" size={22} color={Colors.textDim} />
+                  <Pressable key={task.id} style={[s.taskRow, s.taskRowDone, i < done.length - 1 && s.taskRowBorder]} onPress={() => toggleTask(task.id, task.is_complete)}>
+                    <Ionicons name="checkmark-circle" size={22} color={C.textDim} />
                     <View style={{ flex: 1 }}>
                       <Text style={[s.taskTitle, s.taskTitleDone]}>{task.title}</Text>
                     </View>
@@ -837,6 +747,8 @@ function Phase6({
 export default function PhaseDetailScreen() {
   const { phase: phaseParam } = useLocalSearchParams<{ phase: string }>();
   const router = useRouter();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   const phaseNumber = Number(phaseParam);
   const phase = PHASES.find(p => p.number === phaseNumber);
 
@@ -851,7 +763,7 @@ export default function PhaseDetailScreen() {
   if (!phase) {
     return (
       <View style={s.center}>
-        <Text style={{ color: Colors.textMuted }}>Phase not found.</Text>
+        <Text style={{ color: C.textMuted }}>Phase not found.</Text>
       </View>
     );
   }
@@ -859,22 +771,16 @@ export default function PhaseDetailScreen() {
   if (!isUnlocked) return <LockedView phase={phase} />;
 
   switch (phaseNumber) {
-    case 1:
-      return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
-    case 2:
-      return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} phase={phase} onBack={onBack} />;
-    case 3:
-      return <Phase3 athleteId={athleteData.athlete?.id} isElite={plan === 'elite'} phase={phase} onBack={onBack} />;
-    case 4:
-      return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
-    case 5:
-      return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
-    case 6:
-      return <Phase6 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
+    case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
+    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} phase={phase} onBack={onBack} />;
+    case 3: return <Phase3 athleteId={athleteData.athlete?.id} isElite={plan === 'elite'} phase={phase} onBack={onBack} />;
+    case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
+    case 5: return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
+    case 6: return <Phase6 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     default:
       return (
         <View style={s.center}>
-          <Text style={{ color: Colors.textMuted }}>Phase not found.</Text>
+          <Text style={{ color: C.textMuted }}>Phase not found.</Text>
         </View>
       );
   }
@@ -882,186 +788,143 @@ export default function PhaseDetailScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  container: { paddingTop: 20, paddingBottom: 48, paddingHorizontal: 20, gap: 14 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background, padding: 32 },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingTop: 20, paddingBottom: 48, paddingHorizontal: 20, gap: 14 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background, padding: 32 },
 
-  sLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.3)',
-    letterSpacing: 1.4,
-    marginBottom: 14,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    padding: 18,
-  },
-  dimText: { fontSize: 14, color: Colors.textDim, lineHeight: 21 },
+    dimText: { fontSize: 14, color: C.textDim, lineHeight: 21 },
 
-  // Locked
-  lockCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  lockTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 8 },
-  lockDesc: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', marginBottom: 24 },
-  upgradeBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  upgradeBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+    // Locked
+    lockCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    lockTitle: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 8 },
+    lockDesc: { fontSize: 14, color: C.textMuted, textAlign: 'center', marginBottom: 24 },
+    upgradeBtn: { backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
+    upgradeBtnText: { fontSize: 15, fontWeight: '700', color: C.white },
 
-  // Score card — gradient border technique
-  scoreGradientBorder: { borderRadius: 17, padding: 1.5 },
-  scoreCardInner: {
-    backgroundColor: Colors.scoreCard,
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  scoreCardLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.4)',
-    letterSpacing: 1.6,
-    marginBottom: 14,
-  },
-  bigScore: {
-    fontSize: 96,
-    fontWeight: '900',
-    letterSpacing: -5,
-    lineHeight: 88,
-    marginBottom: 12,
-  },
-  tierChip: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 20,
-  },
-  tierBarsRow: { flexDirection: 'row', gap: 6, width: '100%' },
-  tierBarCol: { flex: 1, alignItems: 'center', gap: 5 },
-  tierBar: { width: '100%', height: 3, borderRadius: 2 },
-  tierBarLabel: { fontSize: 9, letterSpacing: 0.2 },
+    // Score card
+    scoreGradientBorder: { borderRadius: 17, padding: 1.5 },
+    scoreCardInner: { backgroundColor: C.scoreCard, borderRadius: 16, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, alignItems: 'center' },
+    scoreCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 1.6, marginBottom: 14 },
+    bigScore: { fontSize: 96, fontWeight: '900', letterSpacing: -5, lineHeight: 88, marginBottom: 12 },
+    tierChip: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 20 },
+    tierBarsRow: { flexDirection: 'row', gap: 6, width: '100%' },
+    tierBarCol: { flex: 1, alignItems: 'center', gap: 5 },
+    tierBar: { width: '100%', height: 3, borderRadius: 2 },
+    tierBarLabel: { fontSize: 9, letterSpacing: 0.2 },
 
-  // Breakdown bars
-  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  breakLabel: { width: 90, fontSize: 13, color: Colors.textMuted },
-  breakTrack: { flex: 1, height: 5, backgroundColor: Colors.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-  breakFill: { height: '100%', borderRadius: 3 },
-  breakScore: { width: 42, fontSize: 13, fontWeight: '700', color: Colors.text, textAlign: 'right' },
-  breakMax: { fontSize: 11, fontWeight: '400', color: Colors.textDim },
+    // Breakdown bars
+    breakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    breakLabel: { width: 90, fontSize: 13, color: C.textMuted },
+    breakTrack: { flex: 1, height: 5, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
+    breakFill: { height: '100%', borderRadius: 3 },
+    breakScore: { width: 42, fontSize: 13, fontWeight: '700', color: C.text, textAlign: 'right' },
+    breakMax: { fontSize: 11, fontWeight: '400', color: C.textDim },
 
-  // Gap
-  gapRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
-  gapLeft: { alignItems: 'center', minWidth: 68 },
-  gapNum: { fontSize: 38, fontWeight: '900', color: Colors.text, letterSpacing: -2 },
-  gapUnit: { fontSize: 11, color: Colors.textDim, fontWeight: '600', letterSpacing: 0.3 },
-  gapDivider: { width: 1, height: 52, backgroundColor: Colors.border },
-  gapNext: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 6 },
-  gapHint: { fontSize: 13, color: Colors.textDim, lineHeight: 19 },
+    // Gap
+    gapRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
+    gapLeft: { alignItems: 'center', minWidth: 68 },
+    gapNum: { fontSize: 38, fontWeight: '900', color: C.text, letterSpacing: -2 },
+    gapUnit: { fontSize: 11, color: C.textDim, fontWeight: '600', letterSpacing: 0.3 },
+    gapDivider: { width: 1, height: 52, backgroundColor: C.border },
+    gapNext: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 6 },
+    gapHint: { fontSize: 13, color: C.textDim, lineHeight: 19 },
 
-  // JUCO
-  jucoCard: { borderColor: `${Colors.warning}44`, backgroundColor: `${Colors.warning}0A` },
-  jucoHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  jucoTitle: { fontSize: 15, fontWeight: '700', color: Colors.warning },
-  jucoBody: { fontSize: 13, color: Colors.textMuted, lineHeight: 20 },
+    // JUCO
+    jucoCard: { borderColor: `${C.warning}44`, backgroundColor: `${C.warning}0A` },
+    jucoHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+    jucoTitle: { fontSize: 15, fontWeight: '700', color: C.warning },
+    jucoBody: { fontSize: 13, color: C.textMuted, lineHeight: 20 },
 
-  // Retake assessment
-  retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  retakeTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 3 },
-  retakeBody: { fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
-  retakeBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: 10, borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+    // Retake assessment
+    retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    retakeTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3 },
+    retakeBody: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
+    retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.primary },
+    retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: C.primary },
 
-  // Completion
-  completionRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 12 },
-  completionPct: { fontSize: 38, fontWeight: '900', color: Colors.text, letterSpacing: -2 },
-  completionDesc: { fontSize: 13, color: Colors.textMuted },
-  completionTrack: { height: 5, backgroundColor: Colors.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-  completionFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 3 },
+    // Completion
+    completionRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 12 },
+    completionPct: { fontSize: 38, fontWeight: '900', color: C.text, letterSpacing: -2 },
+    completionDesc: { fontSize: 13, color: C.textMuted },
+    completionTrack: { height: 5, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
+    completionFill: { height: '100%', backgroundColor: C.primary, borderRadius: 3 },
 
-  // Checklist
-  checkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
-  checkRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  checkCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.border },
-  checkCircleDone: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  checkLabel: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  checkVal: { fontSize: 12, color: Colors.textMuted },
-  checkEmpty: { fontSize: 12, color: Colors.textDim },
+    // Checklist
+    checkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
+    checkRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    checkCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    checkCircleDone: { backgroundColor: C.primary, borderColor: C.primary },
+    checkLabel: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 2 },
+    checkVal: { fontSize: 12, color: C.textMuted },
+    checkEmpty: { fontSize: 12, color: C.textDim },
 
-  // Success
-  successCard: { alignItems: 'center', gap: 8, borderColor: `${Colors.success}44`, backgroundColor: `${Colors.success}0A` },
-  successTitle: { fontSize: 16, fontWeight: '700', color: Colors.success },
-  successBody: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+    // Success
+    successCard: { alignItems: 'center', gap: 8, borderColor: `${C.success}44`, backgroundColor: `${C.success}0A` },
+    successTitle: { fontSize: 16, fontWeight: '700', color: C.success },
+    successBody: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20 },
 
-  // Programs
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
-  countText: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  planChip: { backgroundColor: Colors.surfaceAlt, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: Colors.border },
-  planChipText: { fontSize: 10, fontWeight: '700', color: Colors.textDim, letterSpacing: 0.5 },
-  listCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, overflow: 'hidden' },
-  programRow: { padding: 16 },
-  programRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  programTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  programName: { fontSize: 15, fontWeight: '700', color: Colors.text, flex: 1 },
-  matchNum: { fontSize: 22, fontWeight: '900', letterSpacing: -1 },
-  programBottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  divBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1 },
-  divBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
-  posFit: { fontSize: 12, color: Colors.textDim },
-  matchLabel: { fontSize: 12, color: Colors.textDim },
+    // Programs
+    rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+    countText: { fontSize: 15, fontWeight: '700', color: C.text },
+    planChip: { backgroundColor: C.surfaceAlt, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: C.border },
+    planChipText: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 0.5 },
+    listCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, overflow: 'hidden' },
+    programRow: { padding: 16 },
+    programRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    programTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+    programName: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1 },
+    matchNum: { fontSize: 22, fontWeight: '900', letterSpacing: -1 },
+    programBottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    divBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1 },
+    divBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
+    posFit: { fontSize: 12, color: C.textDim },
+    matchLabel: { fontSize: 12, color: C.textDim },
 
-  // Outreach
-  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, marginBottom: 2 },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
-  contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  contactRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: `${Colors.primary}22`, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
-  contactName: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  contactSchool: { fontSize: 12, color: Colors.textMuted },
-  statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+    // Outreach
+    primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 14, marginBottom: 2 },
+    primaryBtnText: { fontSize: 15, fontWeight: '700', color: C.white },
+    contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+    contactRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: `${C.primary}22`, alignItems: 'center', justifyContent: 'center' },
+    avatarText: { fontSize: 15, fontWeight: '700', color: C.primary },
+    contactName: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 2 },
+    contactSchool: { fontSize: 12, color: C.textMuted },
+    statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+    statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
 
-  // Pipeline
-  pipelineCol: { width: 130, backgroundColor: Colors.surfaceAlt, borderRadius: 10, padding: 12 },
-  pipelineStage: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
-  pipelineCount: { fontSize: 30, fontWeight: '900', color: Colors.text, letterSpacing: -1 },
-  pipelineUnit: { fontSize: 11, color: Colors.textDim, marginBottom: 10 },
-  pipelineItem: { backgroundColor: Colors.border, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginTop: 4 },
-  pipelineItemText: { fontSize: 11, color: Colors.textMuted },
+    // Pipeline
+    pipelineCol: { width: 130, backgroundColor: C.surfaceAlt, borderRadius: 10, padding: 12 },
+    pipelineStage: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
+    pipelineCount: { fontSize: 30, fontWeight: '900', color: C.text, letterSpacing: -1 },
+    pipelineUnit: { fontSize: 11, color: C.textDim, marginBottom: 10 },
+    pipelineItem: { backgroundColor: C.border, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginTop: 4 },
+    pipelineItemText: { fontSize: 11, color: C.textMuted },
 
-  // Leaderboard
-  leaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  leaderRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  leaderRank: { fontSize: 13, fontWeight: '800', color: Colors.textDim, width: 28 },
-  leaderSchool: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.text },
-  leaderCount: { fontSize: 12, color: Colors.textMuted },
+    // Leaderboard
+    leaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+    leaderRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    leaderRank: { fontSize: 13, fontWeight: '800', color: C.textDim, width: 28 },
+    leaderSchool: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },
+    leaderCount: { fontSize: 12, color: C.textMuted },
 
-  // Tasks
-  taskGroupLabel: { fontSize: 11, fontWeight: '700', color: Colors.textDim, letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
-  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
-  taskRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  taskRowDone: { opacity: 0.5 },
-  taskTitle: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  taskTitleDone: { textDecorationLine: 'line-through', color: Colors.textDim },
-  taskDue: { fontSize: 12, color: Colors.textMuted },
-  priorityBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1 },
-  priorityText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'capitalize' },
+    // Tasks
+    taskGroupLabel: { fontSize: 11, fontWeight: '700', color: C.textDim, letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
+    taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
+    taskRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    taskRowDone: { opacity: 0.5 },
+    taskTitle: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 2 },
+    taskTitleDone: { textDecorationLine: 'line-through', color: C.textDim },
+    taskDue: { fontSize: 12, color: C.textMuted },
+    priorityBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1 },
+    priorityText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, textTransform: 'capitalize' },
 
-  // Empty
-  empty: { alignItems: 'center', gap: 10, paddingVertical: 32, paddingHorizontal: 16 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.textMuted, textAlign: 'center' },
-  emptyBody: { fontSize: 14, color: Colors.textDim, textAlign: 'center', lineHeight: 21 },
-  emptyBtn: { marginTop: 8, backgroundColor: Colors.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
-  emptyBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
-});
+    // Empty
+    empty: { alignItems: 'center', gap: 10, paddingVertical: 32, paddingHorizontal: 16 },
+    emptyTitle: { fontSize: 16, fontWeight: '700', color: C.textMuted, textAlign: 'center' },
+    emptyBody: { fontSize: 14, color: C.textDim, textAlign: 'center', lineHeight: 21 },
+    emptyBtn: { marginTop: 8, backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
+    emptyBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
+  });
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -10,7 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
-import { Colors, GRADIENT } from '../../constants/Colors';
+import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface Stats {
@@ -25,10 +26,12 @@ interface Stats {
 function StatCard({ icon, label, value, sub, color }: {
   icon: string; label: string; value: string | number; sub?: string; color?: string;
 }) {
+  const C = useColors();
+  const sc = useMemo(() => createCardStyles(C), [C]);
   return (
     <View style={sc.card}>
-      <View style={[sc.iconBox, { backgroundColor: (color ?? Colors.primary) + '18' }]}>
-        <Ionicons name={icon as any} size={20} color={color ?? Colors.primary} />
+      <View style={[sc.iconBox, { backgroundColor: (color ?? C.primary) + '18' }]}>
+        <Ionicons name={icon as any} size={20} color={color ?? C.primary} />
       </View>
       <Text style={sc.value}>{value}</Text>
       <Text style={sc.label}>{label}</Text>
@@ -37,34 +40,38 @@ function StatCard({ icon, label, value, sub, color }: {
   );
 }
 
-const sc = StyleSheet.create({
-  card: {
-    flex: 1,
-    minWidth: '46%',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    padding: 16,
-    gap: 4,
-  },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  value: { fontSize: 28, fontWeight: '800', color: Colors.text },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.textMuted },
-  sub: { fontSize: 10, color: Colors.textDim, marginTop: 1 },
-});
+function createCardStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    card: {
+      flex: 1,
+      minWidth: '46%',
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 14,
+      padding: 16,
+      gap: 4,
+    },
+    iconBox: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+    },
+    value: { fontSize: 28, fontWeight: '800', color: C.text },
+    label: { fontSize: 12, fontWeight: '600', color: C.textMuted },
+    sub: { fontSize: 10, color: C.textDim, marginTop: 1 },
+  });
+}
 
 export default function AnalyticsScreen() {
   const { athlete, assessment, loading: dataLoading } = useAthleteData();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
 
   const fetchStats = useCallback(async () => {
     if (!athlete?.id) return;
@@ -109,44 +116,44 @@ export default function AnalyticsScreen() {
 
   if (dataLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+      <View style={s.center}>
+        <ActivityIndicator color={C.primary} size="large" />
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
+      style={s.scroll}
+      contentContainerStyle={s.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={fetchStats} tintColor={Colors.primary} />
+        <RefreshControl refreshing={loading} onRefresh={fetchStats} tintColor={C.primary} />
       }
     >
       {/* Header */}
       <View>
-        <Text style={styles.title}>Analytics</Text>
-        <Text style={styles.subtitle}>Your recruiting activity at a glance</Text>
+        <Text style={s.title}>Analytics</Text>
+        <Text style={s.subtitle}>Your recruiting activity at a glance</Text>
       </View>
 
       {/* Score breakdown */}
       {score !== null && (
-        <View style={styles.scoreSection}>
-          <Text style={styles.sectionLabel}>V1 SCORE BREAKDOWN</Text>
-          <View style={styles.scoreCard}>
+        <View style={s.scoreSection}>
+          <Text style={s.sectionLabel}>V1 SCORE BREAKDOWN</Text>
+          <View style={s.scoreCard}>
             {breakdown.map(bar => (
-              <View key={bar.label} style={styles.barRow}>
-                <Text style={styles.barLabel}>{bar.label}</Text>
-                <View style={styles.barTrack}>
+              <View key={bar.label} style={s.barRow}>
+                <Text style={s.barLabel}>{bar.label}</Text>
+                <View style={s.barTrack}>
                   <LinearGradient
                     colors={[bar.color, bar.color + 'aa']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[styles.barFill, { width: `${(bar.value / bar.max) * 100}%` }]}
+                    style={[s.barFill, { width: `${(bar.value / bar.max) * 100}%` }]}
                   />
                 </View>
-                <Text style={[styles.barValue, { color: bar.color }]}>{bar.value}</Text>
+                <Text style={[s.barValue, { color: bar.color }]}>{bar.value}</Text>
               </View>
             ))}
           </View>
@@ -155,8 +162,8 @@ export default function AnalyticsScreen() {
 
       {/* Outreach stats */}
       <View>
-        <Text style={styles.sectionLabel}>OUTREACH</Text>
-        <View style={styles.statsGrid}>
+        <Text style={s.sectionLabel}>OUTREACH</Text>
+        <View style={s.statsGrid}>
           <StatCard
             icon="mail-outline"
             label="Emails Sent"
@@ -180,15 +187,15 @@ export default function AnalyticsScreen() {
             label="Response Rate"
             value={stats ? `${stats.responseRate}%` : '—'}
             sub={stats?.emailsSent ? `of ${stats.emailsSent} sent` : undefined}
-            color={Colors.primary}
+            color={C.primary}
           />
         </View>
       </View>
 
       {/* Programs */}
       <View>
-        <Text style={styles.sectionLabel}>PROGRAM TARGETING</Text>
-        <View style={styles.statsGrid}>
+        <Text style={s.sectionLabel}>PROGRAM TARGETING</Text>
+        <View style={s.statsGrid}>
           <StatCard
             icon="school-outline"
             label="Programs Matched"
@@ -200,17 +207,17 @@ export default function AnalyticsScreen() {
             label="Profile Views"
             value={stats?.profileViews ?? 0}
             sub="Coming soon"
-            color={Colors.textMuted}
+            color={C.textMuted}
           />
         </View>
       </View>
 
       {/* No assessment yet */}
       {!assessment && (
-        <View style={styles.noDataCard}>
-          <Ionicons name="analytics-outline" size={28} color={Colors.textDim} />
-          <Text style={styles.noDataTitle}>Complete your assessment</Text>
-          <Text style={styles.noDataSub}>
+        <View style={s.noDataCard}>
+          <Ionicons name="analytics-outline" size={28} color={C.textDim} />
+          <Text style={s.noDataTitle}>Complete your assessment</Text>
+          <Text style={s.noDataSub}>
             Take the V1 Assessment to generate your score breakdown and recruiting analytics.
           </Text>
         </View>
@@ -219,53 +226,55 @@ export default function AnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 20 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 20 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
 
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: Colors.textMuted, marginTop: 3 },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textDim,
-    letterSpacing: 1.2,
-    marginBottom: 10,
-  },
+    title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+    subtitle: { fontSize: 14, color: C.textMuted, marginTop: 3 },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: C.textDim,
+      letterSpacing: 1.2,
+      marginBottom: 10,
+    },
 
-  scoreSection: { gap: 10 },
-  scoreCard: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    padding: 18,
-    gap: 14,
-  },
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  barLabel: { fontSize: 12, fontWeight: '600', color: Colors.textMuted, width: 76 },
-  barTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  barFill: { height: '100%', borderRadius: 3 },
-  barValue: { fontSize: 13, fontWeight: '700', width: 28, textAlign: 'right' },
+    scoreSection: { gap: 10 },
+    scoreCard: {
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 14,
+      padding: 18,
+      gap: 14,
+    },
+    barRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    barLabel: { fontSize: 12, fontWeight: '600', color: C.textMuted, width: 76 },
+    barTrack: {
+      flex: 1,
+      height: 6,
+      backgroundColor: C.surfaceAlt,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    barFill: { height: '100%', borderRadius: 3 },
+    barValue: { fontSize: 13, fontWeight: '700', width: 28, textAlign: 'right' },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
-  noDataCard: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  noDataTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  noDataSub: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19 },
-});
+    noDataCard: {
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 14,
+      padding: 24,
+      alignItems: 'center',
+      gap: 8,
+    },
+    noDataTitle: { fontSize: 16, fontWeight: '700', color: C.text },
+    noDataSub: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+  });
+}

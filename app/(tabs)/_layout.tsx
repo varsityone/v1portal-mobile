@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { registerForPushNotifications } from '../../lib/notifications';
 import AppDrawer from '../../components/AppDrawer';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 import { useTheme } from '../../context/ThemeContext';
 
 // ─── Header logo ──────────────────────────────────────────────────────────────
@@ -32,11 +32,12 @@ export default function DrawerLayout() {
   const { session, loading } = useAuth();
   const router = useRouter();
   const { theme: scheme } = useTheme();
+  const C = useColors();
 
-  const headerBg   = scheme === 'light' ? '#ffffff' : Colors.background;
-  const headerBorder = scheme === 'light' ? 'rgba(0,0,0,0.08)' : Colors.border;
-  const iconColor  = scheme === 'light' ? '#1a1b1d' : Colors.textMuted;
-  const drawerBg   = scheme === 'light' ? '#f0f0f0' : Colors.background;
+  const headerBg    = scheme === 'light' ? '#ffffff' : C.background;
+  const headerBorder = scheme === 'light' ? 'rgba(0,0,0,0.08)' : C.border;
+  const iconColor   = scheme === 'light' ? '#1a1b1d' : C.textMuted;
+  const drawerBg    = scheme === 'light' ? '#f0f0f0' : C.background;
 
   useEffect(() => {
     if (!loading && !session) {
@@ -49,8 +50,8 @@ export default function DrawerLayout() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+      <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={C.primary} size="large" />
       </View>
     );
   }
@@ -76,7 +77,7 @@ export default function DrawerLayout() {
           drawerType: 'front',
           overlayColor: 'rgba(0,0,0,0.5)',
           sceneStyle: {
-            backgroundColor: scheme === 'light' ? '#f0f0f0' : Colors.background,
+            backgroundColor: scheme === 'light' ? '#f0f0f0' : C.background,
           },
         }}
       >

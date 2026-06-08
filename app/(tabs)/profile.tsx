@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/Colors';
+import { ThemeColors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,9 @@ function EditModal({ data, onSave, onClose }: {
   onSave: (updates: Partial<ProfileData>) => Promise<void>;
   onClose: () => void;
 }) {
+  const C = useColors();
+  const em = useMemo(() => createEmStyles(C), [C]);
+
   const [fields, setFields] = useState({
     full_name:       data.full_name       ?? '',
     position:        data.position        ?? '',
@@ -162,7 +166,7 @@ function EditModal({ data, onSave, onClose }: {
                     value={fields[row.key]}
                     onChangeText={set(row.key)}
                     placeholder={row.label}
-                    placeholderTextColor={Colors.textDim}
+                    placeholderTextColor={C.textDim}
                     multiline={!!(row as any).multi}
                   />
                 </View>
@@ -175,24 +179,13 @@ function EditModal({ data, onSave, onClose }: {
   );
 }
 
-const em = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  navTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  cancel: { fontSize: 15, color: Colors.textMuted },
-  save: { fontSize: 15, fontWeight: '700', color: Colors.primary },
-  scroll: { flex: 1, paddingHorizontal: 20 },
-  section: { marginTop: 28 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: Colors.textDim, marginBottom: 10 },
-  fieldWrap: { marginBottom: 14 },
-  label: { fontSize: 12, fontWeight: '500', color: Colors.textMuted, marginBottom: 6 },
-  input: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: Colors.text },
-});
-
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
   const { session } = useAuth();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
   const [profile,    setProfile]    = useState<ProfileData | null>(null);
   const [breakdown,  setBreakdown]  = useState<Record<string, any>>({});
   const [seasonStats,setSeasonStats]= useState<Record<string, any>>({});
@@ -209,7 +202,6 @@ export default function ProfileScreen() {
     async function load() {
       setLoading(true);
 
-      // Find athlete row — try user_id first, then linked_user_id
       let athleteRow: ProfileData | null = null;
       const { data: byUser } = await supabase
         .from('athletes')
@@ -230,7 +222,6 @@ export default function ProfileScreen() {
       if (!athleteRow) { setLoading(false); return; }
       setProfile(athleteRow);
 
-      // Assessment + matches in parallel
       const [{ data: assessRow }, { data: matchRows }] = await Promise.all([
         supabase
           .from('assessments')
@@ -290,8 +281,8 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+      <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={C.primary} size="large" />
       </View>
     );
   }
@@ -311,7 +302,6 @@ export default function ProfileScreen() {
     ? (profile.youtube_link.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] ?? null)
     : null;
 
-  // Fallbacks from assessment responses — matches web's athlete.forty_yard || r.forty_time pattern
   const fortyYard   = profile?.forty_yard   || assessRes.forty_time   || null;
   const vertical    = profile?.vertical_jump || assessRes.vertical     || null;
   const proShuttle  = profile?.pro_shuttle   || assessRes.shuttle      || null;
@@ -334,7 +324,6 @@ export default function ProfileScreen() {
       >
         {/* ── Hero ── */}
         <View style={s.heroSection}>
-          {/* Photo / initials avatar */}
           {profile?.profile_photo_url ? (
             <Image source={{ uri: profile.profile_photo_url }} style={s.photo} />
           ) : (
@@ -357,12 +346,12 @@ export default function ProfileScreen() {
           )}
 
           <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
-            <Ionicons name="create-outline" size={14} color={Colors.primary} />
+            <Ionicons name="create-outline" size={14} color={C.primary} />
             <Text style={s.editBtnText}>Edit Profile</Text>
           </Pressable>
         </View>
 
-        {/* ── Metric Boxes — horizontal scroll ── */}
+        {/* ── Metric Boxes ── */}
         {metrics.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.metricsRow}>
             {metrics.map(m => (
@@ -407,7 +396,6 @@ export default function ProfileScreen() {
               </View>
             ) : null}
 
-            {/* V1 Score Breakdown */}
             {Object.keys(breakdown).length > 0 && (
               <View style={s.card}>
                 <Text style={s.cardTitle}>V1 Score Breakdown</Text>
@@ -433,7 +421,6 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* Quick Info */}
             <View style={s.card}>
               <Text style={s.cardTitle}>Quick Info</Text>
               {[
@@ -484,8 +471,8 @@ export default function ProfileScreen() {
             ) : null}
             {!hasHudl && !ytId && (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-                <Ionicons name="film-outline" size={32} color={Colors.textDim} />
-                <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+                <Ionicons name="film-outline" size={32} color={C.textDim} />
+                <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
                   No film links added yet.
                 </Text>
                 <Pressable style={s.addFilmBtn} onPress={() => setEditing(true)}>
@@ -511,7 +498,7 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 32 }]}>
-                <Text style={{ color: Colors.textMuted, fontSize: 13, textAlign: 'center' }}>
+                <Text style={{ color: C.textMuted, fontSize: 13, textAlign: 'center' }}>
                   No season stats available.{'\n'}Complete your assessment to unlock stats.
                 </Text>
               </View>
@@ -562,8 +549,8 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-                <Ionicons name="school-outline" size={32} color={Colors.textDim} />
-                <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 12, textAlign: 'center' }}>
+                <Ionicons name="school-outline" size={32} color={C.textDim} />
+                <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
                   No program matches yet.{'\n'}Complete your profile and assessment.
                 </Text>
               </View>
@@ -581,85 +568,93 @@ export default function ProfileScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  container: { paddingBottom: 60 },
+function createEmStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.background },
+    nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.border },
+    navTitle: { fontSize: 16, fontWeight: '700', color: C.text },
+    cancel: { fontSize: 15, color: C.textMuted },
+    save: { fontSize: 15, fontWeight: '700', color: C.primary },
+    scroll: { flex: 1, paddingHorizontal: 20 },
+    section: { marginTop: 28 },
+    sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: C.textDim, marginBottom: 10 },
+    fieldWrap: { marginBottom: 14 },
+    label: { fontSize: 12, fontWeight: '500', color: C.textMuted, marginBottom: 6 },
+    input: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: C.text },
+  });
+}
 
-  // Hero — centered, matches web's left column layout
-  heroSection: { alignItems: 'center', paddingTop: 32, paddingHorizontal: 20, paddingBottom: 24, gap: 8 },
-  photo: { width: 120, height: 120, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  initials: { fontSize: 40, fontWeight: '900', color: '#fff' },
-  heroName: { fontSize: 30, fontWeight: '900', color: Colors.text, letterSpacing: -0.5, textAlign: 'center' },
-  heroSub: { fontSize: 14, fontWeight: '700', color: Colors.textMuted, textAlign: 'center' },
-  heroLocation: { fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
-  heroClass: { fontSize: 12, color: Colors.textDim, textAlign: 'center' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: Colors.primary + '18', borderWidth: 1, borderColor: Colors.primary + '30', marginTop: 4 },
-  editBtnText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingBottom: 60 },
 
-  // Metrics
-  metricsRow: { paddingHorizontal: 20, paddingBottom: 16, gap: 12 },
-  metricBox: { backgroundColor: Colors.surface, borderRadius: 12, padding: 16, minWidth: 100 },
-  metricLabel: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
-  metricValue: { fontSize: 26, fontWeight: '900', color: Colors.text },
-  metricSub: { fontSize: 13, color: Colors.textDim, fontWeight: '400' },
+    heroSection: { alignItems: 'center', paddingTop: 32, paddingHorizontal: 20, paddingBottom: 24, gap: 8 },
+    photo: { width: 120, height: 120, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+    initials: { fontSize: 40, fontWeight: '900', color: '#fff' },
+    heroName: { fontSize: 30, fontWeight: '900', color: C.text, letterSpacing: -0.5, textAlign: 'center' },
+    heroSub: { fontSize: 14, fontWeight: '700', color: C.textMuted, textAlign: 'center' },
+    heroLocation: { fontSize: 13, color: C.textMuted, textAlign: 'center' },
+    heroClass: { fontSize: 12, color: C.textDim, textAlign: 'center' },
+    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary + '18', borderWidth: 1, borderColor: C.primary + '30', marginTop: 4 },
+    editBtnText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
-  // V1 Score
-  scoreCard: { marginHorizontal: 20, borderRadius: 16, padding: 24, marginBottom: 4 },
-  scoreLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginBottom: 12 },
-  scoreNum: { fontSize: 64, fontWeight: '900', color: '#fff', lineHeight: 68, letterSpacing: -2 },
-  scoreLevel: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 8 },
-  scoreDesc: { fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.85)' },
+    metricsRow: { paddingHorizontal: 20, paddingBottom: 16, gap: 12 },
+    metricBox: { backgroundColor: C.surface, borderRadius: 12, padding: 16, minWidth: 100 },
+    metricLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
+    metricValue: { fontSize: 26, fontWeight: '900', color: C.text },
+    metricSub: { fontSize: 13, color: C.textDim, fontWeight: '400' },
 
-  // Tabs
-  tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 20, gap: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  tabBtn: { paddingBottom: 12, position: 'relative' },
-  tabText: { fontSize: 13, fontWeight: '500', color: Colors.textMuted },
-  tabActive: { color: Colors.text, fontWeight: '700' },
-  tabUnderline: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, backgroundColor: Colors.primary, borderRadius: 1 },
+    scoreCard: { marginHorizontal: 20, borderRadius: 16, padding: 24, marginBottom: 4 },
+    scoreLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginBottom: 12 },
+    scoreNum: { fontSize: 64, fontWeight: '900', color: '#fff', lineHeight: 68, letterSpacing: -2 },
+    scoreLevel: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 8 },
+    scoreDesc: { fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.85)' },
 
-  // Section wrapper
-  section: { paddingHorizontal: 20, paddingTop: 20, gap: 16, paddingBottom: 8 },
-  sectionHeading: { fontSize: 18, fontWeight: '800', color: Colors.text },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, padding: 18, gap: 12 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
-  bio: { fontSize: 14, lineHeight: 21, color: Colors.textMuted },
+    tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 20, gap: 24, borderBottomWidth: 1, borderBottomColor: C.border },
+    tabBtn: { paddingBottom: 12, position: 'relative' },
+    tabText: { fontSize: 13, fontWeight: '500', color: C.textMuted },
+    tabActive: { color: C.text, fontWeight: '700' },
+    tabUnderline: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, backgroundColor: C.primary, borderRadius: 1 },
 
-  // Breakdown bars
-  barLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  barLabel: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  barValue: { fontSize: 13, fontWeight: '800' },
-  barTrack: { height: 6, backgroundColor: Colors.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 3 },
+    section: { paddingHorizontal: 20, paddingTop: 20, gap: 16, paddingBottom: 8 },
+    sectionHeading: { fontSize: 18, fontWeight: '800', color: C.text },
+    card: { backgroundColor: C.surface, borderRadius: 14, padding: 18, gap: 12 },
+    cardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
+    bio: { fontSize: 14, lineHeight: 21, color: C.textMuted },
 
-  // Quick info table
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-  infoLabel: { fontSize: 12, color: Colors.textDim, fontWeight: '500' },
-  infoValue: { fontSize: 13, color: Colors.text, fontWeight: '700' },
+    barLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+    barLabel: { fontSize: 13, fontWeight: '600', color: C.text },
+    barValue: { fontSize: 13, fontWeight: '800' },
+    barTrack: { height: 6, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
+    barFill: { height: '100%', borderRadius: 3 },
 
-  // Film
-  filmCard: { backgroundColor: '#1a1a2e', borderRadius: 16, padding: 28, alignItems: 'center', gap: 12, minHeight: 200, justifyContent: 'center' },
-  filmPlayCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-  filmCardTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
-  filmCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
-  filmLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100, marginTop: 4 },
-  filmLinkText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  ytCard: { backgroundColor: Colors.surfaceAlt, borderRadius: 10, padding: 24, alignItems: 'center', gap: 10 },
-  ytText: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: Colors.primary + '20', borderWidth: 1, borderColor: Colors.primary + '40' },
-  addFilmText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+    infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+    infoRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    infoLabel: { fontSize: 12, color: C.textDim, fontWeight: '500' },
+    infoValue: { fontSize: 13, color: C.text, fontWeight: '700' },
 
-  // Stats grid
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  statBox: { width: '47%', backgroundColor: Colors.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
-  statLabel: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 0.3, textAlign: 'center', marginBottom: 8 },
-  statValue: { fontSize: 28, fontWeight: '900', color: Colors.textMuted },
+    filmCard: { backgroundColor: '#1a1a2e', borderRadius: 16, padding: 28, alignItems: 'center', gap: 12, minHeight: 200, justifyContent: 'center' },
+    filmPlayCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    filmCardTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
+    filmCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
+    filmLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100, marginTop: 4 },
+    filmLinkText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+    ytCard: { backgroundColor: C.surfaceAlt, borderRadius: 10, padding: 24, alignItems: 'center', gap: 10 },
+    ytText: { fontSize: 13, fontWeight: '600', color: C.text },
+    addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary + '20', borderWidth: 1, borderColor: C.primary + '40' },
+    addFilmText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
-  // Program matches
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.surface, borderRadius: 12, padding: 16 },
-  matchRank: { width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  matchRankText: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  matchName: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  matchDiv: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  matchScore: { fontSize: 22, fontWeight: '900', color: '#10b981' },
-});
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    statBox: { width: '47%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
+    statLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 0.3, textAlign: 'center', marginBottom: 8 },
+    statValue: { fontSize: 28, fontWeight: '900', color: C.textMuted },
+
+    matchRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: 12, padding: 16 },
+    matchRank: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+    matchRankText: { fontSize: 15, fontWeight: '700', color: C.text },
+    matchName: { fontSize: 14, fontWeight: '700', color: C.text },
+    matchDiv: { fontSize: 12, color: C.textMuted, marginTop: 2 },
+    matchScore: { fontSize: 22, fontWeight: '900', color: '#10b981' },
+  });
+}

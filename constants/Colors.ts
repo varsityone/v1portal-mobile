@@ -1,32 +1,62 @@
-export const Colors = {
-  // ── Primary ─────────────────────────────────────────────────
-  primary: '#833AB4',          // purple — matches web var(--purple)
-  primaryDark: '#6B2D96',
+export type ThemeColors = {
+  primary: string;
+  primaryDark: string;
+  background: string;
+  surface: string;
+  surfaceAlt: string;
+  scoreCard: string;
+  border: string;
+  border2: string;
+  text: string;
+  textMuted: string;
+  textDim: string;
+  success: string;
+  warning: string;
+  error: string;
+  white: string;
+  black: string;
+};
 
-  // ── Backgrounds ─────────────────────────────────────────────
-  background: '#18191d',       // dark charcoal — matches web --bg
-  surface: '#28292e',          // lifted surface — matches web --surface
-  surfaceAlt: '#303238',       // surface2 — matches web --surface2
-  scoreCard: '#0e0b14',        // deep purple-black for score card background
+export const DARK_THEME: ThemeColors = {
+  primary:    '#833AB4',
+  primaryDark:'#6B2D96',
+  background: '#18191d',
+  surface:    '#28292e',
+  surfaceAlt: '#303238',
+  scoreCard:  '#0e0b14',
+  border:     'rgba(255,255,255,0.09)',
+  border2:    'rgba(255,255,255,0.16)',
+  text:       '#e8e9ea',
+  textMuted:  '#9a9da2',
+  textDim:    '#5a5d63',
+  success:    '#71ff7e',
+  warning:    '#F59E0B',
+  error:      '#e63535',
+  white:      '#FFFFFF',
+  black:      '#000000',
+};
 
-  // ── Borders ─────────────────────────────────────────────────
-  border: 'rgba(255,255,255,0.09)',   // matches web --border
-  border2: 'rgba(255,255,255,0.16)',  // matches web --border2
+export const LIGHT_THEME: ThemeColors = {
+  primary:    '#833AB4',
+  primaryDark:'#6B2D96',
+  background: '#f0f0f0',
+  surface:    '#ffffff',
+  surfaceAlt: '#e8e8ed',
+  scoreCard:  '#f5f3ff',
+  border:     'rgba(0,0,0,0.08)',
+  border2:    'rgba(0,0,0,0.14)',
+  text:       '#1a1b1d',
+  textMuted:  '#5a5d63',
+  textDim:    '#9a9da2',
+  success:    '#16a34a',
+  warning:    '#D97706',
+  error:      '#dc2626',
+  white:      '#FFFFFF',
+  black:      '#000000',
+};
 
-  // ── Text ────────────────────────────────────────────────────
-  text: '#e8e9ea',             // off-white — matches web --text
-  textMuted: '#9a9da2',        // matches web --text2
-  textDim: '#5a5d63',          // matches web --text3
-
-  // ── Semantic ────────────────────────────────────────────────
-  success: '#71ff7e',          // neon green — matches web --green
-  warning: '#F59E0B',          // amber
-  error: '#e63535',            // matches web --red
-
-  // ── Neutrals ────────────────────────────────────────────────
-  white: '#FFFFFF',
-  black: '#000000',
-} as const;
+// Backward-compat alias — dark values; use useColors() inside components for theming
+export const Colors = DARK_THEME;
 
 // Instagram-style gradient — used on score display, breakdown bars, CTAs
 export const GRADIENT = ['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45'] as const;

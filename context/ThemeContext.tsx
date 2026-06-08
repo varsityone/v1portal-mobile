@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DARK_THEME, LIGHT_THEME, ThemeColors } from '../constants/Colors';
 
 type Theme = 'dark' | 'light';
 
@@ -39,3 +40,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useTheme = () => useContext(ThemeContext);
+
+export function useColors(): ThemeColors {
+  const { theme } = useTheme();
+  return theme === 'light' ? LIGHT_THEME : DARK_THEME;
+}

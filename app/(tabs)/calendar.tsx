@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAthleteData } from '../../hooks/useAthleteData';
-import { Colors } from '../../constants/Colors';
+import { Colors, ThemeColors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
 
 interface Milestone {
   month: string;
@@ -82,7 +83,10 @@ const TYPE_CONFIG = {
 };
 
 export default function CalendarScreen() {
-  const { athlete, loading } = useAthleteData();
+  const { athlete } = useAthleteData();
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
+
   const gradYear = typeof athlete?.graduation_year === 'number'
     ? athlete.graduation_year
     : athlete?.graduation_year
@@ -114,81 +118,81 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
+      style={s.scroll}
+      contentContainerStyle={s.container}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Recruiting Calendar</Text>
-        <Text style={styles.subtitle}>Key dates for the Class of {gradYear}</Text>
+      <View style={s.header}>
+        <Text style={s.title}>Recruiting Calendar</Text>
+        <Text style={s.subtitle}>Key dates for the Class of {gradYear}</Text>
       </View>
 
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={s.legend}>
         {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
-          <View key={key} style={styles.legendItem}>
+          <View key={key} style={s.legendItem}>
             <Ionicons name={cfg.icon} size={12} color={cfg.color} />
-            <Text style={[styles.legendText, { color: cfg.color }]}>{cfg.label}</Text>
+            <Text style={[s.legendText, { color: cfg.color }]}>{cfg.label}</Text>
           </View>
         ))}
       </View>
 
       {/* Upcoming header */}
       {upcoming.length > 0 && (
-        <Text style={styles.sectionLabel}>UPCOMING</Text>
+        <Text style={s.sectionLabel}>UPCOMING</Text>
       )}
 
       {/* Timeline */}
-      <View style={styles.timeline}>
+      <View style={s.timeline}>
         {displayed.map((m, i) => {
           const isPast = m.date.getTime() < nowTime;
           const cfg = TYPE_CONFIG[m.type];
           const isLast = i === displayed.length - 1;
           return (
-            <View key={i} style={styles.row}>
+            <View key={i} style={s.row}>
               {/* Left: date */}
-              <View style={styles.dateCol}>
-                <Text style={[styles.dateMonth, isPast && styles.textPast]}>
+              <View style={s.dateCol}>
+                <Text style={[s.dateMonth, isPast && s.textPast]}>
                   {m.month.split(' ')[0].toUpperCase()}
                 </Text>
                 {m.day && (
-                  <Text style={[styles.dateDay, isPast && styles.textPast]}>{m.day}</Text>
+                  <Text style={[s.dateDay, isPast && s.textPast]}>{m.day}</Text>
                 )}
-                <Text style={[styles.dateYear, isPast && styles.textPast]}>
+                <Text style={[s.dateYear, isPast && s.textPast]}>
                   {m.month.split(' ')[1]}
                 </Text>
               </View>
 
               {/* Center: dot + line */}
-              <View style={styles.lineCol}>
+              <View style={s.lineCol}>
                 <View style={[
-                  styles.dot,
-                  { backgroundColor: isPast ? Colors.surfaceAlt : cfg.color },
-                  isPast && styles.dotPast,
+                  s.dot,
+                  { backgroundColor: isPast ? C.surfaceAlt : cfg.color },
+                  isPast && s.dotPast,
                 ]}>
                   <Ionicons
                     name={cfg.icon}
                     size={10}
-                    color={isPast ? Colors.textDim : '#fff'}
+                    color={isPast ? C.textDim : '#fff'}
                   />
                 </View>
                 {!isLast && (
-                  <View style={[styles.line, isPast && styles.linePast]} />
+                  <View style={[s.line, isPast && s.linePast]} />
                 )}
               </View>
 
               {/* Right: content */}
-              <View style={[styles.card, isPast && styles.cardPast, isLast && { marginBottom: 0 }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, isPast && styles.textPast]}>{m.title}</Text>
-                  <View style={[styles.typeBadge, { backgroundColor: cfg.color + (isPast ? '15' : '22') }]}>
-                    <Text style={[styles.typeBadgeText, { color: isPast ? Colors.textDim : cfg.color }]}>
+              <View style={[s.card, isPast && s.cardPast, isLast && { marginBottom: 0 }]}>
+                <View style={s.cardHeader}>
+                  <Text style={[s.cardTitle, isPast && s.textPast]}>{m.title}</Text>
+                  <View style={[s.typeBadge, { backgroundColor: cfg.color + (isPast ? '15' : '22') }]}>
+                    <Text style={[s.typeBadgeText, { color: isPast ? C.textDim : cfg.color }]}>
                       {cfg.label}
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.cardBody, isPast && styles.textPast]}>{m.body}</Text>
+                <Text style={[s.cardBody, isPast && s.textPast]}>{m.body}</Text>
               </View>
             </View>
           );
@@ -197,14 +201,14 @@ export default function CalendarScreen() {
 
       {/* Past toggle */}
       {past.length > 0 && (
-        <Pressable style={styles.pastToggle} onPress={() => setShowAll(v => !v)}>
-          <Text style={styles.pastToggleText}>
+        <Pressable style={s.pastToggle} onPress={() => setShowAll(v => !v)}>
+          <Text style={s.pastToggleText}>
             {showAll ? 'Hide past dates' : `Show ${past.length} past date${past.length !== 1 ? 's' : ''}`}
           </Text>
           <Ionicons
             name={showAll ? 'chevron-up' : 'chevron-down'}
             size={14}
-            color={Colors.textMuted}
+            color={C.textMuted}
           />
         </Pressable>
       )}
@@ -212,80 +216,82 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.background },
-  container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 14 },
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: C.background },
+    container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 14 },
 
-  header: { gap: 4 },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: Colors.textMuted },
+    header: { gap: 4 },
+    title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+    subtitle: { fontSize: 14, color: C.textMuted },
 
-  legend: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendText: { fontSize: 11, fontWeight: '600' },
+    legend: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    legendText: { fontSize: 11, fontWeight: '600' },
 
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textDim,
-    letterSpacing: 1.2,
-    marginBottom: -4,
-  },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: C.textDim,
+      letterSpacing: 1.2,
+      marginBottom: -4,
+    },
 
-  timeline: { gap: 0 },
-  row: { flexDirection: 'row', gap: 12, minHeight: 0 },
+    timeline: { gap: 0 },
+    row: { flexDirection: 'row', gap: 12, minHeight: 0 },
 
-  dateCol: {
-    width: 44,
-    alignItems: 'center',
-    paddingTop: 10,
-  },
-  dateMonth: { fontSize: 9, fontWeight: '700', color: Colors.textMuted, letterSpacing: 0.5 },
-  dateDay: { fontSize: 16, fontWeight: '800', color: Colors.text, lineHeight: 18 },
-  dateYear: { fontSize: 9, color: Colors.textDim },
-  textPast: { opacity: 0.4 },
+    dateCol: {
+      width: 44,
+      alignItems: 'center',
+      paddingTop: 10,
+    },
+    dateMonth: { fontSize: 9, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5 },
+    dateDay: { fontSize: 16, fontWeight: '800', color: C.text, lineHeight: 18 },
+    dateYear: { fontSize: 9, color: C.textDim },
+    textPast: { opacity: 0.4 },
 
-  lineCol: { alignItems: 'center', width: 20 },
-  dot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    zIndex: 1,
-  },
-  dotPast: { backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.border },
-  line: { flex: 1, width: 2, backgroundColor: Colors.border, marginVertical: 2 },
-  linePast: { opacity: 0.4 },
+    lineCol: { alignItems: 'center', width: 20 },
+    dot: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+      zIndex: 1,
+    },
+    dotPast: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    line: { flex: 1, width: 2, backgroundColor: C.border, marginVertical: 2 },
+    linePast: { opacity: 0.4 },
 
-  card: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    gap: 6,
-  },
-  cardPast: { opacity: 0.55 },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
-  cardTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.text, lineHeight: 19 },
-  typeBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
-  typeBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.4 },
-  cardBody: { fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
+    card: {
+      flex: 1,
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 10,
+      gap: 6,
+    },
+    cardPast: { opacity: 0.55 },
+    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
+    cardTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: C.text, lineHeight: 19 },
+    typeBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
+    typeBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.4 },
+    cardBody: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
 
-  pastToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    padding: 14,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-  },
-  pastToggleText: { fontSize: 13, fontWeight: '600', color: Colors.textMuted },
-});
+    pastToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      padding: 14,
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 12,
+    },
+    pastToggleText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
+  });
+}

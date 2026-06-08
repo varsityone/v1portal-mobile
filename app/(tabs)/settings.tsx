@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -15,7 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { registerForPushNotifications } from '../../lib/notifications';
-import { Colors } from '../../constants/Colors';
+import { useColors } from '../../context/ThemeContext';
+import { ThemeColors } from '../../constants/Colors';
 
 // ─── Row components ───────────────────────────────────────────────────────────
 
@@ -27,23 +28,25 @@ type RowProps = {
 };
 
 function SettingsRow({ icon, label, onPress, destructive }: RowProps) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   return (
     <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      style={({ pressed }) => [s.row, pressed && s.rowPressed]}
       onPress={onPress}
     >
-      <View style={styles.rowIcon}>
+      <View style={s.rowIcon}>
         <Ionicons
           name={icon}
           size={18}
-          color={destructive ? Colors.error : Colors.textMuted}
+          color={destructive ? C.error : C.textMuted}
         />
       </View>
-      <Text style={[styles.rowLabel, destructive && styles.rowDestructive]}>
+      <Text style={[s.rowLabel, destructive && s.rowDestructive]}>
         {label}
       </Text>
       {!destructive && (
-        <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+        <Ionicons name="chevron-forward" size={16} color={C.textDim} />
       )}
     </Pressable>
   );
@@ -59,24 +62,26 @@ type ToggleRowProps = {
 };
 
 function ToggleRow({ icon, label, sublabel, value, onValueChange, disabled }: ToggleRowProps) {
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={styles.row}>
-      <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={18} color={Colors.textMuted} />
+    <View style={s.row}>
+      <View style={s.rowIcon}>
+        <Ionicons name={icon} size={18} color={C.textMuted} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={s.rowLabel}>{label}</Text>
         {sublabel ? (
-          <Text style={styles.rowSublabel}>{sublabel}</Text>
+          <Text style={s.rowSublabel}>{sublabel}</Text>
         ) : null}
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
-        trackColor={{ false: Colors.border, true: Colors.primary }}
-        thumbColor={Colors.white}
-        ios_backgroundColor={Colors.border}
+        trackColor={{ false: C.border, true: C.primary }}
+        thumbColor={C.white}
+        ios_backgroundColor={C.border}
       />
     </View>
   );
@@ -88,6 +93,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { session, signOut } = useAuth();
   const userId = session?.user?.id;
+  const C = useColors();
+  const s = useMemo(() => createStyles(C), [C]);
 
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const [emailNotifs, setEmailNotifs] = useState(false);
@@ -131,7 +138,6 @@ export default function SettingsScreen() {
     if (val) {
       const token = await registerForPushNotifications(session);
       if (!token) {
-        // Permissions denied — guide user to Settings
         Alert.alert(
           'Notifications Blocked',
           'To enable push notifications, go to Settings > V1Portal > Notifications and allow notifications.',
@@ -142,15 +148,12 @@ export default function SettingsScreen() {
         setPushEnabled(true);
       }
     } else {
-      // Revoke by clearing the stored token
       if (athleteId) {
         await supabase
           .from('athletes')
           .update({ expo_push_token: null })
           .eq('id', athleteId);
       }
-      // We can't programmatically revoke OS permissions, but clearing the token
-      // means the server won't send anything to this device.
       await Notifications.setBadgeCountAsync(0);
       setPushEnabled(false);
     }
@@ -172,26 +175,26 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
+      style={s.scroll}
+      contentContainerStyle={s.container}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>{session?.user?.email}</Text>
+      <View style={s.header}>
+        <Text style={s.title}>Settings</Text>
+        <Text style={s.subtitle}>{session?.user?.email}</Text>
       </View>
 
-      <View style={styles.group}>
-        <Text style={styles.groupLabel}>Account</Text>
-        <View style={styles.groupCard}>
+      <View style={s.group}>
+        <Text style={s.groupLabel}>Account</Text>
+        <View style={s.groupCard}>
           <SettingsRow icon="person-outline" label="Edit Profile" />
           <SettingsRow icon="lock-closed-outline" label="Change Password" />
         </View>
       </View>
 
-      <View style={styles.group}>
-        <Text style={styles.groupLabel}>Notifications</Text>
-        <View style={styles.groupCard}>
+      <View style={s.group}>
+        <Text style={s.groupLabel}>Notifications</Text>
+        <View style={s.groupCard}>
           <ToggleRow
             icon="mail-outline"
             label="Email Notifications"
@@ -211,9 +214,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.group}>
-        <Text style={styles.groupLabel}>Assessment</Text>
-        <View style={styles.groupCard}>
+      <View style={s.group}>
+        <Text style={s.groupLabel}>Assessment</Text>
+        <View style={s.groupCard}>
           <SettingsRow
             icon="refresh-outline"
             label="Retake V1 Assessment"
@@ -222,9 +225,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.group}>
-        <Text style={styles.groupLabel}>App</Text>
-        <View style={styles.groupCard}>
+      <View style={s.group}>
+        <Text style={s.groupLabel}>App</Text>
+        <View style={s.groupCard}>
           <SettingsRow icon="information-circle-outline" label="About V1Portal" />
           <SettingsRow icon="help-circle-outline" label="Help & Support" />
           <SettingsRow
@@ -235,8 +238,8 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.group}>
-        <View style={styles.groupCard}>
+      <View style={s.group}>
+        <View style={s.groupCard}>
           <SettingsRow
             icon="log-out-outline"
             label="Sign Out"
@@ -247,9 +250,9 @@ export default function SettingsScreen() {
       </View>
 
       {__DEV__ && (
-        <View style={styles.group}>
-          <Text style={styles.groupLabel}>Developer</Text>
-          <View style={styles.groupCard}>
+        <View style={s.group}>
+          <Text style={s.groupLabel}>Developer</Text>
+          <View style={s.groupCard}>
             <SettingsRow
               icon="phone-portrait-outline"
               label="Preview Onboarding Slides"
@@ -264,75 +267,77 @@ export default function SettingsScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    paddingTop: 20,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.textMuted,
-  },
-  group: {
-    marginBottom: 24,
-  },
-  groupLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  groupCard: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    gap: 12,
-  },
-  rowPressed: {
-    backgroundColor: Colors.surfaceAlt,
-  },
-  rowIcon: {
-    width: 22,
-    alignItems: 'center',
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  rowSublabel: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 1,
-  },
-  rowDestructive: {
-    color: Colors.error,
-  },
-});
+function createStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    scroll: {
+      flex: 1,
+      backgroundColor: C.background,
+    },
+    container: {
+      paddingTop: 20,
+      paddingBottom: 32,
+      paddingHorizontal: 24,
+    },
+    header: {
+      marginBottom: 32,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: C.text,
+      marginBottom: 6,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: C.textMuted,
+    },
+    group: {
+      marginBottom: 24,
+    },
+    groupLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: C.textMuted,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+      marginLeft: 4,
+    },
+    groupCard: {
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: 14,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderTopWidth: 1,
+      borderTopColor: C.border,
+      gap: 12,
+    },
+    rowPressed: {
+      backgroundColor: C.surfaceAlt,
+    },
+    rowIcon: {
+      width: 22,
+      alignItems: 'center',
+    },
+    rowLabel: {
+      flex: 1,
+      fontSize: 15,
+      color: C.text,
+    },
+    rowSublabel: {
+      fontSize: 12,
+      color: C.textMuted,
+      marginTop: 1,
+    },
+    rowDestructive: {
+      color: C.error,
+    },
+  });
+}
