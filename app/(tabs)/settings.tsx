@@ -212,6 +212,17 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.group}>
+        <Text style={styles.groupLabel}>Assessment</Text>
+        <View style={styles.groupCard}>
+          <SettingsRow
+            icon="refresh-outline"
+            label="Retake V1 Assessment"
+            onPress={() => router.push('/assessment' as any)}
+          />
+        </View>
+      </View>
+
+      <View style={styles.group}>
         <Text style={styles.groupLabel}>App</Text>
         <View style={styles.groupCard}>
           <SettingsRow icon="information-circle-outline" label="About V1Portal" />

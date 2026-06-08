@@ -319,6 +319,27 @@ function Phase1({
           </Text>
         </Card>
       )}
+
+      {/* Retake assessment */}
+      {score !== null && (
+        <Card>
+          <View style={s.retakeRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.retakeTitle}>Retake Assessment</Text>
+              <Text style={s.retakeBody}>
+                Updated your stats, film, or academics? Retake to get a fresh V1 Score.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [s.retakeBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => router.push('/assessment' as any)}
+            >
+              <Ionicons name="refresh" size={14} color={Colors.primary} />
+              <Text style={s.retakeBtnTxt}>Retake</Text>
+            </Pressable>
+          </View>
+        </Card>
+      )}
     </ScrollView>
   );
 }
@@ -948,6 +969,18 @@ const s = StyleSheet.create({
   jucoHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   jucoTitle: { fontSize: 15, fontWeight: '700', color: Colors.warning },
   jucoBody: { fontSize: 13, color: Colors.textMuted, lineHeight: 20 },
+
+  // Retake assessment
+  retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  retakeTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 3 },
+  retakeBody: { fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
+  retakeBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 10, borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: Colors.primary },
 
   // Completion
   completionRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 12 },
