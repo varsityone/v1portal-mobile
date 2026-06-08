@@ -8,7 +8,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -21,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { handleNotificationResponse, getRouteFromNotification, NotificationScreen } from '../lib/notifications';
 import { Colors } from '../constants/Colors';
+import { ThemeProvider } from '../context/ThemeContext';
 
 // ─── Branded loading screen ───────────────────────────────────────────────────
 
@@ -333,12 +333,14 @@ export default function RootLayout() {
   if (!appReady) return <LoadingScreen />;
 
   return (
-    <View style={{ flex: 1 }}>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-      </Stack>
-      <NotificationBanner banner={banner} onDismiss={dismissBanner} />
-    </View>
+    <ThemeProvider>
+      <View style={{ flex: 1 }}>
+        <StatusBar style="auto" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+        </Stack>
+        <NotificationBanner banner={banner} onDismiss={dismissBanner} />
+      </View>
+    </ThemeProvider>
   );
 }

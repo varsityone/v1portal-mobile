@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Image, View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -7,11 +7,12 @@ import { useAuth } from '../../hooks/useAuth';
 import { registerForPushNotifications } from '../../lib/notifications';
 import AppDrawer from '../../components/AppDrawer';
 import { Colors } from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 
 // ─── Header logo ──────────────────────────────────────────────────────────────
 
 function HeaderLogo() {
-  const scheme = useColorScheme();
+  const { theme: scheme } = useTheme();
   return (
     <Image
       source={
@@ -30,7 +31,7 @@ function HeaderLogo() {
 export default function DrawerLayout() {
   const { session, loading } = useAuth();
   const router = useRouter();
-  const scheme = useColorScheme();
+  const { theme: scheme } = useTheme();
 
   const headerBg   = scheme === 'light' ? '#ffffff' : Colors.background;
   const headerBorder = scheme === 'light' ? 'rgba(0,0,0,0.08)' : Colors.border;

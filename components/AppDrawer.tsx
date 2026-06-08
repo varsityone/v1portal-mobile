@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Appearance, Image, Linking, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useAuth } from '../hooks/useAuth';
 import { useAthleteData } from '../hooks/useAthleteData';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
@@ -116,7 +117,8 @@ const LIGHT = {
 // ─── Drawer content ───────────────────────────────────────────────────────────
 
 export default function AppDrawer(props: DrawerContentComponentProps) {
-  const scheme = useColorScheme();
+  const { theme, setTheme } = useTheme();
+  const scheme = theme;
   const C = scheme === 'light' ? LIGHT : DARK;
   const router = useRouter();
   const pathname = usePathname();
@@ -274,7 +276,7 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
 
             {/* Theme toggle — matches web: moon/sun, gradient active state */}
             <View style={[d.themeToggle, { backgroundColor: C.surface }]}>
-              <Pressable onPress={() => Appearance.setColorScheme('dark')}>
+              <Pressable onPress={() => setTheme('dark')}>
                 {scheme === 'dark' ? (
                   <LinearGradient
                     colors={['#ff0000', '#aa00ff']}
@@ -289,7 +291,7 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
                   </View>
                 )}
               </Pressable>
-              <Pressable onPress={() => Appearance.setColorScheme('light')}>
+              <Pressable onPress={() => setTheme('light')}>
                 {scheme === 'light' ? (
                   <LinearGradient
                     colors={['#ff0000', '#aa00ff']}
