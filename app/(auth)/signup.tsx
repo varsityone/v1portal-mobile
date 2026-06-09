@@ -39,15 +39,12 @@ export default function SignupScreen() {
     setError('');
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signUp({
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          full_name: `${firstName.trim()} ${lastName.trim()}`,
-        },
+        data: { first_name: firstName.trim(), last_name: lastName.trim(), full_name: fullName },
       },
     });
 
@@ -55,7 +52,29 @@ export default function SignupScreen() {
 
     if (authError) {
       setError(authError.message);
-    } else {
+    } else if (authData.user) {
+      // Create athlete record (upsert — safe if a DB trigger already created it)
+      supabase.from('athletes').upsert([{
+        user_id: authData.user.id,
+        email: authData.user.email ?? email.trim().toLowerCase(),
+        full_name: fullName,
+        account_role: 'athlete',
+      }], { onConflict: 'user_id' }).then(() => {});
+
+      // Fire pre-welcome email — matches web signup behavior
+      fetch('https://v1portal.com/api/email/transactional', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-key': process.env.EXPO_PUBLIC_V1_API_KEY ?? '',
+        },
+        body: JSON.stringify({
+          type: 'pre_welcome',
+          to: authData.user.email ?? email.trim().toLowerCase(),
+          data: { firstName: firstName.trim() },
+        }),
+      }).catch(() => {});
+
       router.replace('/(tabs)');
     }
   };

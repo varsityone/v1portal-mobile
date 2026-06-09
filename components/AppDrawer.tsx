@@ -310,6 +310,15 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
           </View>
         </View>
 
+        {/* Visit VarsityOne */}
+        <Pressable
+          style={[d.voLink, { borderColor: C.border }]}
+          onPress={() => Linking.openURL('https://varsityone.com')}
+        >
+          <Ionicons name="globe-outline" size={14} color={C.textMuted} />
+          <Text style={[d.voText, { color: C.textMuted }]}>Visit VarsityOne →</Text>
+        </Pressable>
+
         {/* Upgrade CTA */}
         <Pressable
           style={[d.upgradeBanner, { borderColor: `${C.primary}30` }]}
@@ -440,12 +449,25 @@ const d = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  voLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  voText: { fontSize: 13, fontWeight: '500' },
+
   upgradeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     margin: 16,
-    marginTop: 14,
+    marginTop: 6,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
