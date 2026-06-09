@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/Colors';
 
 interface AuthButtonProps {
@@ -18,29 +19,42 @@ export function AuthButton({
 }: AuthButtonProps) {
   const isDisabled = disabled || loading;
 
+  if (variant === 'ghost') {
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.ghost, isDisabled && styles.disabled, pressed && !isDisabled && styles.pressed]}
+        onPress={onPress}
+        disabled={isDisabled}
+      >
+        {loading
+          ? <ActivityIndicator color={Colors.text} size="small" />
+          : <Text style={styles.ghostLabel}>{label}</Text>}
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.button,
-        variant === 'ghost' && styles.ghost,
-        isDisabled && styles.disabled,
-        pressed && !isDisabled && styles.pressed,
-      ]}
       onPress={onPress}
       disabled={isDisabled}
+      style={({ pressed }) => [isDisabled && styles.disabled, pressed && !isDisabled && styles.pressed]}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'ghost' ? Colors.text : '#000'} size="small" />
-      ) : (
-        <Text style={[styles.label, variant === 'ghost' && styles.ghostLabel]}>{label}</Text>
-      )}
+      <LinearGradient
+        colors={['#ff0000', '#aa00ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.button}
+      >
+        {loading
+          ? <ActivityIndicator color="#fff" size="small" />
+          : <Text style={styles.label}>{label}</Text>}
+      </LinearGradient>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.success,
     borderRadius: 10,
     height: 50,
     alignItems: 'center',
@@ -49,6 +63,10 @@ const styles = StyleSheet.create({
   },
   ghost: {
     backgroundColor: 'transparent',
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
   },
   disabled: {
     opacity: 0.5,
@@ -59,7 +77,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000',
+    color: '#fff',
     letterSpacing: -0.2,
   },
   ghostLabel: {
