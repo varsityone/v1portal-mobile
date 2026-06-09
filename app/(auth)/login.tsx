@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 28,
-    paddingTop: 72,
+    paddingTop: Platform.OS === 'ios' ? 72 : (StatusBar.currentHeight ?? 24) + 24,
     paddingBottom: 48,
   },
   logo: {
