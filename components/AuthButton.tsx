@@ -30,14 +30,9 @@ export function AuthButton({
       disabled={isDisabled}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'ghost' ? Colors.primary : Colors.white}
-          size="small"
-        />
+        <ActivityIndicator color={variant === 'ghost' ? Colors.text : '#000'} size="small" />
       ) : (
-        <Text style={[styles.label, variant === 'ghost' && styles.ghostLabel]}>
-          {label}
-        </Text>
+        <Text style={[styles.label, variant === 'ghost' && styles.ghostLabel]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -45,11 +40,12 @@ export function AuthButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.success,
     borderRadius: 10,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 4,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -58,13 +54,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.white,
-    letterSpacing: 0.2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
+    letterSpacing: -0.2,
   },
   ghostLabel: {
     color: Colors.textMuted,
