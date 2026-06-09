@@ -2,6 +2,7 @@
   "expo": {
     "name": "V1Portal",
     "slug": "v1portal",
+    "description": "V1Portal helps high school football athletes get recruited. Complete your V1 Score assessment, build your recruiting profile, and get connected with college coaches at the right level.",
     "version": "1.0.0",
     "scheme": "v1portal",
     "orientation": "portrait",
