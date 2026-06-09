@@ -114,6 +114,17 @@ export default function AssessmentScreen() {
               injectedJavaScriptBeforeContentLoaded={injectedJs}
               onLoadEnd={() => setLoading(false)}
               onError={() => { setLoading(false); setError(true); }}
+              onNavigationStateChange={(navState) => {
+                const url = navState.url;
+                // Assessment is done — bring user back into the native app
+                if (
+                  url.includes('/assessment-complete') ||
+                  url.includes('/funnel/recruiting') ||
+                  url.includes('/dashboard')
+                ) {
+                  router.replace('/(tabs)');
+                }
+              }}
               style={styles.webview}
               javaScriptEnabled
               domStorageEnabled

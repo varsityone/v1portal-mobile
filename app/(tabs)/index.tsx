@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
@@ -79,6 +79,16 @@ export default function DashboardScreen() {
   const [profileViews, setProfileViews] = useState(0);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
+
+  // Skip the very first focus (mount already fetches); re-fetch on subsequent focuses
+  // so the score updates immediately when returning from the assessment WebView.
+  const isMounted = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isMounted.current) { isMounted.current = true; return; }
+      refresh();
+    }, [refresh])
+  );
 
   const fetchCounts = useCallback(async () => {
     if (!athlete?.id) return;
