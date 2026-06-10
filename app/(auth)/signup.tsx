@@ -13,8 +13,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { signInWithGoogle } from '../../lib/googleAuth';
 import { AuthInput } from '../../components/AuthInput';
 import { AuthButton } from '../../components/AuthButton';
+import { GoogleButton } from '../../components/GoogleButton';
 import { Colors } from '../../constants/Colors';
 
 export default function SignupScreen() {
@@ -25,8 +27,18 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const lastNameRef = useRef<TextInput>(null);
+
+  const handleGoogleSignUp = async () => {
+    setGoogleLoading(true);
+    setError('');
+    const { error: gErr } = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (gErr) { setError(gErr); return; }
+    router.replace('/(tabs)');
+  };
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
@@ -116,6 +128,16 @@ export default function SignupScreen() {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
+
+        {/* Google */}
+        <GoogleButton onPress={handleGoogleSignUp} loading={googleLoading} />
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or sign up with email</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         {/* Fields */}
         <View style={styles.fields}>
@@ -269,6 +291,22 @@ const styles = StyleSheet.create({
     color: '#f87171',
     marginTop: -12,
     marginBottom: 12,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    fontSize: 11,
+    color: Colors.textDim,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

@@ -82,9 +82,11 @@ export default function DashboardScreen() {
 
   // Skip the very first focus (mount already fetches); re-fetch on subsequent focuses
   // so the score updates immediately when returning from the assessment WebView.
+  const scrollRef = useRef<ScrollView>(null);
   const isMounted = useRef(false);
   useFocusEffect(
     useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
       if (!isMounted.current) { isMounted.current = true; return; }
       refresh();
     }, [refresh])
@@ -190,6 +192,7 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.scroll}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
