@@ -87,7 +87,7 @@ const SOCIAL = [
   { label: 'X',         url: 'https://x.com/thev1portal',               Icon: IconX         },
   { label: 'LinkedIn',  url: 'https://linkedin.com/company/v1portal',    Icon: IconLinkedIn  },
   { label: 'Facebook',  url: 'https://facebook.com/v1portal',            Icon: IconFacebook  },
-  { label: 'Instagram', url: 'https://instagram.com/thev1portal',        Icon: IconInstagram },
+  { label: 'Instagram', url: 'https://instagram.com/v1.portal',          Icon: IconInstagram },
 ];
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
