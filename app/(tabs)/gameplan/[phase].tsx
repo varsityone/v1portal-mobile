@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Svg, Rect, Path, Line, Circle, Polygon } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -314,6 +316,49 @@ function Phase1({ data, phase, onBack }: {
           </Text>
         </Card>
       )}
+
+      {/* Playbooks promo */}
+      <LinearGradient
+        colors={['#0f4c2a', '#0d7a55', '#00c9a7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={s.pbCard}
+      >
+        <Text style={s.pbEyebrow}>Recruiting Guides</Text>
+        <Text style={s.pbTitle}>Get the playbooks coaches don't send you</Text>
+        <Text style={s.pbSub}>Film cuts, outreach scripts, parent timelines — everything the process assumes you already know.</Text>
+        <View style={s.pbRows}>
+          {([
+            {
+              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Rect x={2} y={6} width={14} height={12} rx={3} stroke="#fff" strokeWidth={2}/><Path d="M16 10l5-3v10l-5-3V10z" stroke="#fff" strokeWidth={2} strokeLinejoin="round"/><Polygon points="8,10 11,12 8,14" fill="#fff"/></Svg>,
+              label: 'Film Guide', sub: 'Cut your film the way coaches want to see it', price: '$27',
+            },
+            {
+              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Circle cx={9} cy={7} r={3} stroke="#fff" strokeWidth={2}/><Path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#fff" strokeWidth={2} strokeLinecap="round"/><Circle cx={18} cy={8} r={2} stroke="#fff" strokeWidth={2}/><Path d="M21 20c0-2.2-1.3-4.1-3-5" stroke="#fff" strokeWidth={2} strokeLinecap="round"/></Svg>,
+              label: 'Parent Guide', sub: 'Full recruiting timeline for families', price: '$37',
+            },
+            {
+              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Rect x={5} y={3} width={14} height={18} rx={2} stroke="#fff" strokeWidth={2}/><Path d="M9 3v2h6V3" stroke="#fff" strokeWidth={2}/><Line x1={9} y1={10} x2={15} y2={10} stroke="#fff" strokeWidth={2} strokeLinecap="round"/><Line x1={9} y1={14} x2={13} y2={14} stroke="#fff" strokeWidth={2} strokeLinecap="round"/></Svg>,
+              label: 'Recruiting Playbook', sub: '6-phase system to go from unknown to offer', price: '$47',
+            },
+          ] as const).map(({ icon, label, sub, price }) => (
+            <View key={label} style={s.pbRow}>
+              <View style={s.pbIconBox}>{icon}</View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.pbRowLabel}>{label}</Text>
+                <Text style={s.pbRowSub}>{sub}</Text>
+              </View>
+              <Text style={s.pbRowPrice}>{price}</Text>
+            </View>
+          ))}
+        </View>
+        <Pressable
+          style={({ pressed }) => [s.pbBtn, pressed && { opacity: 0.88 }]}
+          onPress={() => Linking.openURL('https://v1portal.com/playbooks')}
+        >
+          <Text style={s.pbBtnText}>Browse Playbooks →</Text>
+        </Pressable>
+      </LinearGradient>
 
       {score !== null && (
         <Card>
@@ -836,6 +881,20 @@ function createStyles(C: ThemeColors) {
     jucoHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
     jucoTitle: { fontSize: 15, fontWeight: '700', color: C.warning },
     jucoBody: { fontSize: 13, color: C.textMuted, lineHeight: 20 },
+
+    // Playbooks promo
+    pbCard:      { borderRadius: 14, padding: 18, gap: 10 },
+    pbEyebrow:   { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.8 },
+    pbTitle:     { fontSize: 15, fontWeight: '800', color: '#fff', lineHeight: 21 },
+    pbSub:       { fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 17 },
+    pbRows:      { gap: 8 },
+    pbRow:       { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 },
+    pbIconBox:   { width: 36, height: 36, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center' as const, justifyContent: 'center' as const },
+    pbRowLabel:  { fontSize: 12, fontWeight: '700', color: '#fff', marginBottom: 1 },
+    pbRowSub:    { fontSize: 11, color: 'rgba(255,255,255,0.55)' },
+    pbRowPrice:  { fontSize: 12, fontWeight: '800', color: '#fff', flexShrink: 0 },
+    pbBtn:       { backgroundColor: '#fff', borderRadius: 100, paddingVertical: 12, alignItems: 'center' as const },
+    pbBtnText:   { fontSize: 13, fontWeight: '800', color: '#0d7a55' },
 
     // Retake assessment
     retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
