@@ -319,7 +319,7 @@ function Phase1({ data, phase, onBack }: {
 
       {/* Playbooks promo */}
       <LinearGradient
-        colors={['#0f4c2a', '#0d7a55', '#00c9a7']}
+        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.pbCard}
@@ -894,7 +894,7 @@ function createStyles(C: ThemeColors) {
     pbRowSub:    { fontSize: 11, color: 'rgba(255,255,255,0.55)' },
     pbRowPrice:  { fontSize: 12, fontWeight: '800', color: '#fff', flexShrink: 0 },
     pbBtn:       { backgroundColor: '#fff', borderRadius: 100, paddingVertical: 12, alignItems: 'center' as const },
-    pbBtnText:   { fontSize: 13, fontWeight: '800', color: '#0d7a55' },
+    pbBtnText:   { fontSize: 13, fontWeight: '800', color: '#833AB4' },
 
     // Retake assessment
     retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
