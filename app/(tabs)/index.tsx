@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -334,6 +335,40 @@ export default function DashboardScreen() {
           </Pressable>
         </LinearGradient>
       )}
+
+      {/* ── Playbooks promo ── */}
+      <LinearGradient
+        colors={['#0f4c2a', '#0d7a55', '#00c9a7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.playbookCard}
+      >
+        <Text style={styles.playbookEyebrow}>Recruiting Guides</Text>
+        <Text style={styles.playbookTitle}>Get the playbooks coaches don't send you</Text>
+        <Text style={styles.playbookSub}>Film cuts, outreach scripts, parent timelines — everything the process assumes you already know.</Text>
+        <View style={styles.playbookRows}>
+          {[
+            { icon: '🎬', label: 'Film Guide',           sub: 'Cut your film the way coaches want', price: '$27' },
+            { icon: '👨‍👩‍👦', label: 'Parent Guide',         sub: 'Full recruiting timeline for families', price: '$37' },
+            { icon: '📋', label: 'Recruiting Playbook', sub: '6-phase system to earn offers',        price: '$47' },
+          ].map(({ icon, label, sub, price }) => (
+            <View key={label} style={styles.playbookRow}>
+              <Text style={styles.playbookRowIcon}>{icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.playbookRowLabel}>{label}</Text>
+                <Text style={styles.playbookRowSub}>{sub}</Text>
+              </View>
+              <Text style={styles.playbookRowPrice}>{price}</Text>
+            </View>
+          ))}
+        </View>
+        <Pressable
+          style={({ pressed }) => [styles.playbookBtn, pressed && { opacity: 0.88 }]}
+          onPress={() => Linking.openURL('https://v1portal.com/playbooks')}
+        >
+          <Text style={styles.playbookBtnText}>Browse Playbooks →</Text>
+        </Pressable>
+      </LinearGradient>
 
       {/* ── Phase cards ── */}
       <View style={styles.phaseList}>
@@ -722,6 +757,20 @@ function createStyles(C: ThemeColors) {
     upgradeDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
     upgradeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, backgroundColor: '#a3ff47', flexShrink: 0 },
     upgradeBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
+
+    // Playbooks promo
+    playbookCard: { borderRadius: 14, padding: 18, gap: 12 },
+    playbookEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.8 },
+    playbookTitle: { fontSize: 15, fontWeight: '800', color: C.white, lineHeight: 21 },
+    playbookSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 17 },
+    playbookRows: { gap: 8 },
+    playbookRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 },
+    playbookRowIcon: { fontSize: 18, width: 26, textAlign: 'center' },
+    playbookRowLabel: { fontSize: 12, fontWeight: '700', color: C.white, marginBottom: 1 },
+    playbookRowSub: { fontSize: 11, color: 'rgba(255,255,255,0.55)' },
+    playbookRowPrice: { fontSize: 12, fontWeight: '800', color: C.white, flexShrink: 0 },
+    playbookBtn: { backgroundColor: C.white, borderRadius: 100, paddingVertical: 12, alignItems: 'center' },
+    playbookBtnText: { fontSize: 13, fontWeight: '800', color: '#0d7a55' },
 
     // Phase list
     phaseList: { gap: 8 },
