@@ -144,6 +144,13 @@ export default function DashboardScreen() {
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
+  const schoolClassification = (() => {
+    if (!assessment) return null;
+    const r = assessment as any;
+    const responses = typeof r.responses === 'string' ? JSON.parse(r.responses) : (r.responses || {});
+    return responses.school_classification || null;
+  })();
+
   const tierDisplay = (() => {
     if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Elite' : 'Pro';
     if (athlete?.subscription_status === 'trial') return 'Pro Trial';
@@ -216,6 +223,11 @@ export default function DashboardScreen() {
           ]}>
             <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
           </View>
+          {schoolClassification && (
+            <View style={styles.classificationBadge}>
+              <Text style={styles.classificationBadgeText}>{schoolClassification}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -687,6 +699,8 @@ function createStyles(C: ThemeColors) {
     tierLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
     tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, borderWidth: 1 },
     tierBadgeText: { fontSize: 12, fontWeight: '700' },
+    classificationBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    classificationBadgeText: { fontSize: 12, fontWeight: '600', color: C.textDim },
 
     // Score card
     scoreGradient: { borderRadius: 17, padding: 1.5 },

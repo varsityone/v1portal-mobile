@@ -77,7 +77,7 @@ export function useAthleteData(): AthleteData {
     if (ath) {
       const { data: rows } = await supabase
         .from('assessments')
-        .select('id, v1_score, score_breakdown, gate_results, development_potential, completed_at, created_at')
+        .select('id, v1_score, score_breakdown, gate_results, development_potential, completed_at, created_at, responses')
         .eq('athlete_id', ath.id)
         .not('v1_score', 'is', null)
         .order('completed_at', { ascending: false, nullsFirst: false })
