@@ -38,7 +38,8 @@ export interface Assessment {
   v1_score: number;
   score_breakdown: ScoreBreakdown | null;
   gate_results: Record<string, unknown> | null;
-  development_potential: number | null;
+  development_potential: Record<string, unknown> | null;
+  development_pathway: Record<string, unknown> | null;
   completed_at: string | null;
   created_at: string;
 }
@@ -77,7 +78,7 @@ export function useAthleteData(): AthleteData {
     if (ath) {
       const { data: rows } = await supabase
         .from('assessments')
-        .select('id, v1_score, score_breakdown, gate_results, development_potential, completed_at, created_at, responses')
+        .select('id, v1_score, score_breakdown, gate_results, development_potential, development_pathway, completed_at, created_at, responses')
         .eq('athlete_id', ath.id)
         .not('v1_score', 'is', null)
         .order('completed_at', { ascending: false, nullsFirst: false })
@@ -88,12 +89,9 @@ export function useAthleteData(): AthleteData {
 
       if (latest?.v1_score) {
         const score = Math.round(latest.v1_score);
-        const [{ count: total }, { count: below }] = await Promise.all([
-          supabase.from('assessments').select('*', { count: 'exact', head: true }).not('v1_score', 'is', null),
-          supabase.from('assessments').select('*', { count: 'exact', head: true }).not('v1_score', 'is', null).lt('v1_score', score),
-        ]);
-        if (total && total > 0) {
-          setPercentile(100 - Math.round(((below ?? 0) / total) * 100));
+        const { data: pctData } = await supabase.rpc('get_score_percentile', { p_score: score });
+        if (pctData !== null && pctData !== undefined) {
+          setPercentile(pctData as number);
         }
       }
     }
