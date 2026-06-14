@@ -183,7 +183,7 @@ export default function DashboardScreen() {
   });
 
   const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
-  const curPhaseIdx = phaseComplete.findIndex(c => !c);
+  const curPhaseIdx = phaseEffectiveDone.findIndex(c => !c);
   const activePhaseIdx = curPhaseIdx === -1 ? 5 : curPhaseIdx;
   const completedCount = phaseEffectiveDone.filter(Boolean).length;
   const progressPct = (completedCount / 6) * 100;
@@ -223,9 +223,14 @@ export default function DashboardScreen() {
           ]}>
             <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
           </View>
+          {score !== null && (
+            <View style={styles.recruitingLevelBadge}>
+              <Text style={styles.recruitingLevelBadgeText}>{getRecruitingLevelFromScore(score)}</Text>
+            </View>
+          )}
           {schoolClassification && (
             <View style={styles.classificationBadge}>
-              <Text style={styles.classificationBadgeText}>{schoolClassification}</Text>
+              <Text style={styles.classificationBadgeText}>HS: {schoolClassification}</Text>
             </View>
           )}
         </View>
@@ -283,6 +288,92 @@ export default function DashboardScreen() {
           )}
         </View>
       </LinearGradient>
+
+      {/* ── Recruiting Reality Check (free for all users) ── */}
+      {assessment && (() => {
+        const breakdown = assessment.score_breakdown;
+        const strengthMap: Record<string, string> = {
+          athletic: 'Athleticism', physical: 'Athleticism',
+          production: 'Production', academic: 'Academics', intangibles: 'Intangibles',
+        };
+        const topStrengthEntry = breakdown
+          ? Object.entries(breakdown)
+              .filter(([k]) => ['athletic', 'physical', 'production', 'academic', 'intangibles'].includes(k))
+              .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]
+          : null;
+        const topStrengthLabel = topStrengthEntry ? strengthMap[topStrengthEntry[0]] : null;
+        const topStrengthVal   = topStrengthEntry ? Math.round(Number(topStrengthEntry[1])) : null;
+
+        const gateResults  = assessment.gate_results as any;
+        const failedGates  = (gateResults?.failedGates ?? []) as any[];
+        const firstFailed  = failedGates[0];
+        const keyFlagText  = firstFailed?.failures?.[0] ?? null;
+        const keyFlagCat   = firstFailed?.category ?? null;
+
+        const devPotential   = assessment.development_potential as any;
+        const devTrajectory  = devPotential?.trajectory ?? null;
+        const devReco        = devPotential?.recommendation ?? null;
+        const devPathway     = assessment.development_pathway as any;
+        const topPriority    = devPathway?.priorities?.[0] ?? null;
+
+        if (!topStrengthLabel && !keyFlagText && !devTrajectory) return null;
+
+        return (
+          <View style={styles.realityCard}>
+            <Text style={styles.realityEyebrow}>Recruiting Reality Check</Text>
+
+            {topStrengthLabel && (
+              <View style={styles.realityRow}>
+                <View style={[styles.realityIcon, { backgroundColor: 'rgba(131,58,180,0.14)' }]}>
+                  <Text style={[styles.realityIconText, { color: '#a78bfa' }]}>↑</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.realityTag, { color: '#a78bfa' }]}>TOP STRENGTH</Text>
+                  <Text style={styles.realityValue}>
+                    {topStrengthLabel}{topStrengthVal != null ? ` — ${topStrengthVal}%` : ''}
+                  </Text>
+                  <Text style={styles.realityDesc}>Your best recruiting leverage point. Lead with it.</Text>
+                </View>
+              </View>
+            )}
+
+            {keyFlagText && (
+              <View style={[styles.realityRow, styles.realityRowDivider]}>
+                <View style={[styles.realityIcon, { backgroundColor: 'rgba(225,48,108,0.12)' }]}>
+                  <Text style={[styles.realityIconText, { color: '#E1306C' }]}>!</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.realityTag, { color: '#E1306C' }]}>
+                    KEY FLAG{keyFlagCat ? ` — ${keyFlagCat.toUpperCase()}` : ''}
+                  </Text>
+                  <Text style={styles.realityValue}>{keyFlagText}</Text>
+                  <Text style={styles.realityDesc}>The biggest gap between you and coaches' requirements. Address it first.</Text>
+                </View>
+              </View>
+            )}
+
+            {devTrajectory && (
+              <View style={[styles.realityRow, styles.realityRowDivider]}>
+                <View style={[styles.realityIcon, { backgroundColor: 'rgba(252,175,69,0.12)' }]}>
+                  <Text style={[styles.realityIconText, { color: '#FCAF45' }]}>→</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.realityTag, { color: '#d48a00' }]}>DEVELOPMENT PATH</Text>
+                  <Text style={styles.realityValue}>{devTrajectory}</Text>
+                  {!!devReco && <Text style={styles.realityDesc}>{devReco}</Text>}
+                  {topPriority && (
+                    <View style={styles.priorityBox}>
+                      <Text style={styles.priorityEyebrow}>TOP PRIORITY</Text>
+                      <Text style={styles.priorityTitle}>{topPriority.area}</Text>
+                      <Text style={styles.priorityDesc}>{topPriority.target}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+          </View>
+        );
+      })()}
 
       {/* ── Overall Progress ── */}
       <View style={styles.progressCard}>
@@ -699,8 +790,10 @@ function createStyles(C: ThemeColors) {
     tierLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
     tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, borderWidth: 1 },
     tierBadgeText: { fontSize: 12, fontWeight: '700' },
+    recruitingLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.primary + '1A', borderWidth: 1, borderColor: C.primary + '33' },
+    recruitingLevelBadgeText: { fontSize: 11, fontWeight: '700', color: C.primary },
     classificationBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-    classificationBadgeText: { fontSize: 12, fontWeight: '600', color: C.textDim },
+    classificationBadgeText: { fontSize: 11, fontWeight: '600', color: C.textDim },
 
     // Score card
     scoreGradient: { borderRadius: 17, padding: 1.5 },
@@ -809,6 +902,21 @@ function createStyles(C: ThemeColors) {
     featureLabel: { fontSize: 13, color: C.text, fontWeight: '500' },
     seeUpgradeBtn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
     seeUpgradeBtnText: { fontSize: 14, fontWeight: '700' },
+
+    // Recruiting Reality Check
+    realityCard: { backgroundColor: C.surface, borderRadius: 16, padding: 20, gap: 0 },
+    realityEyebrow: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 16 },
+    realityRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', paddingBottom: 14 },
+    realityRowDivider: { paddingTop: 14, borderTopWidth: 1, borderTopColor: C.border },
+    realityIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    realityIconText: { fontSize: 16, fontWeight: '800' },
+    realityTag: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 3 },
+    realityValue: { fontSize: 14, fontWeight: '800', color: C.text, lineHeight: 19, marginBottom: 4 },
+    realityDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
+    priorityBox: { marginTop: 10, backgroundColor: C.surfaceAlt, borderRadius: 8, padding: 10, gap: 3 },
+    priorityEyebrow: { fontSize: 9, fontWeight: '700', color: C.textDim, letterSpacing: 0.8, textTransform: 'uppercase' },
+    priorityTitle: { fontSize: 13, fontWeight: '700', color: C.text },
+    priorityDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
 
     // Program matches preview
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
