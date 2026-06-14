@@ -194,9 +194,6 @@ export default function ProfileScreen() {
   const [tab,        setTab]        = useState<Tab>('Overview');
   const [editing,    setEditing]    = useState(false);
   const [assessRes,  setAssessRes]  = useState<Record<string, any>>({});
-  const [gateResults,   setGateResults]   = useState<Record<string, any> | null>(null);
-  const [devPotential,  setDevPotential]  = useState<Record<string, any> | null>(null);
-  const [devPathway,    setDevPathway]    = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -228,7 +225,7 @@ export default function ProfileScreen() {
       const [{ data: assessRow }, { data: matchRows }] = await Promise.all([
         supabase
           .from('assessments')
-          .select('v1_score, score_breakdown, responses, gate_results, development_potential, development_pathway')
+          .select('v1_score, score_breakdown, responses')
           .eq('athlete_id', athleteRow.id)
           .eq('status', 'completed')
           .order('completed_at', { ascending: false })
@@ -267,10 +264,6 @@ export default function ProfileScreen() {
         setSeasonStats(ss);
         setAssessRes(r);
 
-        const parseJson = (v: any) => typeof v === 'string' ? (() => { try { return JSON.parse(v); } catch { return null; } })() : (v ?? null);
-        setGateResults(parseJson((assessRow as any).gate_results));
-        setDevPotential(parseJson((assessRow as any).development_potential));
-        setDevPathway(parseJson((assessRow as any).development_pathway));
       }
 
       if (matchRows) setMatches(matchRows as any);
@@ -383,77 +376,6 @@ export default function ProfileScreen() {
             <Text style={s.scoreDesc}>Realistic assessment of where you fit in college football recruiting.</Text>
           </LinearGradient>
         )}
-
-        {/* ── Recruiting Reality Check ── */}
-        {(() => {
-          const strengthMap: Record<string, string> = {
-            athletic: 'Athleticism', physical: 'Athleticism',
-            production: 'Production', academic: 'Academics', intangibles: 'Intangibles',
-          };
-          const topStrengthEntry = breakdown
-            ? Object.entries(breakdown)
-                .filter(([k]) => ['athletic', 'physical', 'production', 'academic', 'intangibles'].includes(k))
-                .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]
-            : null;
-          const topStrengthLabel = topStrengthEntry ? strengthMap[topStrengthEntry[0]] : null;
-          const topStrengthVal   = topStrengthEntry ? Math.round(Number(topStrengthEntry[1])) : null;
-          const failedGates  = (gateResults?.failedGates ?? []) as any[];
-          const firstFailed  = failedGates[0];
-          const keyFlagText  = firstFailed?.failures?.[0] ?? null;
-          const keyFlagCat   = firstFailed?.category ?? null;
-          const devTrajectory = devPotential?.trajectory ?? null;
-          const devReco       = devPotential?.recommendation ?? null;
-          const topPriority   = devPathway?.priorities?.[0] ?? null;
-          if (!topStrengthLabel && !keyFlagText && !devTrajectory) return null;
-          return (
-            <View style={s.realityCard}>
-              <Text style={s.realityEyebrow}>Recruiting Reality Check</Text>
-              {topStrengthLabel && (
-                <View style={s.realityRow}>
-                  <View style={[s.realityIcon, { backgroundColor: 'rgba(131,58,180,0.14)' }]}>
-                    <Text style={[s.realityIconText, { color: '#a78bfa' }]}>↑</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.realityTag, { color: '#a78bfa' }]}>TOP STRENGTH</Text>
-                    <Text style={s.realityValue}>{topStrengthLabel}{topStrengthVal != null ? ` — ${topStrengthVal}%` : ''}</Text>
-                    <Text style={s.realityDesc}>Your best recruiting leverage point. Lead with it.</Text>
-                  </View>
-                </View>
-              )}
-              {keyFlagText && (
-                <View style={[s.realityRow, s.realityRowDivider]}>
-                  <View style={[s.realityIcon, { backgroundColor: 'rgba(225,48,108,0.12)' }]}>
-                    <Text style={[s.realityIconText, { color: '#E1306C' }]}>!</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.realityTag, { color: '#E1306C' }]}>KEY FLAG{keyFlagCat ? ` — ${keyFlagCat.toUpperCase()}` : ''}</Text>
-                    <Text style={s.realityValue}>{keyFlagText}</Text>
-                    <Text style={s.realityDesc}>The biggest gap between you and coaches' requirements. Address it first.</Text>
-                  </View>
-                </View>
-              )}
-              {devTrajectory && (
-                <View style={[s.realityRow, s.realityRowDivider]}>
-                  <View style={[s.realityIcon, { backgroundColor: 'rgba(252,175,69,0.12)' }]}>
-                    <Text style={[s.realityIconText, { color: '#FCAF45' }]}>→</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.realityTag, { color: '#d48a00' }]}>DEVELOPMENT PATH</Text>
-                    <Text style={s.realityValue}>{devTrajectory}</Text>
-                    {!!devReco && <Text style={s.realityDesc}>{devReco}</Text>}
-                    {topPriority && (
-                      <View style={s.priorityBox}>
-                        <Text style={s.priorityEyebrow}>TOP PRIORITY</Text>
-                        <Text style={s.priorityTitle}>{topPriority.area}</Text>
-                        <Text style={s.priorityDesc}>{topPriority.target}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
-            </View>
-          );
-        })()}
 
         {/* ── Tab Bar ── */}
         <View style={s.tabBar}>
@@ -736,18 +658,5 @@ function createStyles(C: ThemeColors) {
     matchDiv: { fontSize: 12, color: C.textMuted, marginTop: 2 },
     matchScore: { fontSize: 22, fontWeight: '900', color: '#10b981' },
 
-    realityCard: { marginHorizontal: 20, marginTop: 16, backgroundColor: C.surface, borderRadius: 16, padding: 20, gap: 0 },
-    realityEyebrow: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 16 },
-    realityRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', paddingBottom: 14 },
-    realityRowDivider: { paddingTop: 14, borderTopWidth: 1, borderTopColor: C.border },
-    realityIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    realityIconText: { fontSize: 16, fontWeight: '800' },
-    realityTag: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 3 },
-    realityValue: { fontSize: 14, fontWeight: '800', color: C.text, lineHeight: 19, marginBottom: 4 },
-    realityDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
-    priorityBox: { marginTop: 10, backgroundColor: C.surfaceAlt, borderRadius: 8, padding: 10, gap: 3 },
-    priorityEyebrow: { fontSize: 9, fontWeight: '700', color: C.textDim, letterSpacing: 0.8, textTransform: 'uppercase' },
-    priorityTitle: { fontSize: 13, fontWeight: '700', color: C.text },
-    priorityDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
   });
 }

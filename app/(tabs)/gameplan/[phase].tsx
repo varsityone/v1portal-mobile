@@ -288,6 +288,80 @@ function Phase1({ data, phase, onBack }: {
         </Card>
       )}
 
+      {score !== null && (() => {
+        const strengthMap: Record<string, string> = {
+          athletic: 'Athleticism', physical: 'Athleticism',
+          production: 'Production', academic: 'Academics', intangibles: 'Intangibles',
+        };
+        const bd = assessment?.score_breakdown as Record<string, any> | null;
+        const topEntry = bd
+          ? Object.entries(bd)
+              .filter(([k]) => ['athletic', 'physical', 'production', 'academic', 'intangibles'].includes(k))
+              .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]
+          : null;
+        const topLabel = topEntry ? strengthMap[topEntry[0]] : null;
+        const topVal   = topEntry ? Math.round(Number(topEntry[1])) : null;
+        const gateRes  = assessment?.gate_results as any;
+        const failed   = (gateRes?.failedGates ?? []) as any[];
+        const first    = failed[0];
+        const flagText = first?.failures?.[0] ?? null;
+        const flagCat  = first?.category ?? null;
+        const devPot   = assessment?.development_potential as any;
+        const devTraj  = devPot?.trajectory ?? null;
+        const devReco  = devPot?.recommendation ?? null;
+        const devPath  = assessment?.development_pathway as any;
+        const topPri   = devPath?.priorities?.[0] ?? null;
+        if (!topLabel && !flagText && !devTraj) return null;
+        return (
+          <Card>
+            <SLabel>RECRUITING REALITY CHECK</SLabel>
+            {topLabel && (
+              <View style={s.rcRow}>
+                <View style={[s.rcIcon, { backgroundColor: 'rgba(131,58,180,0.14)' }]}>
+                  <Text style={[s.rcIconText, { color: '#a78bfa' }]}>↑</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rcTag, { color: '#a78bfa' }]}>TOP STRENGTH</Text>
+                  <Text style={s.rcValue}>{topLabel}{topVal != null ? ` — ${topVal}%` : ''}</Text>
+                  <Text style={s.rcDesc}>Your best recruiting leverage point. Lead with it.</Text>
+                </View>
+              </View>
+            )}
+            {flagText && (
+              <View style={[s.rcRow, s.rcDivider]}>
+                <View style={[s.rcIcon, { backgroundColor: 'rgba(225,48,108,0.12)' }]}>
+                  <Text style={[s.rcIconText, { color: '#E1306C' }]}>!</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rcTag, { color: '#E1306C' }]}>KEY FLAG{flagCat ? ` — ${flagCat.toUpperCase()}` : ''}</Text>
+                  <Text style={s.rcValue}>{flagText}</Text>
+                  <Text style={s.rcDesc}>The biggest gap between you and coaches' requirements.</Text>
+                </View>
+              </View>
+            )}
+            {devTraj && (
+              <View style={[s.rcRow, s.rcDivider]}>
+                <View style={[s.rcIcon, { backgroundColor: 'rgba(252,175,69,0.12)' }]}>
+                  <Text style={[s.rcIconText, { color: '#FCAF45' }]}>→</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rcTag, { color: '#d48a00' }]}>DEVELOPMENT PATH</Text>
+                  <Text style={s.rcValue}>{devTraj}</Text>
+                  {!!devReco && <Text style={s.rcDesc}>{devReco}</Text>}
+                  {topPri && (
+                    <View style={s.rcPriorityBox}>
+                      <Text style={s.rcPriorityEyebrow}>TOP PRIORITY</Text>
+                      <Text style={s.rcPriorityTitle}>{topPri.area}</Text>
+                      <Text style={s.rcDesc}>{topPri.target}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+          </Card>
+        );
+      })()}
+
       {score !== null && tier.nextScore !== null && (
         <Card>
           <SLabel>RECRUITING GAP</SLabel>
@@ -875,6 +949,18 @@ function createStyles(C: ThemeColors) {
     gapDivider: { width: 1, height: 52, backgroundColor: C.border },
     gapNext: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 6 },
     gapHint: { fontSize: 13, color: C.textDim, lineHeight: 19 },
+
+    // Recruiting Reality Check
+    rcRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', paddingBottom: 14 },
+    rcDivider: { paddingTop: 14, borderTopWidth: 1, borderTopColor: C.border },
+    rcIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    rcIconText: { fontSize: 16, fontWeight: '800' },
+    rcTag: { fontSize: 10, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 3 },
+    rcValue: { fontSize: 14, fontWeight: '800', color: C.text, lineHeight: 19, marginBottom: 4 },
+    rcDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
+    rcPriorityBox: { marginTop: 10, backgroundColor: C.surfaceAlt, borderRadius: 8, padding: 10, gap: 3 },
+    rcPriorityEyebrow: { fontSize: 9, fontWeight: '700', color: C.textDim, letterSpacing: 0.8, textTransform: 'uppercase' },
+    rcPriorityTitle: { fontSize: 13, fontWeight: '700', color: C.text, marginBottom: 2 },
 
     // JUCO
     jucoCard: { borderColor: `${C.warning}44`, backgroundColor: `${C.warning}0A` },
