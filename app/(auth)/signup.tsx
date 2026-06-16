@@ -118,7 +118,7 @@ export default function SignupScreen() {
 
         {/* Heading */}
         <View style={styles.heading}>
-          <Text style={styles.title}>Get Recruited.</Text>
+          <Text style={styles.title}>Know Your Real Targets.</Text>
           <Text style={styles.subtitle}>Create your free V1Portal account</Text>
         </View>
 
