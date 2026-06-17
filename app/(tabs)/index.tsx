@@ -173,7 +173,7 @@ export default function DashboardScreen() {
       athlete?.position && athlete?.graduation_year && athlete?.height &&
       athlete?.weight && athlete?.high_school && athlete?.city &&
       athlete?.gpa && athlete?.ncaa_id &&
-      (athlete?.sat_score || athlete?.act_score) &&
+      (athlete?.sat_score || athlete?.act_score || athlete?.test_scores_not_taken) &&
       athlete?.hudl_link &&
       athlete?.guardian_name && athlete?.guardian_relationship &&
       athlete?.guardian_phone && athlete?.guardian_email
@@ -388,7 +388,7 @@ export default function DashboardScreen() {
                 athlete?.position, athlete?.graduation_year, athlete?.height,
                 athlete?.weight, athlete?.high_school, athlete?.city,
                 athlete?.gpa, athlete?.ncaa_id,
-                (athlete?.sat_score || athlete?.act_score),
+                (athlete?.sat_score || athlete?.act_score || athlete?.test_scores_not_taken),
                 athlete?.hudl_link,
                 athlete?.guardian_name, athlete?.guardian_relationship,
                 athlete?.guardian_phone, athlete?.guardian_email,

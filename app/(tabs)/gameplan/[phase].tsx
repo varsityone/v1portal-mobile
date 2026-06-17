@@ -484,7 +484,7 @@ function Phase2({ athlete, phase, onBack }: {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const completed = PROFILE_FIELDS.filter(f => {
-    if (f.key === 'test_score') return !!(athlete?.['sat_score'] || athlete?.['act_score']);
+    if (f.key === 'test_score') return !!(athlete?.['sat_score'] || athlete?.['act_score'] || athlete?.['test_scores_not_taken']);
     const v = athlete?.[f.key];
     return v !== null && v !== undefined && v !== '';
   }).length;
@@ -509,7 +509,7 @@ function Phase2({ athlete, phase, onBack }: {
         <SLabel>PROFILE FIELDS</SLabel>
         {PROFILE_FIELDS.map((field, i) => {
           const val = field.key === 'test_score'
-            ? (athlete?.['sat_score'] ? `SAT ${athlete['sat_score']}` : athlete?.['act_score'] ? `ACT ${athlete['act_score']}` : null)
+            ? (athlete?.['sat_score'] ? `SAT ${athlete['sat_score']}` : athlete?.['act_score'] ? `ACT ${athlete['act_score']}` : athlete?.['test_scores_not_taken'] ? 'Not taken yet ✓' : null)
             : athlete?.[field.key];
           const done = val !== null && val !== undefined && val !== '';
           return (
