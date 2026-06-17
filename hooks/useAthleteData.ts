@@ -21,7 +21,18 @@ export interface Athlete {
   high_school: string | null;
   city: string | null;
   state: string | null;
+  hudl_link: string | null;
   hudl_video_link: string | null;
+  phone: string | null;
+  bio: string | null;
+  ncaa_id: string | null;
+  sat_score: number | null;
+  act_score: number | null;
+  guardian_name: string | null;
+  guardian_relationship: string | null;
+  guardian_phone: string | null;
+  guardian_email: string | null;
+  target_list_saved_at: string | null;
 }
 
 export interface ScoreBreakdown {
@@ -69,7 +80,7 @@ export function useAthleteData(): AthleteData {
 
     const { data: ath } = await supabase
       .from('athletes')
-      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_video_link')
+      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at')
       .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
       .maybeSingle();
 

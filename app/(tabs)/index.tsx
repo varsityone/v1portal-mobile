@@ -77,6 +77,7 @@ export default function DashboardScreen() {
 
   const [matchCount, setMatchCount] = useState(0);
   const [outreachCount, setOutreachCount] = useState(0);
+  const [trackerCount, setTrackerCount] = useState(0);
   const [profileViews, setProfileViews] = useState(0);
   const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
@@ -99,15 +100,18 @@ export default function DashboardScreen() {
       { data: matchData },
       { data: outData },
       { count: pv },
+      { count: tCount },
     ] = await Promise.all([
       supabase.from('matches').select('id').eq('athlete_id', athlete.id).limit(5),
       supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
       supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
+      supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
     setMatchCount(matchData?.length ?? 0);
     const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
     setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
     setProfileViews(pv ?? 0);
+    setTrackerCount(tCount ?? 0);
   }, [athlete?.id]);
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
@@ -164,12 +168,19 @@ export default function DashboardScreen() {
 
   const phaseComplete = [
     !!assessment?.v1_score,
-    !!(athlete?.full_name && athlete?.position && athlete?.high_school &&
-       athlete?.graduation_year && athlete?.height && athlete?.weight &&
-       athlete?.gpa && athlete?.hudl_video_link),
-    matchCount > 0,
+    !!(
+      athlete?.full_name && athlete?.phone && athlete?.bio &&
+      athlete?.position && athlete?.graduation_year && athlete?.height &&
+      athlete?.weight && athlete?.high_school && athlete?.city &&
+      athlete?.gpa && athlete?.ncaa_id &&
+      (athlete?.sat_score || athlete?.act_score) &&
+      athlete?.hudl_link &&
+      athlete?.guardian_name && athlete?.guardian_relationship &&
+      athlete?.guardian_phone && athlete?.guardian_email
+    ),
+    !!athlete?.target_list_saved_at,
     outreachCount > 0,
-    outreachCount >= 3,
+    trackerCount >= 1,
     outreachCount >= 5,
   ];
 
@@ -373,15 +384,20 @@ export default function DashboardScreen() {
             if (i === 0) hint = 'Takes ~12 minutes';
             else if (i === 1) {
               const fields = [
-                athlete?.full_name, athlete?.position, athlete?.high_school,
-                athlete?.graduation_year, athlete?.height, athlete?.weight,
-                athlete?.gpa, athlete?.hudl_video_link,
+                athlete?.full_name, athlete?.phone, athlete?.bio,
+                athlete?.position, athlete?.graduation_year, athlete?.height,
+                athlete?.weight, athlete?.high_school, athlete?.city,
+                athlete?.gpa, athlete?.ncaa_id,
+                (athlete?.sat_score || athlete?.act_score),
+                athlete?.hudl_link,
+                athlete?.guardian_name, athlete?.guardian_relationship,
+                athlete?.guardian_phone, athlete?.guardian_email,
               ];
               const left = fields.filter(f => !f).length;
-              hint = left > 0 ? `${left} field${left !== 1 ? 's' : ''} left` : 'Ready to complete';
-            } else if (i === 2) hint = 'Programs matched to your score';
+              hint = left > 0 ? `${left} of 17 fields left` : 'Ready to complete';
+            } else if (i === 2) hint = athlete?.target_list_saved_at ? 'Target list locked in' : 'Review and lock in your list';
             else if (i === 3) hint = 'Email templates ready';
-            else if (i === 4) hint = 'Track every coach';
+            else if (i === 4) hint = trackerCount > 0 ? `${trackerCount} coach${trackerCount !== 1 ? 'es' : ''} tracked` : 'Track your first coach';
             else hint = 'Final phase';
           } else if (locked && i > 1) {
             hint = i <= 3 ? 'Pro required' : 'Elite required';

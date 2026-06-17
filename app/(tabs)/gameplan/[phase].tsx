@@ -458,12 +458,23 @@ function Phase1({ data, phase, onBack }: {
 // ─── Phase 2: Build Your Profile ──────────────────────────────────────────────
 
 const PROFILE_FIELDS: { key: string; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; }[] = [
-  { key: 'position',           label: 'Position',        icon: 'football-outline' },
-  { key: 'graduation_year',    label: 'Graduation Year', icon: 'calendar-outline' },
-  { key: 'height',             label: 'Height',          icon: 'resize-outline' },
-  { key: 'weight',             label: 'Weight',          icon: 'barbell-outline' },
-  { key: 'gpa',                label: 'GPA',             icon: 'school-outline' },
-  { key: 'highlight_film_url', label: 'Highlight Film',  icon: 'videocam-outline' },
+  { key: 'full_name',            label: 'Full Name',           icon: 'person-outline' },
+  { key: 'phone',                label: 'Phone Number',        icon: 'call-outline' },
+  { key: 'bio',                  label: 'Bio',                 icon: 'document-text-outline' },
+  { key: 'position',             label: 'Position',            icon: 'football-outline' },
+  { key: 'graduation_year',      label: 'Graduation Year',     icon: 'calendar-outline' },
+  { key: 'height',               label: 'Height',              icon: 'resize-outline' },
+  { key: 'weight',               label: 'Weight',              icon: 'barbell-outline' },
+  { key: 'high_school',          label: 'High School',         icon: 'school-outline' },
+  { key: 'city',                 label: 'City',                icon: 'location-outline' },
+  { key: 'gpa',                  label: 'GPA',                 icon: 'ribbon-outline' },
+  { key: 'ncaa_id',              label: 'NCAA ID (or "Not Yet")', icon: 'card-outline' },
+  { key: 'test_score',           label: 'SAT or ACT Score',   icon: 'calculator-outline' },
+  { key: 'hudl_link',            label: 'Hudl Film Link',      icon: 'videocam-outline' },
+  { key: 'guardian_name',        label: 'Guardian Name',       icon: 'people-outline' },
+  { key: 'guardian_relationship',label: 'Guardian Relationship', icon: 'heart-outline' },
+  { key: 'guardian_phone',       label: 'Guardian Phone',      icon: 'call-outline' },
+  { key: 'guardian_email',       label: 'Guardian Email',      icon: 'mail-outline' },
 ];
 
 function Phase2({ athlete, phase, onBack }: {
@@ -473,6 +484,7 @@ function Phase2({ athlete, phase, onBack }: {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const completed = PROFILE_FIELDS.filter(f => {
+    if (f.key === 'test_score') return !!(athlete?.['sat_score'] || athlete?.['act_score']);
     const v = athlete?.[f.key];
     return v !== null && v !== undefined && v !== '';
   }).length;
@@ -496,7 +508,9 @@ function Phase2({ athlete, phase, onBack }: {
       <Card>
         <SLabel>PROFILE FIELDS</SLabel>
         {PROFILE_FIELDS.map((field, i) => {
-          const val = athlete?.[field.key];
+          const val = field.key === 'test_score'
+            ? (athlete?.['sat_score'] ? `SAT ${athlete['sat_score']}` : athlete?.['act_score'] ? `ACT ${athlete['act_score']}` : null)
+            : athlete?.[field.key];
           const done = val !== null && val !== undefined && val !== '';
           return (
             <Pressable
@@ -542,13 +556,16 @@ const DIV_COLORS: Record<string, string> = {
   D3: '#888888', NAIA: '#F59E0B', JUCO: '#EF4444',
 };
 
-function Phase3({ athleteId, isElite, phase, onBack }: {
-  athleteId: string | undefined; isElite: boolean; phase: Phase; onBack: () => void;
+function Phase3({ athleteId, isElite, targetListSaved: initialSaved, phase, onBack }: {
+  athleteId: string | undefined; isElite: boolean; targetListSaved: boolean; phase: Phase; onBack: () => void;
 }) {
+  const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const [programs, setPrograms] = useState<ProgramMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listSaved, setListSaved] = useState(initialSaved);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!athleteId) { setLoading(false); return; }
@@ -563,6 +580,14 @@ function Phase3({ athleteId, isElite, phase, onBack }: {
       setLoading(false);
     });
   }, [athleteId, isElite]);
+
+  const handleConfirmList = async () => {
+    if (!athleteId || listSaved) return;
+    setSaving(true);
+    await supabase.from('athletes').update({ target_list_saved_at: new Date().toISOString() }).eq('id', athleteId);
+    setListSaved(true);
+    setSaving(false);
+  };
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
@@ -605,6 +630,31 @@ function Phase3({ athleteId, isElite, phase, onBack }: {
               </View>
             );
           })}
+        </View>
+      )}
+
+      {listSaved ? (
+        <View style={[s.successCard, { alignItems: 'flex-start', gap: 10 }]}>
+          <Ionicons name="checkmark-circle" size={24} color={C.success} />
+          <Text style={s.successTitle}>Target List Locked In</Text>
+          <Text style={s.successBody}>Phase 3 complete. Head to Phase 4 to start contacting coaches.</Text>
+          <Pressable style={s.primaryBtn} onPress={() => router.push('/(tabs)/gameplan/4' as any)}>
+            <Text style={s.primaryBtnText}>Continue to Phase 4 →</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, padding: 20, gap: 12 }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>Lock In Your Target List</Text>
+          <Text style={{ fontSize: 13, color: C.textMuted, lineHeight: 20 }}>
+            Review your matched programs above, then confirm your list. This completes Phase 3 and unlocks Phase 4: Intelligent Outreach.
+          </Text>
+          <Pressable
+            style={[s.primaryBtn, { opacity: saving || programs.length === 0 ? 0.6 : 1 }]}
+            onPress={handleConfirmList}
+            disabled={saving || programs.length === 0}
+          >
+            <Text style={s.primaryBtnText}>{saving ? 'Saving…' : 'Lock In My Target List →'}</Text>
+          </Pressable>
         </View>
       )}
     </ScrollView>
@@ -892,7 +942,7 @@ export default function PhaseDetailScreen() {
   switch (phaseNumber) {
     case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
     case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} phase={phase} onBack={onBack} />;
-    case 3: return <Phase3 athleteId={athleteData.athlete?.id} isElite={plan === 'elite'} phase={phase} onBack={onBack} />;
+    case 3: return <Phase3 athleteId={athleteData.athlete?.id} isElite={plan === 'elite'} targetListSaved={!!athleteData.athlete?.target_list_saved_at} phase={phase} onBack={onBack} />;
     case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 5: return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 6: return <Phase6 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
