@@ -160,15 +160,53 @@ function EditModal({ data, onSave, onClose }: {
               <Text style={em.sectionTitle}>{section.title}</Text>
               {section.rows.map(row => (
                 <View key={row.key} style={em.fieldWrap}>
-                  <Text style={em.label}>{row.label}</Text>
-                  <TextInput
-                    style={[em.input, (row as any).multi && { height: 72, textAlignVertical: 'top', paddingTop: 10 }]}
-                    value={fields[row.key]}
-                    onChangeText={set(row.key)}
-                    placeholder={row.label}
-                    placeholderTextColor={C.textDim}
-                    multiline={!!(row as any).multi}
-                  />
+                  {row.key === 'bio' ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <Text style={em.label}>{row.label}</Text>
+                        <Pressable
+                          onPress={() => {
+                            const pos = fields.position || '[Position]';
+                            const yr = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
+                            const school = fields.high_school || '[High School]';
+                            const loc = fields.city && fields.state
+                              ? `${fields.city}, ${fields.state}`
+                              : fields.city || fields.state || '[City, State]';
+                            const ht = fields.height || '[Height]';
+                            const wt = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
+                            const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
+                            set('bio')(`${pos} | ${yr} | ${school} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity every day`);
+                          }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${C.primary}18`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: `${C.primary}35` }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: C.primary }}>✦ Starter Bio</Text>
+                        </Pressable>
+                      </View>
+                      <TextInput
+                        style={[em.input, { height: 90, textAlignVertical: 'top', paddingTop: 10 }]}
+                        value={fields.bio}
+                        onChangeText={set('bio')}
+                        placeholder={"QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity"}
+                        placeholderTextColor={C.textDim}
+                        multiline
+                      />
+                      <Text style={{ fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 }}>
+                        Keep it short and keyword-rich — works for Twitter/X and Instagram too.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={em.label}>{row.label}</Text>
+                      <TextInput
+                        style={[em.input, (row as any).multi && { height: 72, textAlignVertical: 'top', paddingTop: 10 }]}
+                        value={fields[row.key]}
+                        onChangeText={set(row.key)}
+                        placeholder={row.label}
+                        placeholderTextColor={C.textDim}
+                        multiline={!!(row as any).multi}
+                      />
+                    </>
+                  )}
                 </View>
               ))}
             </View>
