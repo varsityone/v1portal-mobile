@@ -603,10 +603,10 @@ export default function OnboardingScreen() {
 
             <Pressable onPress={goNext}>
               <LinearGradient
-                colors={['#833AB4', '#E1306C']}
+                colors={['red', '#ffd000']}
                 style={s.nextBtn}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                end={{ x: 1, y: 1 }}
               >
                 <Text style={s.nextTxt}>Next</Text>
                 <Ionicons name="arrow-forward" size={15} color="#fff" />
