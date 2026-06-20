@@ -17,6 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.varsityone.v1portal",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "V1Portal sends recruiting task reminders and coach reply alerts.",
         "NSCameraUsageDescription": "Used to upload your highlight film thumbnail.",
@@ -48,6 +49,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-secure-store",
         {
