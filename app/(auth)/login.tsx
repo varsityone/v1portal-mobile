@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -12,8 +13,10 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../../lib/supabase';
 import { signInWithGoogle } from '../../lib/googleAuth';
+import { signInWithApple } from '../../lib/appleAuth';
 import { AuthInput } from '../../components/AuthInput';
 import { AuthButton } from '../../components/AuthButton';
 import { GoogleButton } from '../../components/GoogleButton';
@@ -25,6 +28,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState('');
   const passwordRef = useRef<TextInput>(null);
 
@@ -35,6 +39,14 @@ export default function LoginScreen() {
     setGoogleLoading(false);
     if (gErr) { setError(gErr); return; }
     router.replace('/(tabs)');
+  };
+
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    setError('');
+    const { error: aErr } = await signInWithApple();
+    setAppleLoading(false);
+    if (aErr) setError(aErr);
   };
 
   const handleLogin = async () => {
@@ -87,6 +99,23 @@ export default function LoginScreen() {
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
+        )}
+
+        {/* Apple (iOS only) */}
+        {Platform.OS === 'ios' && (
+          appleLoading ? (
+            <View style={styles.appleLoadingWrap}>
+              <ActivityIndicator color={Colors.text} />
+            </View>
+          ) : (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={10}
+              style={styles.appleBtn}
+              onPress={handleAppleSignIn}
+            />
+          )
         )}
 
         {/* Google */}
@@ -211,6 +240,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.primary,
     fontWeight: '500',
+  },
+  appleBtn: {
+    width: '100%',
+    height: 50,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  appleLoadingWrap: {
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    marginTop: 4,
   },
   divider: {
     flexDirection: 'row',
