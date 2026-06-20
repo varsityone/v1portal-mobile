@@ -57,12 +57,12 @@ const TIERS: Tier[] = [
       'Outreach pipeline',
       'Profile completion tools',
     ],
-    checkoutUrl: 'https://v1portal.com/api/checkout?plan=pro',
+    checkoutUrl: 'https://v1portal.com/pricing',
   },
   {
     key: 'elite',
     name: 'Elite',
-    price: '$197',
+    price: '$297',
     period: '/month',
     badge: 'Most Popular',
     accentColor: GOLD,
@@ -74,7 +74,7 @@ const TIERS: Tier[] = [
       'Task manager & recruiting tracker',
       'Priority support',
     ],
-    checkoutUrl: 'https://v1portal.com/api/checkout?plan=elite',
+    checkoutUrl: 'https://v1portal.com/pricing',
   },
 ];
 
@@ -157,12 +157,6 @@ function TierCard({
         <Text style={[card.name, isElite && { color: GOLD }]}>{tier.name}</Text>
       </View>
 
-      {/* Price */}
-      <View style={card.priceRow}>
-        <Text style={[card.price, isElite && { color: GOLD }]}>{tier.price}</Text>
-        <Text style={card.period}>{tier.period}</Text>
-      </View>
-
       {/* Features */}
       <View style={card.features}>
         {tier.features.map(f => (
@@ -188,15 +182,8 @@ function TierCard({
           <Text style={card.ctaDisabledText}>Free</Text>
         </View>
       ) : (
-        <View
-          style={[
-            card.cta,
-            { backgroundColor: tier.accentColor },
-          ]}
-        >
-          <Text style={card.ctaText}>
-            {isElite ? 'Go Elite' : 'Go Pro'}
-          </Text>
+        <View style={[card.cta, { backgroundColor: tier.accentColor }]}>
+          <Text style={card.ctaText}>Subscribe at v1portal.com</Text>
           <Ionicons name="arrow-forward" size={15} color={Colors.white} />
         </View>
       )}
@@ -431,7 +418,7 @@ export default function UpgradeScreen() {
         {/* Trust signals */}
         <View style={styles.trustRow}>
           {[
-            { icon: 'lock-closed-outline' as const, label: 'Secure checkout' },
+            { icon: 'lock-closed-outline' as const, label: 'Secure payment' },
             { icon: 'refresh-outline' as const, label: 'Cancel anytime' },
             { icon: 'shield-checkmark-outline' as const, label: '30-day guarantee' },
           ].map(item => (
@@ -442,16 +429,16 @@ export default function UpgradeScreen() {
           ))}
         </View>
 
-        {/* Restore purchases */}
+        {/* Manage subscription */}
         <Pressable
           style={({ pressed }) => [styles.restoreBtn, pressed && { opacity: 0.6 }]}
-          onPress={handleRestore}
+          onPress={() => WebBrowser.openBrowserAsync('https://v1portal.com/dashboard')}
         >
-          <Text style={styles.restoreText}>Restore Purchases</Text>
+          <Text style={styles.restoreText}>Manage Subscription</Text>
         </Pressable>
 
         <Text style={styles.legalText}>
-          Billed monthly. Prices in USD. By subscribing you agree to our Terms of Service and Privacy Policy.
+          Subscriptions are managed at v1portal.com. By subscribing you agree to our Terms of Service and Privacy Policy.
         </Text>
       </ScrollView>
 
