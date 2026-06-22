@@ -738,7 +738,7 @@ function createStyles(C: ThemeColors) {
     phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
     checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 },
     checkBox: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    checkBoxDone: { backgroundColor: C.success, borderColor: C.success },
+    checkBoxDone: { backgroundColor: C.text, borderColor: C.text },
     checkLabel: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 18 },
     upcomingMsg: { marginTop: 10, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 8, alignItems: 'center' },
     upcomingMsgText: { fontSize: 12, color: C.textDim, textAlign: 'center' },
