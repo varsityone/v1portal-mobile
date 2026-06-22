@@ -16,7 +16,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
 import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
-import { useColors } from '../../context/ThemeContext';
+import { useColors, useTheme } from '../../context/ThemeContext';
 import { PHASES } from '../../constants/Phases';
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
@@ -73,6 +73,8 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { athlete, assessment, isPremium, loading, refresh } = useAthleteData();
   const C = useColors();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [matchCount, setMatchCount] = useState(0);
@@ -184,14 +186,18 @@ export default function DashboardScreen() {
     outreachCount >= 5,
   ];
 
-  const phaseLocked = PHASES.map((_, i): boolean => {
+  const phaseLocked: boolean[] = [];
+  for (let i = 0; i < PHASES.length; i++) {
     let locked = false;
     if (i === 0) locked = false;
     else if (i >= 1 && i <= 3) locked = !isPremium;
     else locked = !isElite;
-    if (!locked && i > 0 && !phaseComplete[i - 1]) locked = true;
-    return locked;
-  });
+    if (!locked && i > 0) {
+      const prevEffectiveDone = !phaseLocked[i - 1] && phaseComplete[i - 1];
+      if (!prevEffectiveDone) locked = true;
+    }
+    phaseLocked.push(locked);
+  }
 
   const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
   const curPhaseIdx = phaseEffectiveDone.findIndex(c => !c);
@@ -458,9 +464,9 @@ export default function DashboardScreen() {
                   {hint ? (
                     <View style={[
                       styles.hintChip,
-                      active && { backgroundColor: 'rgba(131,58,180,0.08)', borderColor: 'rgba(131,58,180,0.25)' },
+                      active && { backgroundColor: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.82)', borderWidth: 0 },
                     ]}>
-                      <Text style={[styles.hintChipText, active && { color: C.primary }]}>{hint}</Text>
+                      <Text style={[styles.hintChipText, active && { color: 'rgb(134, 134, 134)' }]}>{hint}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -608,13 +614,19 @@ export default function DashboardScreen() {
       </View>
 
       {/* ── Tier / features card ── */}
-      <View style={styles.tierFeaturesCard}>
+      <LinearGradient
+        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.tierFeaturesCard}
+      >
+        {/* Header */}
         <View style={styles.tierFeaturesHeader}>
-          <View style={[styles.tierIconCircle, { backgroundColor: tierColor + '22' }]}>
-            <Ionicons name="checkmark-circle" size={16} color={tierColor} />
+          <View style={styles.tierIconCircle}>
+            <Ionicons name="trophy" size={18} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.tierFeaturesTitle, { color: tierColor }]}>
+            <Text style={styles.tierFeaturesTitle}>
               {tierDisplay} Tier
             </Text>
             <Text style={styles.tierFeaturesSub}>
@@ -625,6 +637,10 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Divider */}
+        <View style={styles.tierDivider} />
+
+        {/* Feature list */}
         <View style={styles.featureList}>
           {[
             { label: 'Full V1 Score Breakdown', unlocked: !!assessment },
@@ -636,11 +652,11 @@ export default function DashboardScreen() {
           ].map((feat, i) => (
             <View key={i} style={styles.featureRow}>
               <Ionicons
-                name="checkmark"
-                size={13}
-                color={feat.unlocked ? tierColor : C.textDim}
+                name={feat.unlocked ? 'checkmark-circle' : 'ellipse-outline'}
+                size={15}
+                color={feat.unlocked ? '#fff' : 'rgba(255,255,255,0.3)'}
               />
-              <Text style={[styles.featureLabel, !feat.unlocked && { color: C.textDim, opacity: 0.5 }]}>
+              <Text style={[styles.featureLabel, !feat.unlocked && { opacity: 0.35 }]}>
                 {feat.label}
               </Text>
             </View>
@@ -649,13 +665,13 @@ export default function DashboardScreen() {
 
         {!isPremium && (
           <Pressable
-            style={({ pressed }) => [styles.seeUpgradeBtn, { backgroundColor: tierColor }, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
             onPress={() => router.push('/upgrade' as any)}
           >
-            <Text style={[styles.seeUpgradeBtnText, { color: C.white }]}>See Upgrade Options</Text>
+            <Text style={styles.seeUpgradeBtnText}>See Upgrade Options</Text>
           </Pressable>
         )}
-      </View>
+      </LinearGradient>
 
       {/* ── Program matches preview ── */}
       <View>
@@ -764,7 +780,7 @@ function createStyles(C: ThemeColors) {
     // Phase list
     phaseList: { gap: 8 },
     phaseCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderLeftWidth: 3, borderColor: C.border, borderLeftColor: 'transparent', overflow: 'hidden' },
-    phaseCardActive: { borderLeftColor: C.primary },
+    phaseCardActive: { borderLeftColor: 'rgb(255, 183, 0)' },
     phaseCardDone: { opacity: 0.72, borderLeftColor: 'rgba(5,166,19,0.4)' },
     phaseCardLocked: { opacity: 0.28 },
     phaseInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16 },
@@ -822,16 +838,17 @@ function createStyles(C: ThemeColors) {
     profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
 
     // Tier features card
-    tierFeaturesCard: { backgroundColor: C.surface, borderRadius: 18, padding: 20, gap: 14 },
-    tierFeaturesHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
-    tierIconCircle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    tierFeaturesTitle: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-    tierFeaturesSub: { fontSize: 11, color: C.textDim, marginTop: 1 },
-    featureList: { gap: 10 },
+    tierFeaturesCard: { borderRadius: 20, padding: 22, gap: 16, overflow: 'hidden' },
+    tierFeaturesHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    tierIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.2)' },
+    tierFeaturesTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#fff' },
+    tierFeaturesSub: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
+    tierDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
+    featureList: { gap: 11 },
     featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    featureLabel: { fontSize: 13, color: C.text, fontWeight: '500' },
-    seeUpgradeBtn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-    seeUpgradeBtnText: { fontSize: 14, fontWeight: '700' },
+    featureLabel: { fontSize: 13, color: '#fff', fontWeight: '500' },
+    seeUpgradeBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 2 },
+    seeUpgradeBtnText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 
     // Program matches preview
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
