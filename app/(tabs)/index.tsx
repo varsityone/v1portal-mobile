@@ -380,8 +380,8 @@ export default function DashboardScreen() {
           const canExpand = !locked;
 
           const badgeLabel = done ? 'Completed' : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next';
-          const badgeBg = done ? C.surfaceAlt : active ? 'rgba(131,58,180,0.12)' : locked ? 'rgba(245,158,11,0.10)' : C.surfaceAlt;
-          const badgeColor = done ? C.textMuted : active ? C.primary : locked ? '#F59E0B' : C.textDim;
+          const badgeBg = done ? C.surfaceAlt : active ? 'rgba(255,183,0,0.12)' : locked ? 'rgba(245,158,11,0.08)' : C.surfaceAlt;
+          const badgeColor = done ? C.textMuted : active ? 'rgb(255,183,0)' : locked ? '#F59E0B' : C.textDim;
 
           let hint = '';
           if (done) {
@@ -437,7 +437,7 @@ export default function DashboardScreen() {
                   ) : locked ? (
                     <Ionicons name="lock-closed" size={14} color={C.textDim} />
                   ) : (
-                    <Text style={[styles.phaseIconNum, active && { color: C.primary }]}>
+                    <Text style={[styles.phaseIconNum, active && { color: 'rgb(255,183,0)' }]}>
                       {phase.number}
                     </Text>
                   )}
@@ -464,9 +464,9 @@ export default function DashboardScreen() {
                   {hint ? (
                     <View style={[
                       styles.hintChip,
-                      active && { backgroundColor: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.82)', borderWidth: 0 },
+                      active && { backgroundColor: 'rgba(255,183,0,0.1)', borderColor: 'rgba(255,183,0,0.35)' },
                     ]}>
-                      <Text style={[styles.hintChipText, active && { color: 'rgb(134, 134, 134)' }]}>{hint}</Text>
+                      <Text style={[styles.hintChipText, active && { color: 'rgb(255,183,0)' }]}>{hint}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -480,7 +480,7 @@ export default function DashboardScreen() {
                     <Ionicons
                       name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                       size={14}
-                      color={active ? C.primary : C.textDim}
+                      color={active ? 'rgb(255,183,0)' : C.textDim}
                     />
                   )}
                 </View>
@@ -778,15 +778,24 @@ function createStyles(C: ThemeColors) {
     upgradeBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
 
     // Phase list
-    phaseList: { gap: 8 },
-    phaseCard: { backgroundColor: C.surface, borderRadius: 14, borderWidth: 1, borderLeftWidth: 3, borderColor: C.border, borderLeftColor: 'transparent', overflow: 'hidden' },
-    phaseCardActive: { borderLeftColor: 'rgb(255, 183, 0)' },
-    phaseCardDone: { opacity: 0.72, borderLeftColor: 'rgba(5,166,19,0.4)' },
+    phaseList: { gap: 10 },
+    phaseCard: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' },
+    phaseCardActive: {
+      borderColor: 'rgb(255,183,0)',
+      borderWidth: 1.5,
+      backgroundColor: isDark ? 'rgba(255,183,0,0.04)' : 'rgba(255,183,0,0.05)',
+      shadowColor: 'rgb(255,183,0)',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.45,
+      shadowRadius: 14,
+      elevation: 8,
+    },
+    phaseCardDone: { opacity: 0.6 },
     phaseCardLocked: { opacity: 0.28 },
     phaseInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16 },
-    phaseIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    phaseIconActive: { backgroundColor: 'rgba(131,58,180,0.14)', borderWidth: 1, borderColor: 'rgba(131,58,180,0.25)' },
-    phaseIconDone: { backgroundColor: C.text },
+    phaseIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    phaseIconActive: { backgroundColor: 'rgba(255,183,0,0.14)', borderWidth: 1.5, borderColor: 'rgba(255,183,0,0.45)' },
+    phaseIconDone: { backgroundColor: C.success },
     phaseIconMuted: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
     phaseIconNum: { fontSize: 15, fontWeight: '800', color: C.textMuted },
     phaseContent: { flex: 1, gap: 3 },
