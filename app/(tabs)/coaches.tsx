@@ -514,7 +514,7 @@ export default function CoachesScreen() {
                     <Text style={[s.priorityText, { color: priorityCfg.color }]}>{priorityCfg.label}</Text>
                   </View>
 
-                  {entry.next_action && (
+                  {!!entry.next_action && (
                     <Text style={[s.nextAction, isOverdue && { color: '#e63535' }]} numberOfLines={1}>
                       {isOverdue ? '⚑ ' : ''}{entry.next_action}
                     </Text>
@@ -522,7 +522,7 @@ export default function CoachesScreen() {
                 </View>
 
                 <View style={s.entryActions}>
-                  {entry.coach?.email && (
+                  {!!entry.coach?.email && (
                     <Pressable
                       style={s.actionBtn}
                       onPress={() => router.push('/(tabs)/outreach' as any)}

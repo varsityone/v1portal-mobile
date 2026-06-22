@@ -161,11 +161,11 @@ export default function ProgramsScreen() {
                     <View style={s.programInfo}>
                       <Text style={s.programName}>{prog.school_name}</Text>
                       <Text style={s.programDivision}>{prog.division ?? 'Unknown Division'}</Text>
-                      {prog.position_fit && (
+                      {!!prog.position_fit && (
                         <Text style={s.programPosition}>{prog.position_fit}</Text>
                       )}
                     </View>
-                    {prog.match_type && (
+                    {!!prog.match_type && (
                       <View style={[
                         s.matchTypeBadge,
                         { backgroundColor: (MATCH_TYPE_COLOR[prog.match_type as keyof typeof MATCH_TYPE_COLOR] ?? C.textDim) + '20' },

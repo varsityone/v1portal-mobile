@@ -372,15 +372,15 @@ export default function ProfileScreen() {
           )}
 
           <Text style={s.heroName}>{name}</Text>
-          {(profile?.position || level) && (
+          {!!(profile?.position || level) && (
             <Text style={s.heroSub}>{[profile?.position, level].filter(Boolean).join(' · ')}</Text>
           )}
-          {(profile?.high_school || profile?.city || profile?.state) && (
+          {!!(profile?.high_school || profile?.city || profile?.state) && (
             <Text style={s.heroLocation}>
               {[profile?.high_school, profile?.city, profile?.state].filter(Boolean).join(' · ')}
             </Text>
           )}
-          {profile?.graduation_year && (
+          {!!profile?.graduation_year && (
             <Text style={s.heroClass}>Class of {profile.graduation_year}</Text>
           )}
 

@@ -406,7 +406,7 @@ export default function CalendarScreen() {
                 >
                   <Text style={s.saveBtnText}>{saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Event'}</Text>
                 </Pressable>
-                {editingId && (
+                {!!editingId && (
                   <Pressable style={s.deleteBtn} onPress={handleDelete} disabled={saving}>
                     <Text style={s.deleteBtnText}>Delete</Text>
                   </Pressable>

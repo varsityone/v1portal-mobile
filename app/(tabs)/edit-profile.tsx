@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,88 +11,228 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
-import { ThemeColors } from '../../constants/Colors';
+import { GRADIENT, ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
 
-const SECTIONS = [
-  { title: 'Personal', rows: [
-    { label: 'Full Name',  key: 'full_name'       as const },
-    { label: 'Bio',        key: 'bio'             as const, multi: true },
-  ]},
-  { title: 'Athletic', rows: [
-    { label: 'Position',        key: 'position'      as const },
-    { label: "Height (e.g. 6'1\")", key: 'height'   as const },
-    { label: 'Weight (lbs)',    key: 'weight'        as const },
-    { label: '40-Yard (s)',     key: 'forty_yard'    as const },
-    { label: 'Vertical (in)',   key: 'vertical_jump' as const },
-  ]},
-  { title: 'Academic', rows: [
-    { label: 'GPA',         key: 'gpa'              as const },
-    { label: 'Grad Year',   key: 'graduation_year'  as const },
-    { label: 'High School', key: 'high_school'      as const },
-  ]},
-  { title: 'Location', rows: [
-    { label: 'City',  key: 'city'  as const },
-    { label: 'State', key: 'state' as const },
-  ]},
-  { title: 'Film & Social', rows: [
-    { label: 'Hudl Video URL',    key: 'hudl_video_link'   as const },
-    { label: 'YouTube URL',       key: 'youtube_link'      as const },
-    { label: 'Twitter Handle',    key: 'twitter_handle'    as const },
-    { label: 'Instagram Handle',  key: 'instagram_handle'  as const },
-  ]},
+// ─── Field definitions ────────────────────────────────────────────────────────
+
+type Row = {
+  label: string;
+  key: string;
+  multi?: boolean;
+  placeholder?: string;
+  hint?: string;
+  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'phone-pad' | 'email-address' | 'url';
+};
+
+type Section = {
+  title: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  rows: Row[];
+};
+
+const SECTIONS: Section[] = [
+  {
+    title: 'Personal',
+    icon: 'person-outline',
+    rows: [
+      { label: 'Full Name',           key: 'full_name' },
+      { label: 'Phone',               key: 'phone',              keyboardType: 'phone-pad' },
+      { label: 'Recruitment Status',  key: 'recruitment_status', placeholder: 'e.g. Uncommitted, Committed, Signed' },
+      { label: 'Bio',                 key: 'bio',                multi: true,
+        placeholder: "QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity",
+        hint: 'Keep it short and keyword-rich — works for Twitter/X and Instagram too.' },
+    ],
+  },
+  {
+    title: 'Athletic',
+    icon: 'football-outline',
+    rows: [
+      { label: 'Position',        key: 'position' },
+      { label: "Height (e.g. 6'2\")", key: 'height' },
+      { label: 'Weight (lbs)',    key: 'weight',       keyboardType: 'numeric' },
+      { label: '40-Yard (sec)',   key: 'forty_yard',   keyboardType: 'decimal-pad' },
+      { label: 'Vertical (in)',   key: 'vertical_jump',keyboardType: 'decimal-pad' },
+      { label: 'Pro Shuttle (sec)',key: 'pro_shuttle', keyboardType: 'decimal-pad' },
+      { label: '3-Cone (sec)',    key: 'three_cone',   keyboardType: 'decimal-pad' },
+      { label: 'Broad Jump (in)', key: 'broad_jump',   keyboardType: 'numeric' },
+      { label: 'Bench Press (lbs)',key: 'bench_press', keyboardType: 'numeric' },
+      { label: 'Squat (lbs)',     key: 'squat',        keyboardType: 'numeric' },
+      { label: 'Power Clean (lbs)',key: 'power_clean', keyboardType: 'numeric' },
+      { label: 'Deadlift (lbs)', key: 'deadlift',      keyboardType: 'numeric' },
+    ],
+  },
+  {
+    title: 'Academic',
+    icon: 'school-outline',
+    rows: [
+      { label: 'GPA',             key: 'gpa',             keyboardType: 'decimal-pad' },
+      { label: 'SAT Score',       key: 'sat_score',       keyboardType: 'numeric' },
+      { label: 'ACT Score',       key: 'act_score',       keyboardType: 'numeric' },
+      { label: 'Grad Year',       key: 'graduation_year', keyboardType: 'numeric' },
+      { label: 'High School',     key: 'high_school' },
+      { label: 'NCAA ID',         key: 'ncaa_id',         hint: 'Register at eligibilitycenter.org' },
+    ],
+  },
+  {
+    title: 'Location',
+    icon: 'location-outline',
+    rows: [
+      { label: 'City',  key: 'city' },
+      { label: 'State', key: 'state', placeholder: 'e.g. TX' },
+    ],
+  },
+  {
+    title: 'Coaching Staff',
+    icon: 'people-outline',
+    rows: [
+      { label: 'Head Coach Name',        key: 'head_coach_name' },
+      { label: 'Head Coach Phone',       key: 'head_coach_phone',  keyboardType: 'phone-pad' },
+      { label: 'Head Coach Email',       key: 'head_coach_email',  keyboardType: 'email-address' },
+      { label: 'Positional Coach Name',  key: 'positional_coach_name' },
+      { label: 'Positional Coach Phone', key: 'positional_coach_phone', keyboardType: 'phone-pad' },
+      { label: 'Positional Coach Email', key: 'positional_coach_email', keyboardType: 'email-address' },
+    ],
+  },
+  {
+    title: 'Guardian',
+    icon: 'shield-outline',
+    rows: [
+      { label: 'Guardian Name',         key: 'guardian_name' },
+      { label: 'Relationship',          key: 'guardian_relationship', placeholder: 'e.g. Parent, Grandparent' },
+      { label: 'Guardian Phone',        key: 'guardian_phone', keyboardType: 'phone-pad' },
+      { label: 'Guardian Email',        key: 'guardian_email', keyboardType: 'email-address' },
+    ],
+  },
+  {
+    title: 'Film & Social',
+    icon: 'play-circle-outline',
+    rows: [
+      { label: 'Hudl Video URL',    key: 'hudl_video_link',   keyboardType: 'url' },
+      { label: 'YouTube URL',       key: 'youtube_link',      keyboardType: 'url' },
+      { label: 'Twitter Handle',    key: 'twitter_handle',    placeholder: '@handle' },
+      { label: 'Instagram Handle',  key: 'instagram_handle',  placeholder: '@handle' },
+    ],
+  },
 ];
 
+// All editable keys as a flat type
 type Fields = {
-  full_name: string; bio: string; position: string; height: string;
-  weight: string; forty_yard: string; vertical_jump: string; gpa: string;
-  graduation_year: string; high_school: string; city: string; state: string;
-  hudl_video_link: string; youtube_link: string; twitter_handle: string;
-  instagram_handle: string;
+  full_name: string; phone: string; recruitment_status: string; bio: string;
+  position: string; height: string; weight: string;
+  forty_yard: string; vertical_jump: string; pro_shuttle: string;
+  three_cone: string; broad_jump: string; bench_press: string;
+  squat: string; power_clean: string; deadlift: string;
+  gpa: string; sat_score: string; act_score: string;
+  graduation_year: string; high_school: string; ncaa_id: string;
+  city: string; state: string;
+  head_coach_name: string; head_coach_phone: string; head_coach_email: string;
+  positional_coach_name: string; positional_coach_phone: string; positional_coach_email: string;
+  guardian_name: string; guardian_relationship: string;
+  guardian_phone: string; guardian_email: string;
+  hudl_video_link: string; youtube_link: string;
+  twitter_handle: string; instagram_handle: string;
 };
+
+const EMPTY: Fields = {
+  full_name: '', phone: '', recruitment_status: '', bio: '',
+  position: '', height: '', weight: '',
+  forty_yard: '', vertical_jump: '', pro_shuttle: '',
+  three_cone: '', broad_jump: '', bench_press: '',
+  squat: '', power_clean: '', deadlift: '',
+  gpa: '', sat_score: '', act_score: '',
+  graduation_year: '', high_school: '', ncaa_id: '',
+  city: '', state: '',
+  head_coach_name: '', head_coach_phone: '', head_coach_email: '',
+  positional_coach_name: '', positional_coach_phone: '', positional_coach_email: '',
+  guardian_name: '', guardian_relationship: '',
+  guardian_phone: '', guardian_email: '',
+  hudl_video_link: '', youtube_link: '',
+  twitter_handle: '', instagram_handle: '',
+};
+
+// Columns that map 1-to-1 to athlete table columns
+const DIRECT_COLS = new Set([
+  'full_name', 'phone', 'recruitment_status', 'bio',
+  'position', 'height', 'weight',
+  'forty_yard', 'vertical_jump', 'pro_shuttle',
+  'three_cone', 'broad_jump', 'bench_press',
+  'squat', 'power_clean', 'deadlift',
+  'gpa', 'sat_score', 'act_score',
+  'graduation_year', 'high_school', 'ncaa_id',
+  'city', 'state',
+  'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
+  'hudl_video_link', 'youtube_link', 'twitter_handle', 'instagram_handle',
+]);
+
+// Keys that live inside coach_info JSONB
+const COACH_INFO_KEYS: (keyof Fields)[] = [
+  'head_coach_name', 'head_coach_phone', 'head_coach_email',
+  'positional_coach_name', 'positional_coach_phone', 'positional_coach_email',
+];
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { session } = useAuth();
   const { athlete, refresh } = useAthleteData();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
 
-  const [fields, setFields] = useState<Fields>({
-    full_name: '', bio: '', position: '', height: '', weight: '',
-    forty_yard: '', vertical_jump: '', gpa: '', graduation_year: '',
-    high_school: '', city: '', state: '', hudl_video_link: '',
-    youtube_link: '', twitter_handle: '', instagram_handle: '',
-  });
+  const [fields, setFields] = useState<Fields>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (athlete) {
-      setFields({
-        full_name:        athlete.full_name        ?? '',
-        bio:              athlete.bio              ?? '',
-        position:         athlete.position         ?? '',
-        height:           athlete.height           ?? '',
-        weight:           athlete.weight           ?? '',
-        forty_yard:       (athlete as any).forty_yard      ?? '',
-        vertical_jump:    (athlete as any).vertical_jump   ?? '',
-        gpa:              athlete.gpa              ?? '',
-        graduation_year:  athlete.graduation_year  ?? '',
-        high_school:      athlete.high_school      ?? '',
-        city:             athlete.city             ?? '',
-        state:            (athlete as any).state   ?? '',
-        hudl_video_link:  (athlete as any).hudl_video_link ?? '',
-        youtube_link:     (athlete as any).youtube_link    ?? '',
-        twitter_handle:   (athlete as any).twitter_handle  ?? '',
-        instagram_handle: (athlete as any).instagram_handle ?? '',
-      });
-      setLoading(false);
-    }
+    if (!athlete) return;
+    const a = athlete as any;
+    const ci = (typeof a.coach_info === 'object' && a.coach_info) ? a.coach_info : {};
+    setFields({
+      full_name:              a.full_name              ?? '',
+      phone:                  a.phone                  ?? '',
+      recruitment_status:     a.recruitment_status     ?? '',
+      bio:                    a.bio                    ?? '',
+      position:               a.position               ?? '',
+      height:                 a.height                 ?? '',
+      weight:                 a.weight != null          ? String(a.weight) : '',
+      forty_yard:             a.forty_yard != null      ? String(a.forty_yard) : '',
+      vertical_jump:          a.vertical_jump != null   ? String(a.vertical_jump) : '',
+      pro_shuttle:            a.pro_shuttle != null     ? String(a.pro_shuttle) : '',
+      three_cone:             a.three_cone != null      ? String(a.three_cone) : '',
+      broad_jump:             a.broad_jump != null      ? String(a.broad_jump) : '',
+      bench_press:            a.bench_press != null     ? String(a.bench_press) : '',
+      squat:                  a.squat != null           ? String(a.squat) : '',
+      power_clean:            a.power_clean != null     ? String(a.power_clean) : '',
+      deadlift:               a.deadlift != null        ? String(a.deadlift) : '',
+      gpa:                    a.gpa != null             ? String(a.gpa) : '',
+      sat_score:              a.sat_score != null       ? String(a.sat_score) : '',
+      act_score:              a.act_score != null       ? String(a.act_score) : '',
+      graduation_year:        a.graduation_year != null ? String(a.graduation_year) : '',
+      high_school:            a.high_school            ?? '',
+      ncaa_id:                a.ncaa_id                ?? '',
+      city:                   a.city                   ?? '',
+      state:                  a.state                  ?? '',
+      head_coach_name:        ci.head_coach_name        ?? '',
+      head_coach_phone:       ci.head_coach_phone       ?? '',
+      head_coach_email:       ci.head_coach_email       ?? '',
+      positional_coach_name:  ci.positional_coach_name  ?? '',
+      positional_coach_phone: ci.positional_coach_phone ?? '',
+      positional_coach_email: ci.positional_coach_email ?? '',
+      guardian_name:          a.guardian_name          ?? '',
+      guardian_relationship:  a.guardian_relationship  ?? '',
+      guardian_phone:         a.guardian_phone         ?? '',
+      guardian_email:         a.guardian_email         ?? '',
+      hudl_video_link:        a.hudl_video_link        ?? '',
+      youtube_link:           a.youtube_link           ?? '',
+      twitter_handle:         a.twitter_handle         ?? '',
+      instagram_handle:       a.instagram_handle       ?? '',
+    });
+    setLoading(false);
   }, [athlete]);
 
   const set = (k: keyof Fields) => (v: string) => setFields(f => ({ ...f, [k]: v }));
@@ -98,15 +240,38 @@ export default function EditProfileScreen() {
   const handleSave = async () => {
     if (!athlete?.id) return;
     setSaving(true);
-    const updates: Record<string, string | null> = {};
+
+    // Build direct-column updates
+    const updates: Record<string, string | number | null | object> = {};
     (Object.keys(fields) as (keyof Fields)[]).forEach(k => {
-      updates[k] = fields[k] || null;
+      if (DIRECT_COLS.has(k)) {
+        updates[k] = fields[k] || null;
+      }
     });
+
+    // Pack coach_info JSONB
+    const coachInfo: Record<string, string | null> = {};
+    COACH_INFO_KEYS.forEach(k => { coachInfo[k] = fields[k] || null; });
+    updates.coach_info = coachInfo;
+
     const { error } = await supabase.from('athletes').update(updates).eq('id', athlete.id);
     setSaving(false);
     if (error) { Alert.alert('Error', error.message); return; }
     await refresh();
     router.back();
+  };
+
+  const buildStarterBio = () => {
+    const pos = fields.position || '[Position]';
+    const yr  = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
+    const sch = fields.high_school || '[High School]';
+    const loc = fields.city && fields.state
+      ? `${fields.city}, ${fields.state}`
+      : fields.city || fields.state || '[City, State]';
+    const ht  = fields.height || '[Height]';
+    const wt  = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
+    const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
+    set('bio')(`${pos} | ${yr} | ${sch} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity every day`);
   };
 
   if (loading) {
@@ -118,115 +283,137 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <View style={s.root}>
-      {/* Nav bar */}
-      <View style={s.nav}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Text style={s.cancel}>Cancel</Text>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={10}>
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </Pressable>
-        <Text style={s.navTitle}>Edit Profile</Text>
-        <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
-          <Text style={[s.save, saving && { opacity: 0.5 }]}>{saving ? 'Saving…' : 'Save'}</Text>
-        </Pressable>
+        <View style={s.headerCenter}>
+          <Text style={s.eyebrow}>ATHLETE PROFILE</Text>
+          <Text style={s.headerTitle}>Edit Profile</Text>
+        </View>
+        <View style={{ width: 36 }} />
       </View>
+
+      {/* ── Gradient accent bar ── */}
+      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.accentBar} />
 
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={s.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {SECTIONS.map(section => (
-          <View key={section.title} style={s.section}>
-            <Text style={s.sectionTitle}>{section.title}</Text>
-            {section.rows.map(row => (
-              <View key={row.key} style={s.fieldWrap}>
-                {row.key === 'bio' ? (
-                  <>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <View key={section.title} style={s.sectionWrap}>
+            <View style={s.sectionHeader}>
+              <Ionicons name={section.icon} size={14} color={C.primary} />
+              <Text style={s.sectionTitle}>{section.title.toUpperCase()}</Text>
+            </View>
+
+            <View style={s.card}>
+              {section.rows.map((row, idx) => {
+                const isBio = row.key === 'bio';
+                return (
+                  <View key={row.key} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                    <View style={s.fieldLabelRow}>
                       <Text style={s.label}>{row.label}</Text>
-                      <Pressable
-                        onPress={() => {
-                          const pos = fields.position || '[Position]';
-                          const yr = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
-                          const school = fields.high_school || '[High School]';
-                          const loc = fields.city && fields.state
-                            ? `${fields.city}, ${fields.state}`
-                            : fields.city || fields.state || '[City, State]';
-                          const ht = fields.height || '[Height]';
-                          const wt = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
-                          const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
-                          set('bio')(`${pos} | ${yr} | ${school} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity every day`);
-                        }}
-                        style={s.starterBioBtn}
-                      >
-                        <Text style={s.starterBioBtnText}>✦ Starter Bio</Text>
-                      </Pressable>
+                      {isBio && (
+                        <Pressable onPress={buildStarterBio} style={s.starterBioBtn}>
+                          <Text style={s.starterBioBtnText}>✦ Starter Bio</Text>
+                        </Pressable>
+                      )}
                     </View>
                     <TextInput
-                      style={[s.input, { height: 90, textAlignVertical: 'top', paddingTop: 10 }]}
-                      value={fields.bio}
-                      onChangeText={set('bio')}
-                      placeholder={"QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity"}
+                      style={[s.input, isBio && s.inputMulti]}
+                      value={fields[row.key as keyof Fields]}
+                      onChangeText={set(row.key as keyof Fields)}
+                      placeholder={row.placeholder ?? row.label}
                       placeholderTextColor={C.textDim}
-                      multiline
+                      multiline={isBio}
+                      textAlignVertical={isBio ? 'top' : 'auto'}
+                      keyboardType={row.keyboardType ?? 'default'}
+                      autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
                     />
-                    <Text style={s.bioHint}>
-                      Keep it short and keyword-rich — works for Twitter/X and Instagram too.
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={s.label}>{row.label}</Text>
-                    <TextInput
-                      style={[s.input, (row as any).multi && { height: 72, textAlignVertical: 'top', paddingTop: 10 }]}
-                      value={fields[row.key]}
-                      onChangeText={set(row.key)}
-                      placeholder={row.label}
-                      placeholderTextColor={C.textDim}
-                      multiline={!!(row as any).multi}
-                    />
-                  </>
-                )}
-              </View>
-            ))}
+                    {row.hint && (
+                      <Text style={s.hint}>{row.hint}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </View>
         ))}
+
+        {/* ── Save CTA ── */}
+        <Pressable onPress={handleSave} disabled={saving} style={s.saveBtnWrap}>
+          <LinearGradient
+            colors={['#ff0000', '#aa00ff']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[s.saveBtn, saving && { opacity: 0.6 }]}
+          >
+            <Text style={s.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+          </LinearGradient>
+        </Pressable>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.background },
-    nav: {
+
+    header: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16,
-      borderBottomWidth: 1, borderBottomColor: C.border,
+      paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12,
     },
-    navTitle: { fontSize: 16, fontWeight: '700', color: C.text },
-    cancel: { fontSize: 15, color: C.textMuted },
-    save: { fontSize: 15, fontWeight: '700', color: C.primary },
-    scroll: { flex: 1, paddingHorizontal: 20 },
-    section: { marginTop: 28 },
-    sectionTitle: {
-      fontSize: 11, fontWeight: '700', letterSpacing: 0.8,
-      textTransform: 'uppercase', color: C.textDim, marginBottom: 10,
+    backBtn: {
+      width: 36, height: 36, backgroundColor: C.surface,
+      borderRadius: 100, alignItems: 'center', justifyContent: 'center',
     },
-    fieldWrap: { marginBottom: 14 },
-    label: { fontSize: 12, fontWeight: '500', color: C.textMuted, marginBottom: 6 },
-    input: {
-      backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
-      borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
-      fontSize: 14, color: C.text,
+    headerCenter: { alignItems: 'center' },
+    eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: C.primary, marginBottom: 2 },
+    headerTitle: { fontSize: 17, fontWeight: '800', color: C.text },
+
+    accentBar: { height: 3, marginHorizontal: 20, borderRadius: 100, marginBottom: 20 },
+
+    scroll: { flex: 1 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+
+    sectionWrap: { marginBottom: 20 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+    sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0, color: C.textMuted },
+
+    card: { backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden' },
+    fieldRow: { paddingHorizontal: 16, paddingVertical: 12 },
+    fieldRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+    fieldLabelRow: {
+      flexDirection: 'row', alignItems: 'center',
+      justifyContent: 'space-between', marginBottom: 6,
     },
+    label: { fontSize: 12, fontWeight: '500', color: C.textMuted },
+
+    input: { fontSize: 15, color: C.text, paddingVertical: 0 },
+    inputMulti: { height: 80, textAlignVertical: 'top' },
+
+    hint: { fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
+
     starterBioBtn: {
-      flexDirection: 'row', alignItems: 'center', gap: 4,
-      backgroundColor: `${C.primary}18`, borderRadius: 100,
-      paddingHorizontal: 10, paddingVertical: 4,
+      backgroundColor: `${C.primary}22`, borderRadius: 100,
+      paddingHorizontal: 10, paddingVertical: 3,
     },
     starterBioBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
-    bioHint: { fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
+
+    saveBtnWrap: { marginTop: 8 },
+    saveBtn: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontSize: 16, fontWeight: '800', color: '#ffffff', letterSpacing: 0.3 },
   });
 }
