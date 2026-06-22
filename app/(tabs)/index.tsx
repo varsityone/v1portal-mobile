@@ -81,7 +81,6 @@ export default function DashboardScreen() {
   const [outreachCount, setOutreachCount] = useState(0);
   const [trackerCount, setTrackerCount] = useState(0);
   const [profileViews, setProfileViews] = useState(0);
-  const [expandedPhase, setExpandedPhase] = useState<number | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
 
   // Skip the very first focus (mount already fetches); re-fetch on subsequent focuses
@@ -236,9 +235,11 @@ export default function DashboardScreen() {
           <Text style={styles.tierLabel}>Tier:</Text>
           <View style={[
             styles.tierBadge,
-            { backgroundColor: tierColor + '28', borderColor: tierColor + '55' },
+            isElite
+              ? { backgroundColor: 'rgb(199, 0, 156)', borderWidth: 0 }
+              : { backgroundColor: tierColor + '28', borderColor: tierColor + '55' },
           ]}>
-            <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
+            <Text style={[styles.tierBadgeText, { color: isElite ? '#ffffff' : tierColor }]}>{tierDisplay}</Text>
           </View>
           {score !== null && (
             <View style={styles.recruitingLevelBadge}>
@@ -296,11 +297,15 @@ export default function DashboardScreen() {
           </View>
 
           {score === null && !loading && (
-            <Pressable
-              style={styles.assessmentBtn}
-              onPress={() => router.push('/(tabs)/gameplan' as any)}
-            >
-              <Text style={styles.assessmentBtnText}>Start Your Assessment →</Text>
+            <Pressable onPress={() => router.push('/(tabs)/gameplan' as any)}>
+              <LinearGradient
+                colors={['#ff0000', '#aa00ff']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.assessmentBtn}
+              >
+                <Text style={styles.assessmentBtnText}>Start Assessment</Text>
+              </LinearGradient>
             </Pressable>
           )}
         </View>
@@ -310,39 +315,31 @@ export default function DashboardScreen() {
       <View style={styles.progressCard}>
         <View style={styles.progressTop}>
           <Text style={styles.progressLabel}>Overall Progress</Text>
-          <Text style={styles.progressCount}>{completedCount}/6 phases complete</Text>
+          <View style={styles.progressBadge}>
+            <Text style={styles.progressBadgeText}>Recruiting Journey</Text>
+          </View>
         </View>
-        <View style={styles.progressTrack}>
-          <LinearGradient
-            colors={GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.progressFill, { width: `${progressPct}%` }]}
-          />
-        </View>
-        <View style={styles.phaseDots}>
-          {PHASES.map((p, i) => {
-            const isDone = phaseEffectiveDone[i];
-            const isActive = i === activePhaseIdx && !isDone;
-            return (
-              <View
-                key={i}
-                style={[
-                  styles.phaseDot,
-                  isDone && styles.phaseDotDone,
-                  isActive && styles.phaseDotActive,
-                ]}
-              >
-                {isDone ? (
-                  <Ionicons name="checkmark" size={10} color={C.background} />
-                ) : (
-                  <Text style={[styles.phaseDotNum, isActive && styles.phaseDotNumActive]}>
-                    {p.number}
-                  </Text>
-                )}
-              </View>
-            );
-          })}
+
+        <Text style={styles.progressPct}>{Math.round(progressPct)}%</Text>
+
+        <View style={styles.progressBarWrap}>
+          {/* Track */}
+          <View style={styles.progressBarTrack}>
+            {progressPct > 0 && (
+              <LinearGradient
+                colors={GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressBarFill, { width: `${Math.max(progressPct, 6)}%` }]}
+              />
+            )}
+          </View>
+          {/* Floating pill label */}
+          <View style={styles.progressBarPill}>
+            <Text style={styles.progressBarPillText}>
+              {completedCount === 6 ? 'Complete!' : `Phase ${activePhaseIdx + 1} of 6`}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -370,24 +367,26 @@ export default function DashboardScreen() {
         </LinearGradient>
       )}
 
-      {/* ── Phase cards ── */}
-      <View style={styles.phaseList}>
+      {/* ── Phase list — gradient timeline ── */}
+
+      {/* Vertical gradient timeline */}
+      <View>
         {PHASES.map((phase, i) => {
           const locked = phaseLocked[i];
           const done = phaseEffectiveDone[i];
           const active = i === activePhaseIdx && !locked;
-          const isExpanded = expandedPhase === i;
-          const canExpand = !locked;
+          const isLast = i === PHASES.length - 1;
 
-          const badgeLabel = done ? 'Completed' : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next';
-          const badgeBg = done ? C.surfaceAlt : active ? 'rgba(255,183,0,0.12)' : locked ? 'rgba(245,158,11,0.08)' : C.surfaceAlt;
-          const badgeColor = done ? C.textMuted : active ? 'rgb(255,183,0)' : locked ? '#F59E0B' : C.textDim;
-
-          let hint = '';
+          let sub = '';
           if (done) {
-            hint = 'Complete';
+            if (i === 0) sub = 'Takes ~12 minutes';
+            else if (i === 1) sub = 'Profile complete';
+            else if (i === 2) sub = 'Target list locked in';
+            else if (i === 3) sub = 'Outreach sent';
+            else if (i === 4) sub = 'Coaches tracked';
+            else sub = 'Phase complete';
           } else if (active) {
-            if (i === 0) hint = 'Takes ~12 minutes';
+            if (i === 0) sub = 'Takes ~12 minutes';
             else if (i === 1) {
               const fields = [
                 athlete?.full_name, athlete?.phone, athlete?.bio,
@@ -400,139 +399,75 @@ export default function DashboardScreen() {
                 athlete?.guardian_phone, athlete?.guardian_email,
               ];
               const left = fields.filter(f => !f).length;
-              hint = left > 0 ? `${left} of 17 fields left` : 'Ready to complete';
-            } else if (i === 2) hint = athlete?.target_list_saved_at ? 'Target list locked in' : 'Review and lock in your list';
-            else if (i === 3) hint = 'Email templates ready';
-            else if (i === 4) hint = trackerCount > 0 ? `${trackerCount} coach${trackerCount !== 1 ? 'es' : ''} tracked` : 'Track your first coach';
-            else hint = 'Final phase';
+              sub = left > 0 ? `${left} of 17 fields left` : 'Ready to complete';
+            } else if (i === 2) sub = athlete?.target_list_saved_at ? 'Target list locked in' : 'Review your list';
+            else if (i === 3) sub = 'Email templates ready';
+            else if (i === 4) sub = trackerCount > 0 ? `${trackerCount} coach${trackerCount !== 1 ? 'es' : ''} tracked` : 'Track your first coach';
+            else sub = 'Final phase';
           } else if (locked && i > 1) {
-            hint = i <= 3 ? 'Pro required' : 'Elite required';
+            sub = i <= 3 ? 'Pro required' : 'Elite required';
           } else if (!locked && !done) {
-            hint = `Complete Phase ${i} first`;
+            sub = `Complete Phase ${i} first`;
           }
 
           return (
-            <View
-              key={i}
-              style={[
-                styles.phaseCard,
-                done && styles.phaseCardDone,
-                active && styles.phaseCardActive,
-                locked && styles.phaseCardLocked,
-                locked && { filter: [{ blur: 1.5 }, { grayscale: 0.85 }] } as any,
-              ]}
-            >
-              <Pressable
-                style={styles.phaseInner}
-                onPress={() => canExpand && setExpandedPhase(isExpanded ? null : i)}
-                disabled={!canExpand}
-              >
-                {/* Icon */}
-                <View style={[
-                  styles.phaseIcon,
-                  done ? styles.phaseIconDone : active ? styles.phaseIconActive : styles.phaseIconMuted,
-                ]}>
-                  {done ? (
-                    <Ionicons name="checkmark" size={16} color={C.background} />
-                  ) : locked ? (
-                    <Ionicons name="lock-closed" size={14} color={C.textDim} />
-                  ) : (
-                    <Text style={[styles.phaseIconNum, active && { color: 'rgb(255,183,0)' }]}>
-                      {phase.number}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Content */}
-                <View style={styles.phaseContent}>
-                  <Text style={[
-                    styles.phaseEyebrow,
-                    done && { color: C.textMuted },
-                    (locked || (!active && !done)) && { color: C.textDim },
-                  ]}>
-                    Phase {phase.number}
-                  </Text>
-                  <Text style={[
-                    styles.phaseTitle,
-                    locked && { color: C.textMuted },
-                  ]}>
-                    {phase.title}
-                  </Text>
-                  <Text style={[styles.phaseDesc, locked && { color: C.textDim }]}>
-                    {phase.description}
-                  </Text>
-                  {hint ? (
-                    <View style={[
-                      styles.hintChip,
-                      active && { backgroundColor: 'rgba(255,183,0,0.1)', borderColor: 'rgba(255,183,0,0.35)' },
-                    ]}>
-                      <Text style={[styles.hintChipText, active && { color: 'rgb(255,183,0)' }]}>{hint}</Text>
-                    </View>
-                  ) : null}
-                </View>
-
-                {/* Right: badge + chevron */}
-                <View style={styles.phaseRight}>
-                  <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
-                    <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badgeLabel}</Text>
+            <View key={i} style={styles.phaseTimelineItem}>
+              {/* Left: connector + node + connector */}
+              <View style={styles.phaseTimelineLeft}>
+                {i > 0 && (
+                  <View style={[styles.phaseConnector, { backgroundColor: done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)' }]} />
+                )}
+                {done ? (
+                  <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
+                    <Ionicons name="checkmark" size={16} color="#000000" />
                   </View>
-                  {canExpand && (
-                    <Ionicons
-                      name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                      size={14}
-                      color={active ? 'rgb(255,183,0)' : C.textDim}
-                    />
-                  )}
-                </View>
-              </Pressable>
+                ) : active ? (
+                  <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' }]} />
+                ) : locked ? (
+                  <View style={[styles.phaseNode, { backgroundColor: '#1a1a1f' }]}>
+                    <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.25)" />
+                  </View>
+                ) : (
+                  <View style={[styles.phaseNode, { backgroundColor: '#1a1a1f', opacity: 0.7 }]} />
+                )}
+                {!isLast && (
+                  <View style={[styles.phaseConnector, { backgroundColor: done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)' }]} />
+                )}
+              </View>
 
-              {/* Expanded checklist */}
-              {isExpanded && canExpand && (
-                <View style={styles.phaseBody}>
-                  {(active || done) ? (
-                    <>
-                      {phase.items.map((item, j) => {
-                        const checked = done || (active && j === 0 && i === 0 && !!assessment);
-                        return (
-                          <Pressable
-                            key={j}
-                            style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: C.surfaceAlt }]}
-                            onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
-                          >
-                            <View style={[styles.checkBox, checked && styles.checkBoxDone]}>
-                              {checked && <Ionicons name="checkmark" size={10} color={C.background} />}
-                            </View>
-                            <Text style={[styles.checkLabel, checked && { opacity: 0.6 }]}>{item.label}</Text>
-                            <Ionicons name="arrow-forward" size={12} color={C.textDim} />
-                          </Pressable>
-                        );
-                      })}
-                    </>
-                  ) : (
-                    <View style={styles.upcomingMsg}>
-                      <Text style={styles.upcomingMsgText}>
-                        Complete Phase {phase.number - 1} to unlock this phase
-                      </Text>
-                    </View>
-                  )}
+              {/* Right: content */}
+              <View style={[styles.phaseTimelineContent, locked && { opacity: 0.38 }]}>
+                <View style={styles.phaseTimelineRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.phaseTimelineTitle, !done && !active && { color: C.textMuted }]}>
+                      {phase.title}
+                    </Text>
+                    {sub ? <Text style={styles.phaseTimelineSub}>{sub}</Text> : null}
+                  </View>
+                  {!locked && <Ionicons name="chevron-forward" size={15} color={C.icon} />}
                 </View>
-              )}
 
-              {/* Locked footer */}
-              {locked && (
-                <View style={styles.lockedRow}>
-                  <Text style={styles.lockedText}>
-                    {i > 1
-                      ? `Upgrade to ${i <= 3 ? 'Pro' : 'Elite'} to access Phase ${phase.number}`
-                      : `Complete Phase ${phase.number - 1} to unlock`}
-                  </Text>
-                  {i > 1 && !isElite && (
-                    <Pressable onPress={() => router.push('/upgrade' as any)}>
-                      <Text style={styles.lockedUpgradeLink}>Upgrade →</Text>
-                    </Pressable>
-                  )}
-                </View>
-              )}
+                {!locked && (
+                  <View style={styles.phaseBody}>
+                    {phase.items.map((item, j) => {
+                      const checked = done || (active && j === 0 && i === 0 && !!assessment);
+                      return (
+                        <Pressable
+                          key={j}
+                          style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: C.surfaceAlt }]}
+                          onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
+                        >
+                          <View style={[styles.checkBox, checked && styles.checkBoxDone]}>
+                            {checked && <Ionicons name="checkmark" size={10} color={C.background} />}
+                          </View>
+                          <Text style={[styles.checkLabel, checked && { opacity: 0.6 }]}>{item.label}</Text>
+                          <Ionicons name="arrow-forward" size={12} color={C.icon} />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
             </View>
           );
         })}
@@ -546,7 +481,7 @@ export default function DashboardScreen() {
           { label: 'Programs', value: matchCount, icon: 'school-outline' as const },
         ].map((stat, i) => (
           <View key={i} style={styles.statCard}>
-            <Ionicons name={stat.icon} size={16} color={C.textMuted} />
+            <Ionicons name={stat.icon} size={16} color={C.icon} />
             <Text style={styles.statValue}>{stat.value}</Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
@@ -685,7 +620,7 @@ export default function DashboardScreen() {
         </View>
         {!isPremium ? (
           <View style={styles.matchGate}>
-            <Ionicons name="lock-closed" size={20} color={C.textDim} />
+            <Ionicons name="lock-closed" size={20} color={C.icon} />
             <Text style={styles.matchGateText}>Upgrade to Pro to see your matched programs</Text>
             <Pressable
               style={styles.matchGateBtn}
@@ -696,13 +631,17 @@ export default function DashboardScreen() {
           </View>
         ) : matchCount === 0 ? (
           <View style={styles.matchGate}>
-            <Ionicons name="school-outline" size={22} color={C.textDim} />
+            <Ionicons name="school-outline" size={22} color={C.icon} />
             <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
-            <Pressable
-              style={styles.matchGateBtn}
-              onPress={() => router.push('/assessment' as any)}
-            >
-              <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
+            <Pressable onPress={() => router.push('/assessment' as any)}>
+              <LinearGradient
+                colors={['#ff0000', '#aa00ff']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.matchGateBtn}
+              >
+                <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
+              </LinearGradient>
             </Pressable>
           </View>
         ) : (
@@ -712,7 +651,7 @@ export default function DashboardScreen() {
           >
             <Ionicons name="school-outline" size={18} color={C.primary} />
             <Text style={styles.matchViewAllText}>View {matchCount} matched program{matchCount !== 1 ? 's' : ''}</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.textDim} />
+            <Ionicons name="chevron-forward" size={14} color={C.icon} />
           </Pressable>
         )}
       </View>
@@ -729,7 +668,7 @@ function createStyles(C: ThemeColors) {
 
     // Greeting
     welcomeCard: { backgroundColor: C.surface, borderRadius: 18, padding: 22 },
-    eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: C.primary, marginBottom: 6 },
+    eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: C.text, marginBottom: 6 },
     welcomeTitle: { fontSize: 26, fontWeight: '700', color: C.text, letterSpacing: -0.5, marginBottom: 6, lineHeight: 30 },
     welcomeSub: { fontSize: 13, color: C.textMuted, lineHeight: 18, marginBottom: 14 },
     badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -752,22 +691,22 @@ function createStyles(C: ThemeColors) {
     tierItem: { flex: 1, alignItems: 'center', gap: 5 },
     tierBar: { height: 3, width: '100%', borderRadius: 2 },
     tierBarLabel: { fontSize: 9, letterSpacing: 0.3 },
-    assessmentBtn: { marginTop: 20, backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 13 },
+    assessmentBtn: { marginTop: 20, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 13 },
     assessmentBtnText: { color: C.white, fontSize: 15, fontWeight: '700' },
 
     // Progress
-    progressCard: { backgroundColor: C.surface, borderRadius: 14, padding: 18 },
-    progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-    progressLabel: { fontSize: 13, fontWeight: '700', color: C.text },
+    progressCard: { backgroundColor: C.surface, borderRadius: 20, padding: 22 },
+    progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    progressLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+    progressBadge: { paddingHorizontal: 12, paddingVertical: 5, backgroundColor: C.surfaceAlt, borderRadius: 100 },
+    progressBadgeText: { fontSize: 11, fontWeight: '500', color: C.textMuted },
+    progressPct: { fontSize: 52, fontWeight: '900', color: C.text, letterSpacing: -2, lineHeight: 60, marginBottom: 16 },
+    progressBarWrap: { position: 'relative', height: 36 },
+    progressBarTrack: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: C.surfaceAlt, borderRadius: 100, overflow: 'hidden' },
+    progressBarFill: { height: '100%', borderRadius: 100 },
+    progressBarPill: { position: 'absolute', right: 8, top: 0, bottom: 0, justifyContent: 'center', paddingHorizontal: 14, backgroundColor: C.surfaceAlt, borderRadius: 100 },
+    progressBarPillText: { fontSize: 12, fontWeight: '600', color: C.text },
     progressCount: { fontSize: 12, color: C.textMuted },
-    progressTrack: { height: 15, backgroundColor: C.surfaceAlt, borderRadius: 15, overflow: 'hidden', marginBottom: 14 },
-    progressFill: { height: '100%', borderRadius: 3 },
-    phaseDots: { flexDirection: 'row', gap: 8 },
-    phaseDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-    phaseDotDone: { backgroundColor: C.text, borderColor: C.border },
-    phaseDotActive: { backgroundColor: C.primary, borderColor: C.primary },
-    phaseDotNum: { fontSize: 11, fontWeight: '700', color: C.textDim },
-    phaseDotNumActive: { color: C.white },
 
     // Upgrade banner
     upgradeBanner: { borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -777,53 +716,36 @@ function createStyles(C: ThemeColors) {
     upgradeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, backgroundColor: '#a3ff47', flexShrink: 0 },
     upgradeBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
 
-    // Phase list
-    phaseList: { gap: 10 },
-    phaseCard: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' },
-    phaseCardActive: {
-      borderColor: 'rgb(255,183,0)',
-      borderWidth: 1.5,
-      backgroundColor: isDark ? 'rgba(255,183,0,0.04)' : 'rgba(255,183,0,0.05)',
-      shadowColor: 'rgb(255,183,0)',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.45,
-      shadowRadius: 14,
-      elevation: 8,
-    },
-    phaseCardDone: { opacity: 0.6 },
-    phaseCardLocked: { opacity: 0.28 },
-    phaseInner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16 },
-    phaseIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    phaseIconActive: { backgroundColor: 'rgba(255,183,0,0.14)', borderWidth: 1.5, borderColor: 'rgba(255,183,0,0.45)' },
-    phaseIconDone: { backgroundColor: C.success },
-    phaseIconMuted: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-    phaseIconNum: { fontSize: 15, fontWeight: '800', color: C.textMuted },
-    phaseContent: { flex: 1, gap: 3 },
-    phaseEyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: C.primary },
-    phaseTitle: { fontSize: 14, fontWeight: '800', color: C.text, lineHeight: 18 },
-    phaseDesc: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
-    hintChip: { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-    hintChipText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.3 },
-    phaseRight: { alignItems: 'flex-end', gap: 8, paddingTop: 2, flexShrink: 0 },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100 },
-    statusBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
+    // Phase list — gradient timeline (screenshot style)
+    phaseChipsRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+    phaseChipDone: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.surfaceAlt, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center' },
+    phaseChipActive: { height: 42, paddingHorizontal: 20, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+    phaseChipActiveText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+    phaseChip: { width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+    phaseChipNum: { fontSize: 14, fontWeight: '600', color: C.textMuted },
+
+    phaseTimelineItem: { flexDirection: 'row', alignItems: 'stretch' },
+    phaseTimelineLeft: { width: 44, alignItems: 'center', flexShrink: 0 },
+    phaseConnector: { width: 8, flex: 1, minHeight: 12 },
+    phaseNode: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    phaseNodeSmall: { width: 14, height: 14, borderRadius: 7, flexShrink: 0 },
+    phaseTimelineContent: { flex: 1, paddingLeft: 12, paddingVertical: 12 },
+    phaseTimelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    phaseTimelineTitle: { fontSize: 16, fontWeight: '700', color: C.text, lineHeight: 20 },
+    phaseTimelineSub: { fontSize: 12, color: C.textMuted, lineHeight: 17, marginTop: 2 },
 
     // Expanded body
-    phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 2, borderTopWidth: 1, borderTopColor: C.border },
+    phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
     checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 },
     checkBox: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     checkBoxDone: { backgroundColor: C.success, borderColor: C.success },
     checkLabel: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 18 },
     upcomingMsg: { marginTop: 10, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 8, alignItems: 'center' },
     upcomingMsgText: { fontSize: 12, color: C.textDim, textAlign: 'center' },
-
-    // Locked footer
-    lockedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: C.surfaceAlt, borderTopWidth: 1, borderTopColor: C.border },
-    lockedText: { flex: 1, fontSize: 12, color: C.textDim },
-    lockedUpgradeLink: { fontSize: 12, fontWeight: '700', color: C.primary },
+    lockedUpgradeLink: { fontSize: 12, fontWeight: '700', color: C.primary, textAlign: 'center', paddingVertical: 4 },
 
     // Stats row
-    statsRow: { flexDirection: 'row', gap: 10 },
+    statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
     statCard: { flex: 1, backgroundColor: C.surface, borderRadius: 12, padding: 14, alignItems: 'center', gap: 4 },
     statValue: { fontSize: 24, fontWeight: '900', color: C.text, letterSpacing: -1, lineHeight: 28 },
     statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '500', textAlign: 'center', lineHeight: 14 },

@@ -10,6 +10,7 @@ export type ThemeColors = {
   text: string;
   textMuted: string;
   textDim: string;
+  icon: string;
   success: string;
   warning: string;
   error: string;
@@ -20,15 +21,16 @@ export type ThemeColors = {
 export const DARK_THEME: ThemeColors = {
   primary:    '#833AB4',
   primaryDark:'#6B2D96',
-  background: '#18191d',
-  surface:    '#28292e',
-  surfaceAlt: '#303238',
+  background: '#0a0a0b',
+  surface:    '#141416',
+  surfaceAlt: '#1c1c1f',
   scoreCard:  '#0e0b14',
   border:     'rgba(255,255,255,0.09)',
-  border2:    'rgba(255,255,255,0.16)',
-  text:       '#e8e9ea',
-  textMuted:  '#9a9da2',
-  textDim:    '#5a5d63',
+  border2:    'rgba(255,255,255,0.18)',
+  text:       '#ffffff',
+  textMuted:  '#8e8e93',
+  textDim:    '#48484a',
+  icon:       '#ffffff',
   success:    '#71ff7e',
   warning:    '#F59E0B',
   error:      '#e63535',
@@ -39,15 +41,16 @@ export const DARK_THEME: ThemeColors = {
 export const LIGHT_THEME: ThemeColors = {
   primary:    '#833AB4',
   primaryDark:'#6B2D96',
-  background: '#f0f0f0',
+  background: '#f2f2f7',
   surface:    '#ffffff',
-  surfaceAlt: '#e8e8ed',
+  surfaceAlt: '#e5e5ea',
   scoreCard:  '#f5f3ff',
-  border:     'rgba(0,0,0,0.08)',
-  border2:    'rgba(0,0,0,0.14)',
-  text:       '#1a1b1d',
-  textMuted:  '#5a5d63',
-  textDim:    '#9a9da2',
+  border:     'rgba(0,0,0,0.09)',
+  border2:    'rgba(0,0,0,0.18)',
+  text:       '#000000',
+  textMuted:  '#3c3c43',
+  textDim:    '#8e8e93',
+  icon:       '#1c1c1e',
   success:    '#16a34a',
   warning:    '#D97706',
   error:      '#dc2626',

@@ -510,7 +510,7 @@ export default function ProfileScreen() {
             ) : null}
             {!hasHudl && !ytId && (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-                <Ionicons name="film-outline" size={32} color={C.textDim} />
+                <Ionicons name="film-outline" size={32} color={C.icon} />
                 <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
                   No film links added yet.
                 </Text>
@@ -588,7 +588,7 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-                <Ionicons name="school-outline" size={32} color={C.textDim} />
+                <Ionicons name="school-outline" size={32} color={C.icon} />
                 <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
                   No program matches yet.{'\n'}Complete your profile and assessment.
                 </Text>
@@ -635,7 +635,7 @@ function createStyles(C: ThemeColors) {
     heroSub: { fontSize: 14, fontWeight: '700', color: C.textMuted, textAlign: 'center' },
     heroLocation: { fontSize: 13, color: C.textMuted, textAlign: 'center' },
     heroClass: { fontSize: 12, color: C.textDim, textAlign: 'center' },
-    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary + '18', borderWidth: 1, borderColor: C.primary + '30', marginTop: 4 },
+    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary + '18', marginTop: 4 },
     editBtnText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
     metricsRow: { paddingHorizontal: 20, paddingBottom: 16, gap: 12 },
@@ -677,11 +677,11 @@ function createStyles(C: ThemeColors) {
     filmPlayCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
     filmCardTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
     filmCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
-    filmLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100, marginTop: 4 },
+    filmLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100, marginTop: 4 },
     filmLinkText: { fontSize: 13, fontWeight: '700', color: '#fff' },
     ytCard: { backgroundColor: C.surfaceAlt, borderRadius: 10, padding: 24, alignItems: 'center', gap: 10 },
     ytText: { fontSize: 13, fontWeight: '600', color: C.text },
-    addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary + '20', borderWidth: 1, borderColor: C.primary + '40' },
+    addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary + '20' },
     addFilmText: { fontSize: 13, fontWeight: '700', color: C.primary },
 
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

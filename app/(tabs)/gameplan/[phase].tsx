@@ -111,7 +111,7 @@ function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
   return (
     <View style={sh.root}>
       <Pressable style={sh.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={20} color={C.textMuted} />
+        <Ionicons name="arrow-back" size={20} color={C.icon} />
         <Text style={sh.backText}>The Gameplan</Text>
       </Pressable>
       <View style={sh.badge}>
@@ -154,12 +154,19 @@ function EmptyState({
   const s = useMemo(() => createStyles(C), [C]);
   return (
     <View style={s.empty}>
-      <Ionicons name={icon} size={32} color={C.textDim} />
+      <Ionicons name={icon} size={32} color={C.icon} />
       <Text style={s.emptyTitle}>{title}</Text>
       <Text style={s.emptyBody}>{body}</Text>
       {cta && onCta && (
-        <Pressable style={s.emptyBtn} onPress={onCta}>
-          <Text style={s.emptyBtnText}>{cta}</Text>
+        <Pressable onPress={onCta}>
+          <LinearGradient
+            colors={['#ff0000', '#aa00ff']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.5 }}
+            style={s.emptyBtn}
+          >
+            <Text style={s.emptyBtnText}>{cta}</Text>
+          </LinearGradient>
         </Pressable>
       )}
     </View>
@@ -183,7 +190,7 @@ function LockedView({ phase }: { phase: Phase }) {
   return (
     <View style={[s.scroll, s.center]}>
       <View style={s.lockCircle}>
-        <Ionicons name="lock-closed" size={28} color={C.textMuted} />
+        <Ionicons name="lock-closed" size={28} color={C.icon} />
       </View>
       <Text style={s.lockTitle}>Phase {phase.number} Locked</Text>
       <Text style={s.lockDesc}>
@@ -532,7 +539,7 @@ function Phase2({ athlete, phase, onBack }: {
                   <Text style={s.checkEmpty}>Not set — tap to add</Text>
                 )}
               </View>
-              {!done && <Ionicons name="chevron-forward" size={14} color={C.textDim} />}
+              {!done && <Ionicons name="chevron-forward" size={14} color={C.icon} />}
             </Pressable>
           );
         })}
@@ -875,7 +882,7 @@ function Phase6({ athleteId, phase, onBack }: {
                 <Card>
                   {items.map((task, i) => (
                     <Pressable key={task.id} style={[s.taskRow, i < items.length - 1 && s.taskRowBorder]} onPress={() => toggleTask(task.id, task.is_complete)}>
-                      <Ionicons name="ellipse-outline" size={22} color={C.textDim} />
+                      <Ionicons name="ellipse-outline" size={22} color={C.icon} />
                       <View style={{ flex: 1 }}>
                         <Text style={s.taskTitle}>{task.title}</Text>
                         {task.due_date && <Text style={s.taskDue}>{formatDueDate(task.due_date)}</Text>}
@@ -896,7 +903,7 @@ function Phase6({ athleteId, phase, onBack }: {
               <Card>
                 {done.map((task, i) => (
                   <Pressable key={task.id} style={[s.taskRow, s.taskRowDone, i < done.length - 1 && s.taskRowBorder]} onPress={() => toggleTask(task.id, task.is_complete)}>
-                    <Ionicons name="checkmark-circle" size={22} color={C.textDim} />
+                    <Ionicons name="checkmark-circle" size={22} color={C.icon} />
                     <View style={{ flex: 1 }}>
                       <Text style={[s.taskTitle, s.taskTitleDone]}>{task.title}</Text>
                     </View>
@@ -1065,7 +1072,7 @@ function createStyles(C: ThemeColors) {
     countText: { fontSize: 15, fontWeight: '700', color: C.text },
     planChip: { backgroundColor: C.surfaceAlt, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: C.border },
     planChipText: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 0.5 },
-    listCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, overflow: 'hidden' },
+    listCard: { backgroundColor: C.surface, borderRadius: 14, overflow: 'hidden' },
     programRow: { padding: 16 },
     programRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
     programTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
@@ -1119,7 +1126,7 @@ function createStyles(C: ThemeColors) {
     empty: { alignItems: 'center', gap: 10, paddingVertical: 32, paddingHorizontal: 16 },
     emptyTitle: { fontSize: 16, fontWeight: '700', color: C.textMuted, textAlign: 'center' },
     emptyBody: { fontSize: 14, color: C.textDim, textAlign: 'center', lineHeight: 21 },
-    emptyBtn: { marginTop: 8, backgroundColor: C.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
+    emptyBtn: { marginTop: 8, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
     emptyBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
   });
 }

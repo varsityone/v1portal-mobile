@@ -115,7 +115,7 @@ function DateStepper({ date, onChange, C }: { date: Date; onChange: (d: Date) =>
       {fields.map(({ key, label }) => (
         <View key={key} style={{ alignItems: 'center', gap: 2 }}>
           <Pressable onPress={() => onChange(stepDate(date, key, 1))} hitSlop={10} style={{ padding: 6 }}>
-            <Ionicons name="chevron-up" size={18} color={C.textMuted} />
+            <Ionicons name="chevron-up" size={18} color={C.icon} />
           </Pressable>
           <View style={{
             backgroundColor: C.surfaceAlt,
@@ -128,7 +128,7 @@ function DateStepper({ date, onChange, C }: { date: Date; onChange: (d: Date) =>
             <Text style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>{label}</Text>
           </View>
           <Pressable onPress={() => onChange(stepDate(date, key, -1))} hitSlop={10} style={{ padding: 6 }}>
-            <Ionicons name="chevron-down" size={18} color={C.textMuted} />
+            <Ionicons name="chevron-down" size={18} color={C.icon} />
           </Pressable>
         </View>
       ))}
@@ -251,7 +251,7 @@ export default function CalendarScreen() {
                 <View style={[s.typeBadge, { backgroundColor: cfg.color + (isPast ? '15' : '22') }]}>
                   <Text style={[s.typeBadgeText, { color: isPast ? C.textDim : cfg.color }]}>{cfg.label}</Text>
                 </View>
-                <Ionicons name="pencil-outline" size={11} color={C.textDim} />
+                <Ionicons name="pencil-outline" size={11} color={C.icon} />
               </View>
             </View>
           </Pressable>
@@ -325,7 +325,7 @@ export default function CalendarScreen() {
         {/* Empty state */}
         {upcomingItems.length === 0 && (
           <View style={s.emptyState}>
-            <Ionicons name="calendar-outline" size={36} color={C.textDim} />
+            <Ionicons name="calendar-outline" size={36} color={C.icon} />
             <Text style={s.emptyText}>No upcoming dates</Text>
             <Text style={s.emptySubtext}>Tap + to add your own events</Text>
           </View>
@@ -337,7 +337,7 @@ export default function CalendarScreen() {
             <Text style={s.pastToggleText}>
               {showAll ? 'Hide past dates' : `Show ${pastItems.length} past date${pastItems.length !== 1 ? 's' : ''}`}
             </Text>
-            <Ionicons name={showAll ? 'chevron-up' : 'chevron-down'} size={14} color={C.textMuted} />
+            <Ionicons name={showAll ? 'chevron-up' : 'chevron-down'} size={14} color={C.icon} />
           </Pressable>
         )}
       </ScrollView>
@@ -362,7 +362,7 @@ export default function CalendarScreen() {
               <View style={s.modalHeader}>
                 <Text style={s.modalTitle}>{editingId ? 'Edit Event' : 'Add Event'}</Text>
                 <Pressable onPress={() => setModalVisible(false)} hitSlop={12}>
-                  <Ionicons name="close" size={22} color={C.textMuted} />
+                  <Ionicons name="close" size={22} color={C.icon} />
                 </Pressable>
               </View>
 
@@ -461,15 +461,13 @@ function createStyles(C: ThemeColors) {
       alignItems: 'center', justifyContent: 'center',
       marginTop: 8, zIndex: 1,
     },
-    dotPast:  { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    dotPast:  { backgroundColor: C.surfaceAlt },
     line:     { flex: 1, width: 2, backgroundColor: C.border, marginVertical: 2 },
     linePast: { opacity: 0.4 },
 
     card: {
       flex: 1,
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 12,
       padding: 14,
       marginBottom: 10,
@@ -490,7 +488,7 @@ function createStyles(C: ThemeColors) {
     pastToggle: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
       padding: 14, backgroundColor: C.surface,
-      borderWidth: 1, borderColor: C.border, borderRadius: 12,
+      borderRadius: 12,
     },
     pastToggleText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
 
@@ -526,15 +524,13 @@ function createStyles(C: ThemeColors) {
       padding: 14,
       color: C.text,
       fontSize: 15,
-      borderWidth: 1,
-      borderColor: C.border,
     },
 
     typeRow:      { marginHorizontal: -2 },
     typeChip: {
       flexDirection: 'row', alignItems: 'center', gap: 5,
       paddingHorizontal: 12, paddingVertical: 7,
-      borderRadius: 20, borderWidth: 1, borderColor: C.border,
+      borderRadius: 20,
       backgroundColor: C.surfaceAlt,
     },
     typeChipText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
@@ -549,7 +545,6 @@ function createStyles(C: ThemeColors) {
     deleteBtn: {
       height: 48, paddingHorizontal: 18, borderRadius: 100,
       backgroundColor: 'rgba(225,48,108,0.1)',
-      borderWidth: 1, borderColor: 'rgba(225,48,108,0.25)',
       alignItems: 'center', justifyContent: 'center',
     },
     deleteBtnText: { fontSize: 14, fontWeight: '600', color: '#E1306C' },

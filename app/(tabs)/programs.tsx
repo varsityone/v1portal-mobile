@@ -117,16 +117,20 @@ export default function ProgramsScreen() {
         </LinearGradient>
       ) : programs.length === 0 && !loading ? (
         <View style={s.emptyCard}>
-          <Ionicons name="school-outline" size={32} color={C.textDim} />
+          <Ionicons name="school-outline" size={32} color={C.icon} />
           <Text style={s.emptyTitle}>No matches yet</Text>
           <Text style={s.emptySub}>
             Complete your V1 Assessment to generate your program matches.
           </Text>
-          <Pressable
-            style={s.emptyBtn}
-            onPress={() => router.push('/assessment' as any)}
-          >
-            <Text style={s.emptyBtnText}>Take Assessment →</Text>
+          <Pressable onPress={() => router.push('/assessment' as any)}>
+            <LinearGradient
+              colors={['#ff0000', '#aa00ff']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0.5 }}
+              style={s.emptyBtn}
+            >
+              <Text style={s.emptyBtnText}>Take Assessment →</Text>
+            </LinearGradient>
           </Pressable>
         </View>
       ) : (
@@ -208,8 +212,6 @@ function createStyles(C: ThemeColors) {
 
     scoreChip: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 12,
       padding: 14,
       flexDirection: 'row',
@@ -238,8 +240,6 @@ function createStyles(C: ThemeColors) {
 
     emptyCard: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 16,
       padding: 28,
       alignItems: 'center',
@@ -256,7 +256,7 @@ function createStyles(C: ThemeColors) {
       borderWidth: 1,
       borderColor: C.primary + '40',
     },
-    emptyBtnText: { fontSize: 14, fontWeight: '700', color: C.primary },
+    emptyBtnText: { fontSize: 14, fontWeight: '700', color: '#ffffff' },
 
     filters: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     filterChip: {
@@ -274,8 +274,6 @@ function createStyles(C: ThemeColors) {
     list: { gap: 10 },
     programCard: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 14,
       padding: 16,
       flexDirection: 'row',

@@ -111,7 +111,7 @@ function EditModal({ entry, onSave, onClose }: {
             ) : null}
           </View>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={20} color={C.textMuted} />
+            <Ionicons name="close" size={20} color={C.icon} />
           </Pressable>
         </View>
 
@@ -162,7 +162,7 @@ function EditModal({ entry, onSave, onClose }: {
             value={nextAction}
             onChangeText={setNextAction}
             placeholder="e.g. Follow up email, Attend camp..."
-            placeholderTextColor={C.textDim}
+            placeholderTextColor="#ffffff"
           />
 
           {/* Notes */}
@@ -172,7 +172,7 @@ function EditModal({ entry, onSave, onClose }: {
             value={notes}
             onChangeText={setNotes}
             placeholder="Anything worth remembering..."
-            placeholderTextColor={C.textDim}
+            placeholderTextColor="#ffffff"
             multiline
           />
 
@@ -235,7 +235,7 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
         <View style={em.sheetHeader}>
           <Text style={em.sheetTitle}>Add Coach to Tracker</Text>
           <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={20} color={C.textMuted} />
+            <Ionicons name="close" size={20} color={C.icon} />
           </Pressable>
         </View>
         <TextInput
@@ -243,7 +243,7 @@ function AddCoachModal({ athleteId, existing, onAdd, onClose }: {
           value={query}
           onChangeText={setQuery}
           placeholder="Search by coach name…"
-          placeholderTextColor={C.textDim}
+          placeholderTextColor="#ffffff"
           autoFocus
         />
         {busy && <ActivityIndicator color={C.primary} style={{ marginVertical: 12 }} />}
@@ -407,13 +407,13 @@ export default function CoachesScreen() {
       {/* ── Filters ── */}
       <View style={s.filterRow}>
         <View style={s.searchWrap}>
-          <Ionicons name="search-outline" size={14} color={C.textDim} />
+          <Ionicons name="search-outline" size={14} color={C.icon} />
           <TextInput
             style={s.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search coaches..."
-            placeholderTextColor={C.textDim}
+            placeholderTextColor="#ffffff"
           />
         </View>
       </View>
@@ -425,10 +425,10 @@ export default function CoachesScreen() {
           return (
             <Pressable
               key={val}
-              style={[s.pill, active && { backgroundColor: color + '20', borderColor: color + '60' }]}
+              style={[s.pill, active && { backgroundColor: color }]}
               onPress={() => setFilterStatus(val)}
             >
-              <Text style={[s.pillText, active && { color }]}>
+              <Text style={[s.pillText, active && { color: '#ffffff' }]}>
                 {val === 'all' ? 'All Statuses' : (cfg?.label ?? val)}
               </Text>
             </Pressable>
@@ -442,10 +442,10 @@ export default function CoachesScreen() {
           return (
             <Pressable
               key={`pri-${val}`}
-              style={[s.pill, active && { backgroundColor: color + '20', borderColor: color + '60' }]}
+              style={[s.pill, active && { backgroundColor: color }]}
               onPress={() => setFilterPriority(val)}
             >
-              <Text style={[s.pillText, active && { color }]}>
+              <Text style={[s.pillText, active && { color: '#ffffff' }]}>
                 {val === 'all' ? 'All Priorities' : (cfg?.label ?? val)}
               </Text>
             </Pressable>
@@ -458,7 +458,7 @@ export default function CoachesScreen() {
         <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
       ) : filtered.length === 0 ? (
         <View style={s.emptyCard}>
-          <Ionicons name="clipboard-outline" size={32} color={C.textDim} />
+          <Ionicons name="clipboard-outline" size={32} color={C.icon} />
           <Text style={s.emptyTitle}>
             {entries.length === 0 ? 'No coaches tracked yet' : 'No coaches match your filters'}
           </Text>
@@ -527,11 +527,11 @@ export default function CoachesScreen() {
                       style={s.actionBtn}
                       onPress={() => router.push('/(tabs)/outreach' as any)}
                     >
-                      <Ionicons name="mail-outline" size={14} color={C.textMuted} />
+                      <Ionicons name="mail-outline" size={14} color={C.icon} />
                     </Pressable>
                   )}
                   <Pressable style={s.actionBtn} onPress={() => setEditEntry(entry)}>
-                    <Ionicons name="create-outline" size={14} color={C.textMuted} />
+                    <Ionicons name="create-outline" size={14} color={C.icon} />
                   </Pressable>
                   <Pressable style={s.actionBtn} onPress={() => handleRemove(entry.id)}>
                     <Ionicons name="trash-outline" size={14} color={C.error} />
@@ -609,26 +609,26 @@ function createStyles(C: ThemeColors) {
     addBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    statCard: { width: '47.5%', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 16, alignItems: 'center', gap: 4 },
+    statCard: { width: '47.5%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center', gap: 4 },
     statValue: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
     statLabel: { fontSize: 11, fontWeight: '500', color: C.textDim, letterSpacing: 0.2 },
 
     filterRow: { flexDirection: 'row', gap: 8 },
-    searchWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+    searchWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
     searchInput: { flex: 1, fontSize: 13, color: C.text },
     filterPills: { gap: 8, paddingBottom: 2 },
-    pill: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+    pill: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 100, backgroundColor: C.surface },
     pillText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
     pillDivider: { width: 1, backgroundColor: C.border, marginHorizontal: 2 },
 
-    emptyCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 32, alignItems: 'center', gap: 10 },
+    emptyCard: { backgroundColor: C.surface, borderRadius: 16, padding: 32, alignItems: 'center', gap: 10 },
     emptyTitle: { fontSize: 16, fontWeight: '700', color: C.text, textAlign: 'center' },
     emptySub: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
     emptyBtn: { backgroundColor: C.primary + '20', borderRadius: 100, paddingHorizontal: 22, paddingVertical: 10, marginTop: 4, borderWidth: 1, borderColor: C.primary + '40' },
     emptyBtnText: { fontSize: 14, fontWeight: '700', color: C.primary },
 
     list: { gap: 8 },
-    entryCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
+    entryCard: { backgroundColor: C.surface, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', overflow: 'hidden' },
     statusBar: { width: 4, borderRadius: 2, alignSelf: 'stretch', marginRight: -4 },
     entryNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
     entryName: { fontSize: 14, fontWeight: '700', color: C.text },

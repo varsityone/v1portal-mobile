@@ -60,8 +60,8 @@ function PhaseCard({ phase, unlocked, isLast, onPress }: PhaseCardProps) {
             )}
           </View>
           {unlocked
-            ? <Ionicons name="chevron-forward" size={16} color={C.textDim} />
-            : <Ionicons name="lock-closed" size={14} color={C.textDim} />
+            ? <Ionicons name="chevron-forward" size={16} color={C.icon} />
+            : <Ionicons name="lock-closed" size={14} color={C.icon} />
           }
         </View>
 

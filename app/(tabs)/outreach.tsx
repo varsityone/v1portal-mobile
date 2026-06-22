@@ -128,7 +128,7 @@ export default function OutreachScreen() {
         </View>
       ) : contacts.length === 0 ? (
         <View style={s.emptyCard}>
-          <Ionicons name="mail-outline" size={36} color={C.textDim} />
+          <Ionicons name="mail-outline" size={36} color={C.icon} />
           <Text style={s.emptyTitle}>No outreach yet</Text>
           <Text style={s.emptyBody}>
             Tap "New" to compose your first coach email and start building your pipeline.
@@ -198,8 +198,6 @@ function createStyles(C: ThemeColors) {
     stageCard: {
       flex: 1,
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 12,
       padding: 12,
       alignItems: 'center',
@@ -213,8 +211,6 @@ function createStyles(C: ThemeColors) {
 
     emptyCard: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 14,
       padding: 36,
       alignItems: 'center',
@@ -235,8 +231,6 @@ function createStyles(C: ThemeColors) {
 
     listCard: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 14,
       overflow: 'hidden',
       paddingHorizontal: 16,

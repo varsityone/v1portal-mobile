@@ -46,7 +46,7 @@ function SettingsRow({ icon, label, onPress, destructive }: RowProps) {
         {label}
       </Text>
       {!destructive && (
-        <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+        <Ionicons name="chevron-forward" size={16} color={C.icon} />
       )}
     </Pressable>
   );
@@ -67,7 +67,7 @@ function ToggleRow({ icon, label, sublabel, value, onValueChange, disabled }: To
   return (
     <View style={s.row}>
       <View style={s.rowIcon}>
-        <Ionicons name={icon} size={18} color={C.textMuted} />
+        <Ionicons name={icon} size={18} color={C.icon} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.rowLabel}>{label}</Text>
@@ -305,8 +305,6 @@ function createStyles(C: ThemeColors) {
     },
     groupCard: {
       backgroundColor: C.surface,
-      borderWidth: 1,
-      borderColor: C.border,
       borderRadius: 14,
       overflow: 'hidden',
     },

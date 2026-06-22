@@ -24,9 +24,9 @@ const NAV_ITEMS = [
 
 // Profile Settings sub-items — matches web DashboardShell exactly
 const PROFILE_SUB_ITEMS = [
-  { label: 'Edit Profile',    href: '/(tabs)/profile'  },
-  { label: 'Athlete Profile', href: '/(tabs)/profile'  },
-  { label: 'Settings',        href: '/(tabs)/settings' },
+  { label: 'Edit Profile',    href: '/(tabs)/edit-profile' },
+  { label: 'Athlete Profile', href: '/(tabs)/profile'      },
+  { label: 'Settings',        href: '/(tabs)/settings'     },
 ];
 
 // ─── Social icons — exact SVG paths from web DashboardShell ──────────────────
@@ -179,19 +179,19 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
                 key={item.href}
                 style={({ pressed }) => [
                   d.navItem,
-                  pressed && { backgroundColor: `${C.primary}08` },
+                  pressed && { backgroundColor: 'rgba(255,255,255,0.05)' },
                 ]}
                 onPress={() => navigate(item.href)}
               >
                 <Ionicons
                   name={active ? item.icon : item.iconOff}
                   size={17}
-                  color={active ? C.primary : C.textMuted}
+                  color={scheme === 'dark' ? '#ffffff' : '#252525'}
                 />
-                <Text style={[d.navLabel, { color: active ? C.primary : C.text, fontWeight: active ? '700' : '400' }]}>
+                <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
                   {item.label}
                 </Text>
-                {active && <View style={[d.activeBar, { backgroundColor: C.primary }]} />}
+                {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
               </Pressable>
             );
           })}
@@ -201,22 +201,22 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
             <Pressable
               style={({ pressed }) => [
                 d.navItem,
-                pressed && { backgroundColor: `${C.primary}08` },
+                pressed && { backgroundColor: 'rgba(255,255,255,0.05)' },
               ]}
               onPress={() => setProfileMenuOpen(v => !v)}
             >
               <Ionicons
                 name={profileSettingsActive ? 'settings' : 'settings-outline'}
                 size={17}
-                color={profileSettingsActive ? C.primary : C.textMuted}
+                color={scheme === 'dark' ? '#ffffff' : '#252525'}
               />
-              <Text style={[d.navLabel, { color: profileSettingsActive ? C.primary : C.text, fontWeight: profileSettingsActive ? '700' : '400', flex: 1 }]}>
+              <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: profileSettingsActive ? '700' : '400', flex: 1 }]}>
                 Profile Settings
               </Text>
               <Ionicons
                 name={profileMenuOpen ? 'chevron-down' : 'chevron-forward'}
                 size={13}
-                color={profileSettingsActive ? C.primary : C.textDim}
+                color={scheme === 'dark' ? '#ffffff' : '#252525'}
               />
             </Pressable>
 
@@ -252,8 +252,8 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
             router.push('/(tabs)' as any);
           }}
         >
-          <Ionicons name="play-circle" size={15} color={C.primary} />
-          <Text style={[d.tourText, { color: C.primary }]}>Dashboard Tour</Text>
+          <Ionicons name="play-circle" size={15} color="rgb(200, 0, 167)" />
+          <Text style={[d.tourText, { color: 'rgb(200, 0, 167)' }]}>Dashboard Tour</Text>
         </Pressable>
 
         {/* Divider */}
@@ -340,8 +340,8 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
           {athlete?.profile_photo_url ? (
             <Image source={{ uri: athlete.profile_photo_url }} style={d.avatar} />
           ) : (
-            <View style={[d.avatar, { backgroundColor: `${C.primary}20` }]}>
-              <Text style={[d.avatarText, { color: C.primary }]}>{initials}</Text>
+            <View style={[d.avatar, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
+              <Text style={[d.avatarText, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -431,7 +431,7 @@ const d = StyleSheet.create({
 
   divider: { height: 1, marginHorizontal: 16, marginVertical: 12 },
 
-  socialSection: { marginBottom: 4 },
+  socialSection: { marginBottom: 20 },
   socialRow: { flexDirection: 'row', gap: 18, paddingHorizontal: 20, alignItems: 'center' },
   socialIcon: { padding: 4 },
   themeToggle: {
