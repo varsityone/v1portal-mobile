@@ -19,6 +19,9 @@ if (Platform.OS !== 'web') {
 // ─── Register ─────────────────────────────────────────────────────────────────
 
 export async function registerForPushNotifications(session: Session): Promise<string | null> {
+  // Push tokens are not supported on web
+  if (Platform.OS === 'web') return null;
+
   // Expo push tokens only work on physical devices
   if (!Device.isDevice) {
     return null;
