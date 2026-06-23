@@ -761,12 +761,12 @@ function createStyles(C: ThemeColors) {
     phaseTimelineTitle: { fontSize: 16, fontWeight: '700', color: C.text, lineHeight: 20 },
     phaseTimelineSub: { fontSize: 12, color: C.textMuted, lineHeight: 17, marginTop: 2 },
 
-    phaseBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexShrink: 0 },
+    phaseBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, flexShrink: 0 },
     phaseBadgeDone: { backgroundColor: C.border },
     phaseBadgeActive: { backgroundColor: C.border },
     phaseBadgeLocked: { backgroundColor: C.border },
     phaseBadgeUpcoming: { backgroundColor: C.border },
-    phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.2 },
+    phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
 
     // Expanded body
     phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
