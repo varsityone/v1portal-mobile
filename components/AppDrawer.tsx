@@ -166,6 +166,21 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
         </Pressable>
       </View>
 
+      {/* User profile header */}
+      <View style={[d.profileHeader, { borderBottomColor: C.border }]}>
+        {athlete?.profile_photo_url ? (
+          <Image source={{ uri: athlete.profile_photo_url }} style={d.profilePhoto} />
+        ) : (
+          <View style={[d.profilePhoto, d.profilePhotoFallback, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
+            <Text style={[d.profilePhotoInitials, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
+          </View>
+        )}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[d.profileName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
+          {fullName ? <Text style={[d.profileEmail, { color: C.textMuted }]} numberOfLines={1}>{email}</Text> : null}
+        </View>
+      </View>
+
       {/* Scrollable nav */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 
@@ -379,6 +394,38 @@ const d = StyleSheet.create({
   },
   logo: { height: 28, width: 130 },
   closeBtn: { padding: 4 },
+
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    marginBottom: 4,
+  },
+  profilePhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    flexShrink: 0,
+  },
+  profilePhotoFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profilePhotoInitials: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  profileName: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  profileEmail: {
+    fontSize: 12,
+    marginTop: 1,
+  },
 
   groupLabel: {
     fontSize: 10,

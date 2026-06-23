@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+// WebBrowser is kept for the "Manage Subscription" link only
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
@@ -124,24 +125,18 @@ const toast = StyleSheet.create({
 function TierCard({
   tier,
   isActive,
-  isSelected,
-  onSelect,
 }: {
   tier: Tier;
   isActive: boolean;
-  isSelected: boolean;
-  onSelect: () => void;
 }) {
   const isElite = tier.key === 'elite';
 
   return (
-    <Pressable
-      onPress={tier.key === 'free' ? undefined : onSelect}
-      style={({ pressed }) => [
+    <View
+      style={[
         card.root,
-        isSelected && { borderColor: tier.accentColor, borderWidth: 2 },
+        isActive && { borderColor: tier.accentColor, borderWidth: 2 },
         isElite && card.eliteRoot,
-        pressed && tier.key !== 'free' && { opacity: 0.88 },
       ]}
     >
       {/* Badge */}
@@ -182,12 +177,11 @@ function TierCard({
           <Text style={card.ctaDisabledText}>Free</Text>
         </View>
       ) : (
-        <View style={[card.cta, { backgroundColor: tier.accentColor }]}>
-          <Text style={card.ctaText}>Subscribe at v1portal.com</Text>
-          <Ionicons name="arrow-forward" size={15} color={Colors.white} />
+        <View style={[card.cta, { backgroundColor: tier.accentColor + '22', borderWidth: 1, borderColor: tier.accentColor + '55' }]}>
+          <Text style={[card.ctaText, { color: tier.accentColor }]}>Available at v1portal.com</Text>
         </View>
       )}
-    </Pressable>
+    </View>
   );
 }
 
@@ -300,8 +294,6 @@ export default function UpgradeScreen() {
   const userId = session?.user?.id;
 
   const [currentPlan, setCurrentPlan] = useState<PlanKey>('free');
-  const [selectedTier, setSelectedTier] = useState<PlanKey | null>(null);
-  const [loading, setLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -348,28 +340,6 @@ export default function UpgradeScreen() {
     return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
   }, [fetchPlan]);
 
-  const handleSelect = async (tier: Tier) => {
-    if (tier.key === 'free' || !tier.checkoutUrl) return;
-    setSelectedTier(tier.key);
-    setLoading(true);
-
-    try {
-      const result = await WebBrowser.openBrowserAsync(tier.checkoutUrl, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        controlsColor: tier.accentColor,
-        toolbarColor: Colors.background,
-        showTitle: true,
-      });
-
-      // Browser dismissed — refresh subscription status regardless of result
-      if (result.type === 'dismiss' || result.type === 'cancel') {
-        await fetchPlan();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRestore = () => {
     showToast('Contact support at support@v1portal.com to restore your purchase.');
   };
@@ -409,8 +379,6 @@ export default function UpgradeScreen() {
               key={tier.key}
               tier={tier}
               isActive={currentPlan === tier.key}
-              isSelected={selectedTier === tier.key}
-              onSelect={() => handleSelect(tier)}
             />
           ))}
         </View>

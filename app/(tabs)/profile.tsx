@@ -26,10 +26,10 @@ const IG_GRADIENT: [string, string, string, string] = ['#833AB4', '#C13584', '#E
 const SCORE_GRADIENT: [string, string] = ['#ff0000', '#aa00ff'];
 
 const BREAKDOWN_BARS = [
-  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#0067ff' },
-  { label: 'Football Production', key: 'production',  fallback: null,         color: '#00ffbe' },
-  { label: 'Academic',            key: 'academic',    fallback: null,         color: '#3eff00' },
-  { label: 'Intangibles',         key: 'intangibles', fallback: null,         color: '#FCAF45' },
+  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#3b82f6' },
+  { label: 'Football Production', key: 'production',  fallback: null,         color: '#10b981' },
+  { label: 'Academic',            key: 'academic',    fallback: null,         color: '#22c55e' },
+  { label: 'Intangibles',         key: 'intangibles', fallback: null,         color: '#f59e0b' },
 ];
 
 const TABS = ['Overview', 'Film', 'Stats', 'Schools'] as const;
@@ -668,7 +668,7 @@ function createStyles(C: ThemeColors) {
     barLabel: { fontSize: 13, fontWeight: '600', color: C.text },
     barValue: { fontSize: 13, fontWeight: '800' },
     barTrack: { height: 6, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-    barFill: { height: '100%', borderRadius: 3 },
+    barFill: { height: '100%' },
 
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
     infoRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
