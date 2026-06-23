@@ -82,6 +82,7 @@ export default function DashboardScreen() {
   const [trackerCount, setTrackerCount] = useState(0);
   const [profileViews, setProfileViews] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
+  const [isScoreAnimating, setIsScoreAnimating] = useState(true);
 
   // Skip the very first focus (mount already fetches); re-fetch on subsequent focuses
   // so the score updates immediately when returning from the assessment WebView.
@@ -132,7 +133,7 @@ export default function DashboardScreen() {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 2);
       setDisplayScore(Math.round(score * eased));
-      if (progress >= 1) clearInterval(timer);
+      if (progress >= 1) { clearInterval(timer); setIsScoreAnimating(false); }
     }, 16);
     return () => clearInterval(timer);
   }, [score]);
@@ -144,7 +145,7 @@ export default function DashboardScreen() {
     : (session?.user?.email ?? '??').slice(0, 2).toUpperCase();
   const isElite = athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite';
   const activeTierIdx = getActiveTierIndex(displayScore);
-  const numColor = score ? getScoreColor(displayScore) : C.textDim;
+  const numColor = score ? (isScoreAnimating ? getScoreColor(displayScore) : C.text) : C.textDim;
 
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -285,7 +286,7 @@ export default function DashboardScreen() {
                   <Text style={[
                     styles.tierBarLabel,
                     {
-                      color: (active && i === activeTierIdx) ? tier.color : C.textDim,
+                      color: (active && i === activeTierIdx) ? '#ffffff' : C.textDim,
                       fontWeight: (active && i === activeTierIdx) ? '800' : '400',
                     },
                   ]}>
