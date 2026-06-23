@@ -474,6 +474,8 @@ export default function DashboardScreen() {
                   </View>
                 </View>
 
+                <Text style={styles.phaseDesc}>{phase.description}</Text>
+
                 {!locked && (
                   <View style={styles.phaseBody}>
                     {phase.items.map((item, j) => {
@@ -767,6 +769,7 @@ function createStyles(C: ThemeColors) {
     phaseBadgeLocked: { backgroundColor: C.border },
     phaseBadgeUpcoming: { backgroundColor: C.border },
     phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
+    phaseDesc: { fontSize: 12, color: C.textMuted, lineHeight: 18, marginTop: 6, marginBottom: 4 },
 
     // Expanded body
     phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
