@@ -193,7 +193,7 @@ export default function ProgramsScreen() {
                     )}
                   </View>
                   <View style={s.programRight}>
-                    <Text style={[s.matchScore, { color: scoreColor(prog.match_score) }]}>
+                    <Text style={[s.matchScore, { color: C.text }]}>
                       {prog.match_score}
                     </Text>
                     <Text style={s.matchScoreLabel}>match</Text>

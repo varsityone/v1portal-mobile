@@ -625,7 +625,7 @@ function Phase3({ athleteId, isElite, targetListSaved: initialSaved, phase, onBa
               <View key={i} style={[s.programRow, i < programs.length - 1 && s.programRowBorder]}>
                 <View style={s.programTop}>
                   <Text style={s.programName}>{p.school_name}</Text>
-                  <Text style={[s.matchNum, { color: getMatchScoreColor(p.match_score) }]}>{p.match_score}</Text>
+                  <Text style={[s.matchNum, { color: C.text }]}>{p.match_score}</Text>
                 </View>
                 <View style={s.programBottom}>
                   <View style={[s.divBadge, { borderColor: dc }]}>
