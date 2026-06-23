@@ -324,6 +324,10 @@ export default function DashboardScreen() {
         <Text style={styles.progressPct}>{Math.round(progressPct)}%</Text>
 
         <View style={styles.progressBarWrap}>
+          {/* Glow layer behind track */}
+          {progressPct > 0 && (
+            <View style={[styles.progressGlow, { width: `${Math.max(progressPct, 6)}%` as any }]} />
+          )}
           {/* Track */}
           <View style={styles.progressBarTrack}>
             {progressPct > 0 && (
@@ -733,6 +737,7 @@ function createStyles(C: ThemeColors) {
     progressBarWrap: { position: 'relative', height: 36 },
     progressBarTrack: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: C.surfaceAlt, borderRadius: 100, overflow: 'hidden' },
     progressBarFill: { height: '100%', borderRadius: 100 },
+    progressGlow: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 100, backgroundColor: '#E1306C', shadowColor: '#E1306C', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10, elevation: 8 },
     progressBarPill: { position: 'absolute', right: 8, top: 0, bottom: 0, justifyContent: 'center', paddingHorizontal: 14, backgroundColor: C.surfaceAlt, borderRadius: 100 },
     progressBarPillText: { fontSize: 12, fontWeight: '600', color: C.text },
     progressCount: { fontSize: 12, color: C.textMuted },
