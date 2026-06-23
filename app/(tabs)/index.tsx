@@ -282,7 +282,7 @@ export default function DashboardScreen() {
               const active = score !== null && i <= activeTierIdx;
               return (
                 <View key={tier.label} style={styles.tierItem}>
-                  <View style={[styles.tierBar, { backgroundColor: active ? tier.color : C.surfaceAlt }]} />
+                  <View style={[styles.tierBar, { backgroundColor: active ? '#ffffff' : C.surfaceAlt }]} />
                   <Text style={[
                     styles.tierBarLabel,
                     {
