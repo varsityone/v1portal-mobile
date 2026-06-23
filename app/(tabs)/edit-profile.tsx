@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Clipboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -185,8 +186,11 @@ export default function EditProfileScreen() {
   const s = useMemo(() => createStyles(C), [C]);
 
   const [fields, setFields] = useState<Fields>(EMPTY);
+  const [isPublic, setIsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const profileSlug = (athlete as any)?.profile_slug ?? null;
 
   useEffect(() => {
     if (!athlete) return;
@@ -232,6 +236,7 @@ export default function EditProfileScreen() {
       twitter_handle:         a.twitter_handle         ?? '',
       instagram_handle:       a.instagram_handle       ?? '',
     });
+    setIsPublic(a.is_profile_public ?? true);
     setLoading(false);
   }, [athlete]);
 
@@ -242,12 +247,13 @@ export default function EditProfileScreen() {
     setSaving(true);
 
     // Build direct-column updates
-    const updates: Record<string, string | number | null | object> = {};
+    const updates: Record<string, string | number | boolean | null | object> = {};
     (Object.keys(fields) as (keyof Fields)[]).forEach(k => {
       if (DIRECT_COLS.has(k)) {
         updates[k] = fields[k] || null;
       }
     });
+    updates.is_profile_public = isPublic;
 
     // Pack coach_info JSONB
     const coachInfo: Record<string, string | null> = {};
@@ -306,6 +312,31 @@ export default function EditProfileScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Profile Link ── */}
+        {profileSlug ? (
+          <View style={s.sectionWrap}>
+            <View style={s.sectionHeader}>
+              <Ionicons name="link-outline" size={14} color={C.primary} />
+              <Text style={s.sectionTitle}>PUBLIC PROFILE</Text>
+            </View>
+            <View style={[s.card, { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
+              <Text style={{ flex: 1, fontSize: 13, color: C.textMuted }} numberOfLines={1}>
+                v1portal.com/athlete/{profileSlug}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Clipboard.setString(`https://v1portal.com/athlete/${profileSlug}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>{copied ? 'Copied!' : 'Copy Link'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
         {SECTIONS.map(section => (
           <View key={section.title} style={s.sectionWrap}>
             <View style={s.sectionHeader}>
@@ -346,6 +377,30 @@ export default function EditProfileScreen() {
             </View>
           </View>
         ))}
+
+        {/* ── Public Profile Toggle ── */}
+        <View style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, marginBottom: 20 }]}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: C.text, marginBottom: 2 }}>Public Profile</Text>
+            <Text style={{ fontSize: 11, color: C.textDim }}>Allow coaches to view your profile</Text>
+          </View>
+          <Pressable
+            onPress={() => setIsPublic(v => !v)}
+            style={{
+              width: 44, height: 24, borderRadius: 100,
+              backgroundColor: isPublic ? C.primary : C.surface,
+              borderWidth: 1, borderColor: isPublic ? C.primary : C.border,
+              justifyContent: 'center', position: 'relative',
+            }}
+          >
+            <View style={{
+              position: 'absolute',
+              top: 2,
+              left: isPublic ? 22 : 2,
+              width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff',
+            }} />
+          </Pressable>
+        </View>
 
         {/* ── Save CTA ── */}
         <Pressable onPress={handleSave} disabled={saving} style={s.saveBtnWrap}>

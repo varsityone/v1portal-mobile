@@ -23,7 +23,7 @@ import { useColors } from '../../context/ThemeContext';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const IG_GRADIENT: [string, string, string, string] = ['#833AB4', '#C13584', '#E1306C', '#FCAF45'];
-const SCORE_GRADIENT: [string, string] = ['#833AB4', '#3ab7ed'];
+const SCORE_GRADIENT: [string, string] = ['#ff0000', '#aa00ff'];
 
 const BREAKDOWN_BARS = [
   { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#0067ff' },
