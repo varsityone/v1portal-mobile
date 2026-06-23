@@ -696,7 +696,7 @@ function createStyles(C: ThemeColors) {
     matchRankText: { fontSize: 15, fontWeight: '700', color: C.text },
     matchName: { fontSize: 14, fontWeight: '700', color: C.text },
     matchDiv: { fontSize: 12, color: C.textMuted, marginTop: 2 },
-    matchScore: { fontSize: 22, fontWeight: '900', color: '#10b981' },
+    matchScore: { fontSize: 22, fontWeight: '900', color: C.text },
 
   });
 }
