@@ -467,7 +467,7 @@ export default function DashboardScreen() {
                   ]}>
                     <Text style={[
                       styles.phaseBadgeText,
-                      locked && { color: isDark ? '#F59E0B' : '#D97706' },
+                      locked && { color: C.warning },
                     ]}>
                       {done ? `Phase ${phase.number} Completed` : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next'}
                     </Text>
@@ -762,10 +762,10 @@ function createStyles(C: ThemeColors) {
     phaseTimelineSub: { fontSize: 12, color: C.textMuted, lineHeight: 17, marginTop: 2 },
 
     phaseBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexShrink: 0 },
-    phaseBadgeDone: { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' },
-    phaseBadgeActive: { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' },
-    phaseBadgeLocked: { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : 'rgba(217,119,6,0.08)' },
-    phaseBadgeUpcoming: { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+    phaseBadgeDone: { backgroundColor: C.border },
+    phaseBadgeActive: { backgroundColor: C.border },
+    phaseBadgeLocked: { backgroundColor: C.border },
+    phaseBadgeUpcoming: { backgroundColor: C.border },
     phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.2 },
 
     // Expanded body
