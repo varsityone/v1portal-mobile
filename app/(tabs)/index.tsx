@@ -461,7 +461,17 @@ export default function DashboardScreen() {
                     </Text>
                     {sub ? <Text style={styles.phaseTimelineSub}>{sub}</Text> : null}
                   </View>
-                  {!locked && <Ionicons name="chevron-forward" size={15} color={C.icon} />}
+                  <View style={[
+                    styles.phaseBadge,
+                    done ? styles.phaseBadgeDone : active ? styles.phaseBadgeActive : locked ? styles.phaseBadgeLocked : styles.phaseBadgeUpcoming,
+                  ]}>
+                    <Text style={[
+                      styles.phaseBadgeText,
+                      locked && { color: isDark ? '#F59E0B' : '#D97706' },
+                    ]}>
+                      {done ? `Phase ${phase.number} Completed` : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next'}
+                    </Text>
+                  </View>
                 </View>
 
                 {!locked && (
@@ -750,6 +760,13 @@ function createStyles(C: ThemeColors) {
     phaseTimelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     phaseTimelineTitle: { fontSize: 16, fontWeight: '700', color: C.text, lineHeight: 20 },
     phaseTimelineSub: { fontSize: 12, color: C.textMuted, lineHeight: 17, marginTop: 2 },
+
+    phaseBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexShrink: 0 },
+    phaseBadgeDone: { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' },
+    phaseBadgeActive: { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' },
+    phaseBadgeLocked: { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : 'rgba(217,119,6,0.08)' },
+    phaseBadgeUpcoming: { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+    phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.2 },
 
     // Expanded body
     phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
