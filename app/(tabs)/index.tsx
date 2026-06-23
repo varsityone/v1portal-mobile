@@ -282,11 +282,11 @@ export default function DashboardScreen() {
               const active = score !== null && i <= activeTierIdx;
               return (
                 <View key={tier.label} style={styles.tierItem}>
-                  <View style={[styles.tierBar, { backgroundColor: active ? '#ffffff' : C.surfaceAlt }]} />
+                  <View style={[styles.tierBar, { backgroundColor: active ? C.text : C.surfaceAlt }]} />
                   <Text style={[
                     styles.tierBarLabel,
                     {
-                      color: (active && i === activeTierIdx) ? '#ffffff' : C.textDim,
+                      color: (active && i === activeTierIdx) ? C.text : C.textDim,
                       fontWeight: (active && i === activeTierIdx) ? '800' : '400',
                     },
                   ]}>
@@ -416,23 +416,39 @@ export default function DashboardScreen() {
               {/* Left: connector + node + connector */}
               <View style={styles.phaseTimelineLeft}>
                 {i > 0 && (
-                  <View style={[styles.phaseConnector, { backgroundColor: done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)' }]} />
+                  <LinearGradient
+                    colors={[
+                      phaseEffectiveDone[i - 1] ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                    ]}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.phaseConnector}
+                  />
                 )}
                 {done ? (
-                  <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
-                    <Ionicons name="checkmark" size={16} color="#000000" />
+                  <View style={[styles.phaseNode, { backgroundColor: C.text }]}>
+                    <Ionicons name="checkmark" size={16} color={C.background} />
                   </View>
                 ) : active ? (
-                  <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' }]} />
+                  <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)' }]} />
                 ) : locked ? (
-                  <View style={[styles.phaseNode, { backgroundColor: '#1a1a1f' }]}>
-                    <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.25)" />
+                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6' }]}>
+                    <Ionicons name="lock-closed" size={14} color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.8)'} />
                   </View>
                 ) : (
-                  <View style={[styles.phaseNode, { backgroundColor: '#1a1a1f', opacity: 0.7 }]} />
+                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6', opacity: 0.7 }]} />
                 )}
                 {!isLast && (
-                  <View style={[styles.phaseConnector, { backgroundColor: done ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)' }]} />
+                  <LinearGradient
+                    colors={[
+                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                      phaseEffectiveDone[i + 1] ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                    ]}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.phaseConnector}
+                  />
                 )}
               </View>
 
