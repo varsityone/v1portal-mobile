@@ -362,58 +362,58 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Hero ── */}
-        <View style={s.heroSection}>
-          {profile?.profile_photo_url ? (
-            <Image source={{ uri: profile.profile_photo_url }} style={s.photo} />
-          ) : (
-            <LinearGradient colors={IG_GRADIENT} style={s.photo} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <Text style={s.initials}>{initials}</Text>
-            </LinearGradient>
-          )}
+        <View style={s.heroRow}>
+          {/* Left: photo + basic info */}
+          <View style={s.heroLeft}>
+            {profile?.profile_photo_url ? (
+              <Image source={{ uri: profile.profile_photo_url }} style={s.photo} />
+            ) : (
+              <LinearGradient colors={IG_GRADIENT} style={s.photo} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Text style={s.initials}>{initials}</Text>
+              </LinearGradient>
+            )}
+            <Text style={s.heroName}>{name}</Text>
+            {!!(profile?.position || level) && (
+              <Text style={s.heroSub}>{[profile?.position, level].filter(Boolean).join(' · ')}</Text>
+            )}
+            {!!(profile?.high_school || profile?.city || profile?.state) && (
+              <Text style={s.heroLocation}>
+                {[profile?.high_school, profile?.city, profile?.state].filter(Boolean).join(' · ')}
+              </Text>
+            )}
+            {!!profile?.graduation_year && (
+              <Text style={s.heroClass}>Class of {profile.graduation_year}</Text>
+            )}
+            <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
+              <Ionicons name="create-outline" size={14} color={C.primary} />
+              <Text style={s.editBtnText}>Edit Profile</Text>
+            </Pressable>
+          </View>
 
-          <Text style={s.heroName}>{name}</Text>
-          {!!(profile?.position || level) && (
-            <Text style={s.heroSub}>{[profile?.position, level].filter(Boolean).join(' · ')}</Text>
-          )}
-          {!!(profile?.high_school || profile?.city || profile?.state) && (
-            <Text style={s.heroLocation}>
-              {[profile?.high_school, profile?.city, profile?.state].filter(Boolean).join(' · ')}
-            </Text>
-          )}
-          {!!profile?.graduation_year && (
-            <Text style={s.heroClass}>Class of {profile.graduation_year}</Text>
-          )}
-
-          <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
-            <Ionicons name="create-outline" size={14} color={C.primary} />
-            <Text style={s.editBtnText}>Edit Profile</Text>
-          </Pressable>
-        </View>
-
-        {/* ── Metric Boxes ── */}
-        {metrics.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.metricsRow}>
-            {metrics.map(m => (
-              <View key={m.label} style={s.metricBox}>
-                <Text style={s.metricLabel}>{m.label}</Text>
-                <Text style={[s.metricValue, m.green && { color: '#10b981' }]}>
-                  {m.value}
-                  {m.sub ? <Text style={s.metricSub}>{' '}{m.sub}</Text> : null}
-                </Text>
+          {/* Right: 2x2 metrics grid + V1 score card */}
+          <View style={s.heroRight}>
+            {metrics.length > 0 && (
+              <View style={s.metricsGrid}>
+                {metrics.slice(0, 4).map(m => (
+                  <View key={m.label} style={s.metricBox}>
+                    <Text style={s.metricLabel}>{m.label}</Text>
+                    <Text style={[s.metricValue, m.green && { color: '#10b981' }]}>
+                      {m.value}
+                      {m.sub ? <Text style={s.metricSub}>{' '}{m.sub}</Text> : null}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* ── V1 Score Card ── */}
-        {score !== null && (
-          <LinearGradient colors={SCORE_GRADIENT} style={s.scoreCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={s.scoreLabel}>V1 Score</Text>
-            <Text style={s.scoreNum}>{score}</Text>
-            {level ? <Text style={s.scoreLevel}>{level}</Text> : null}
-            <Text style={s.scoreDesc}>Realistic assessment of where you fit in college football recruiting.</Text>
-          </LinearGradient>
-        )}
+            )}
+            {score !== null && (
+              <LinearGradient colors={SCORE_GRADIENT} style={s.scoreCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Text style={s.scoreLabel}>V1 Score</Text>
+                <Text style={s.scoreNum}>{score}</Text>
+                {level ? <Text style={s.scoreLevel}>{level}</Text> : null}
+              </LinearGradient>
+            )}
+          </View>
+        </View>
 
         {/* ── Tab Bar ── */}
         <View style={s.tabBar}>
@@ -628,26 +628,28 @@ function createStyles(C: ThemeColors) {
     scroll: { flex: 1, backgroundColor: C.background },
     container: { paddingBottom: 60 },
 
-    heroSection: { alignItems: 'center', paddingTop: 32, paddingHorizontal: 20, paddingBottom: 24, gap: 8 },
-    photo: { width: 120, height: 120, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-    initials: { fontSize: 40, fontWeight: '900', color: '#fff' },
-    heroName: { fontSize: 30, fontWeight: '900', color: C.text, letterSpacing: -0.5, textAlign: 'center' },
-    heroSub: { fontSize: 14, fontWeight: '700', color: C.textMuted, textAlign: 'center' },
-    heroLocation: { fontSize: 13, color: C.textMuted, textAlign: 'center' },
-    heroClass: { fontSize: 12, color: C.textDim, textAlign: 'center' },
-    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary + '18', marginTop: 4 },
-    editBtnText: { fontSize: 13, fontWeight: '700', color: C.primary },
+    heroRow: { flexDirection: 'row', gap: 14, paddingTop: 24, paddingHorizontal: 16, paddingBottom: 16, alignItems: 'flex-start' },
+    heroLeft: { width: 148, gap: 5 },
+    heroRight: { flex: 1, gap: 10 },
+    photo: { width: 140, height: 140, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    initials: { fontSize: 48, fontWeight: '900', color: '#fff' },
+    heroName: { fontSize: 18, fontWeight: '900', color: C.text, letterSpacing: -0.3, lineHeight: 22 },
+    heroSub: { fontSize: 12, fontWeight: '700', color: C.textMuted },
+    heroLocation: { fontSize: 11, color: C.textMuted, lineHeight: 15 },
+    heroClass: { fontSize: 11, color: C.textDim },
+    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100, backgroundColor: C.primary + '18', marginTop: 6, alignSelf: 'flex-start' },
+    editBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
 
-    metricsRow: { paddingHorizontal: 20, paddingBottom: 16, gap: 12 },
-    metricBox: { backgroundColor: C.surface, borderRadius: 12, padding: 16, minWidth: 100 },
-    metricLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
-    metricValue: { fontSize: 26, fontWeight: '900', color: C.text },
-    metricSub: { fontSize: 13, color: C.textDim, fontWeight: '400' },
+    metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    metricBox: { backgroundColor: C.surface, borderRadius: 10, padding: 10, flexBasis: '47%', flexGrow: 1 },
+    metricLabel: { fontSize: 9, fontWeight: '700', color: C.textDim, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
+    metricValue: { fontSize: 20, fontWeight: '900', color: C.text, letterSpacing: -0.5 },
+    metricSub: { fontSize: 11, color: C.textDim, fontWeight: '400' },
 
-    scoreCard: { marginHorizontal: 20, borderRadius: 16, padding: 24, marginBottom: 4 },
-    scoreLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)', marginBottom: 12 },
-    scoreNum: { fontSize: 64, fontWeight: '900', color: '#fff', lineHeight: 68, letterSpacing: -2 },
-    scoreLevel: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 8 },
+    scoreCard: { borderRadius: 14, padding: 16 },
+    scoreLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginBottom: 4 },
+    scoreNum: { fontSize: 40, fontWeight: '900', color: '#fff', lineHeight: 44, letterSpacing: -2 },
+    scoreLevel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
     scoreDesc: { fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.85)' },
 
     tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 20, gap: 24, borderBottomWidth: 1, borderBottomColor: C.border },

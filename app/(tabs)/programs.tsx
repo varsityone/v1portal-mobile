@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,6 +24,7 @@ interface ProgramMatch {
   match_score: number;
   position_fit: string | null;
   match_type: string | null;
+  programs?: { logo_url: string | null } | null;
 }
 
 function scoreColor(s: number) {
@@ -52,7 +54,7 @@ export default function ProgramsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('matches')
-      .select('id, school_name, division, match_score, position_fit, match_type')
+      .select('id, school_name, division, match_score, position_fit, match_type, programs(logo_url)')
       .eq('athlete_id', athlete.id)
       .order('match_score', { ascending: false });
     setPrograms(data ?? []);
@@ -157,6 +159,17 @@ export default function ProgramsScreen() {
             <View style={s.list}>
               {filtered.map((prog) => (
                 <View key={prog.id} style={s.programCard}>
+                  {prog.programs?.logo_url ? (
+                    <View style={s.programLogo}>
+                      <Image source={{ uri: prog.programs.logo_url }} style={s.programLogoImg} resizeMode="contain" />
+                    </View>
+                  ) : (
+                    <View style={s.programLogoFallback}>
+                      <Text style={s.programLogoFallbackText}>
+                        {(prog.school_name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                   <View style={s.programLeft}>
                     <View style={s.programInfo}>
                       <Text style={s.programName}>{prog.school_name}</Text>
@@ -278,8 +291,12 @@ function createStyles(C: ThemeColors) {
       padding: 16,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: 12,
     },
+    programLogo: { width: 40, height: 40, borderRadius: 8, backgroundColor: C.background, padding: 4, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    programLogoImg: { width: '100%', height: '100%' },
+    programLogoFallback: { width: 40, height: 40, borderRadius: 8, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    programLogoFallbackText: { fontSize: 13, fontWeight: '800', color: C.textMuted },
     programLeft: { flex: 1, gap: 6 },
     programInfo: { gap: 2 },
     programName: { fontSize: 15, fontWeight: '700', color: C.text },
