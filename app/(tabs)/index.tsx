@@ -418,7 +418,7 @@ export default function DashboardScreen() {
                 {i > 0 && (
                   <LinearGradient
                     colors={[
-                      phaseEffectiveDone[i - 1] ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
                       done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
                     ]}
                     start={{ x: 0.5, y: 0 }}
