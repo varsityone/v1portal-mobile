@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -173,6 +174,37 @@ export default function SettingsScreen() {
     router.replace('/onboarding');
   };
 
+  const handleEditProfile = () => router.push('/(tabs)/edit-profile' as any);
+
+  const handleChangePassword = () => {
+    const email = session?.user?.email;
+    Alert.alert(
+      'Reset Password',
+      `We'll send a password reset link to ${email}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send Reset Email',
+          onPress: async () => {
+            if (!email) return;
+            await supabase.auth.resetPasswordForEmail(email);
+            Alert.alert('Email Sent', 'Check your inbox for the reset link.');
+          },
+        },
+      ],
+    );
+  };
+
+  const handleHelp = () => Linking.openURL('mailto:support@v1portal.com');
+
+  const handleAbout = () => {
+    Alert.alert(
+      'V1Portal',
+      'Version 1.0\n\nThe recruiting platform built for student-athletes who want an honest, data-driven path to college football.',
+      [{ text: 'OK' }],
+    );
+  };
+
   const handleDeleteAccount = () => router.push('/delete-account' as any);
 
   const handleUnsubscribe = () => router.push('/unsubscribe' as any);
@@ -191,8 +223,8 @@ export default function SettingsScreen() {
       <View style={s.group}>
         <Text style={s.groupLabel}>Account</Text>
         <View style={s.groupCard}>
-          <SettingsRow icon="person-outline" label="Edit Profile" />
-          <SettingsRow icon="lock-closed-outline" label="Change Password" />
+          <SettingsRow icon="person-outline" label="Edit Profile" onPress={handleEditProfile} />
+          <SettingsRow icon="lock-closed-outline" label="Change Password" onPress={handleChangePassword} />
         </View>
       </View>
 
@@ -232,8 +264,8 @@ export default function SettingsScreen() {
       <View style={s.group}>
         <Text style={s.groupLabel}>App</Text>
         <View style={s.groupCard}>
-          <SettingsRow icon="information-circle-outline" label="About V1Portal" />
-          <SettingsRow icon="help-circle-outline" label="Help & Support" />
+          <SettingsRow icon="information-circle-outline" label="About V1Portal" onPress={handleAbout} />
+          <SettingsRow icon="help-circle-outline" label="Help & Support" onPress={handleHelp} />
           <SettingsRow
             icon="shield-checkmark-outline"
             label="Privacy Policy"
