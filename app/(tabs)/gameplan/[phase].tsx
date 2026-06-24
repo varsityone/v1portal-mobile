@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Svg, Rect, Path, Line, Circle, Polygon } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -219,11 +217,32 @@ function Phase1({ data, phase, onBack }: {
   const score = assessment?.v1_score ? Math.round(assessment.v1_score) : null;
   const tier = getTierInfo(score);
 
+  const [displayScore, setDisplayScore] = useState(0);
+  const [isScoreAnimating, setIsScoreAnimating] = useState(true);
+
+  useEffect(() => {
+    if (!score) { setDisplayScore(0); return; }
+    setIsScoreAnimating(true);
+    const duration = 1500;
+    const start = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 2);
+      setDisplayScore(Math.round(score * eased));
+      if (progress >= 1) { clearInterval(timer); setIsScoreAnimating(false); }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [score]);
+
+  const activeTier = getActiveTierIndex(displayScore);
+  const numColor = score ? (isScoreAnimating ? scoreNumColor(displayScore) : C.text) : C.textDim;
+
   const categories = [
-    { label: 'Athletic',    val: safeNum(assessment?.score_breakdown?.physical),    max: 40 },
-    { label: 'Academic',    val: safeNum(assessment?.score_breakdown?.academic),    max: 35 },
-    { label: 'Production',  val: safeNum(assessment?.score_breakdown?.production),  max: 15 },
-    { label: 'Intangibles', val: safeNum(assessment?.score_breakdown?.intangibles), max: 10 },
+    { label: 'Athletic',    val: safeNum(assessment?.score_breakdown?.physical) ?? 0 },
+    { label: 'Academic',    val: safeNum(assessment?.score_breakdown?.academic) ?? 0 },
+    { label: 'Production',  val: safeNum(assessment?.score_breakdown?.production) ?? 0 },
+    { label: 'Intangibles', val: safeNum(assessment?.score_breakdown?.intangibles) ?? 0 },
   ];
   const hasBreakdown = categories.some(c => c.val > 0);
   const showJuco = score !== null && score < 50;
@@ -232,9 +251,7 @@ function Phase1({ data, phase, onBack }: {
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
 
-      {score !== null ? (() => {
-        const activeTier = getActiveTierIndex(score);
-        return (
+      {score !== null ? (
           <LinearGradient
             colors={['#833AB4', '#E1306C', '#FCAF45']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -242,13 +259,13 @@ function Phase1({ data, phase, onBack }: {
           >
             <View style={s.scoreCardInner}>
               <Text style={s.scoreCardLabel}>V1 SCORE</Text>
-              <Text style={[s.bigScore, { color: scoreNumColor(score) }]}>{score}</Text>
+              <Text style={[s.bigScore, { color: numColor }]}>{displayScore}</Text>
               <Text style={s.tierChip}>{tier.level}</Text>
               <View style={s.tierBarsRow}>
                 {TIER_BARS.map((t, i) => (
                   <View key={t.label} style={s.tierBarCol}>
-                    <View style={[s.tierBar, { backgroundColor: i <= activeTier ? t.color : 'rgba(255,255,255,0.1)' }]} />
-                    <Text style={[s.tierBarLabel, { color: i === activeTier ? t.color : 'rgba(255,255,255,0.28)', fontWeight: i === activeTier ? '800' : '400' }]}>
+                    <View style={[s.tierBar, { backgroundColor: i <= activeTier ? C.text : C.surfaceAlt }]} />
+                    <Text style={[s.tierBarLabel, { color: i === activeTier ? C.text : C.textDim, fontWeight: i === activeTier ? '800' : '400' }]}>
                       {t.label}
                     </Text>
                   </View>
@@ -256,8 +273,7 @@ function Phase1({ data, phase, onBack }: {
               </View>
             </View>
           </LinearGradient>
-        );
-      })() : (
+      ) : (
         <Card>
           <EmptyState
             icon="analytics-outline"
@@ -274,20 +290,15 @@ function Phase1({ data, phase, onBack }: {
           <SLabel>SCORE BREAKDOWN</SLabel>
           {hasBreakdown ? (
             <View style={{ gap: 14 }}>
-              {categories.map(cat => {
-                const pct = Math.min((cat.val / cat.max) * 100, 100);
-                return (
-                  <View key={cat.label} style={s.breakRow}>
-                    <Text style={s.breakLabel}>{cat.label}</Text>
-                    <View style={s.breakTrack}>
-                      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.breakFill, { width: `${pct}%` }]} />
-                    </View>
-                    <Text style={s.breakScore}>
-                      {cat.val}<Text style={s.breakMax}>/{cat.max}</Text>
-                    </Text>
+              {categories.map(cat => (
+                <View key={cat.label} style={s.breakRow}>
+                  <Text style={s.breakLabel}>{cat.label}</Text>
+                  <View style={s.breakTrack}>
+                    <View style={[s.breakFill, { width: `${Math.min(cat.val, 100)}%` as any, backgroundColor: '#b2b2b2' }]} />
                   </View>
-                );
-              })}
+                  <Text style={s.breakScore}>{cat.val}</Text>
+                </View>
+              ))}
             </View>
           ) : (
             <Text style={s.dimText}>Detailed breakdown will appear after retaking your assessment.</Text>
@@ -398,50 +409,7 @@ function Phase1({ data, phase, onBack }: {
         </Card>
       )}
 
-      {/* Playbooks promo */}
-      <LinearGradient
-        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={s.pbCard}
-      >
-        <Text style={s.pbEyebrow}>Recruiting Guides</Text>
-        <Text style={s.pbTitle}>Get the playbooks coaches don't send you</Text>
-        <Text style={s.pbSub}>Film cuts, outreach scripts, parent timelines — everything the process assumes you already know.</Text>
-        <View style={s.pbRows}>
-          {([
-            {
-              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Rect x={2} y={6} width={14} height={12} rx={3} stroke="#fff" strokeWidth={2}/><Path d="M16 10l5-3v10l-5-3V10z" stroke="#fff" strokeWidth={2} strokeLinejoin="round"/><Polygon points="8,10 11,12 8,14" fill="#fff"/></Svg>,
-              label: 'Film Guide', sub: 'Cut your film the way coaches want to see it', price: '$27',
-            },
-            {
-              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Circle cx={9} cy={7} r={3} stroke="#fff" strokeWidth={2}/><Path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#fff" strokeWidth={2} strokeLinecap="round"/><Circle cx={18} cy={8} r={2} stroke="#fff" strokeWidth={2}/><Path d="M21 20c0-2.2-1.3-4.1-3-5" stroke="#fff" strokeWidth={2} strokeLinecap="round"/></Svg>,
-              label: 'Parent Guide', sub: 'Full recruiting timeline for families', price: '$37',
-            },
-            {
-              icon: <Svg width={20} height={20} viewBox="0 0 24 24" fill="none"><Rect x={5} y={3} width={14} height={18} rx={2} stroke="#fff" strokeWidth={2}/><Path d="M9 3v2h6V3" stroke="#fff" strokeWidth={2}/><Line x1={9} y1={10} x2={15} y2={10} stroke="#fff" strokeWidth={2} strokeLinecap="round"/><Line x1={9} y1={14} x2={13} y2={14} stroke="#fff" strokeWidth={2} strokeLinecap="round"/></Svg>,
-              label: 'Recruiting Playbook', sub: '6-phase system to go from unknown to offer', price: '$47',
-            },
-          ] as const).map(({ icon, label, sub, price }) => (
-            <View key={label} style={s.pbRow}>
-              <View style={s.pbIconBox}>{icon}</View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.pbRowLabel}>{label}</Text>
-                <Text style={s.pbRowSub}>{sub}</Text>
-              </View>
-              <Text style={s.pbRowPrice}>{price}</Text>
-            </View>
-          ))}
-        </View>
-        <Pressable
-          style={({ pressed }) => [s.pbBtn, pressed && { opacity: 0.88 }]}
-          onPress={() => Linking.openURL('https://v1portal.com/playbooks')}
-        >
-          <Text style={s.pbBtnText}>Browse Playbooks →</Text>
-        </Pressable>
-      </LinearGradient>
-
-      {score !== null && (
+{score !== null && (
         <Card>
           <View style={s.retakeRow}>
             <View style={{ flex: 1 }}>
@@ -982,9 +950,9 @@ function createStyles(C: ThemeColors) {
     // Score card
     scoreGradientBorder: { borderRadius: 17, padding: 1.5 },
     scoreCardInner: { backgroundColor: C.scoreCard, borderRadius: 16, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, alignItems: 'center' },
-    scoreCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 1.6, marginBottom: 14 },
+    scoreCardLabel: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.6, marginBottom: 14 },
     bigScore: { fontSize: 96, fontWeight: '900', letterSpacing: -5, lineHeight: 88, marginBottom: 12 },
-    tierChip: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 20 },
+    tierChip: { fontSize: 13, fontWeight: '700', color: C.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 20 },
     tierBarsRow: { flexDirection: 'row', gap: 6, width: '100%' },
     tierBarCol: { flex: 1, alignItems: 'center', gap: 5 },
     tierBar: { width: '100%', height: 3, borderRadius: 2 },

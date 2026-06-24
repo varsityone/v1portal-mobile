@@ -9,9 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
-// WebBrowser is kept for the "Manage Subscription" link only
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/Colors';
@@ -25,31 +23,25 @@ type PlanKey = 'free' | 'pro' | 'elite';
 interface Tier {
   key: PlanKey;
   name: string;
-  price: string;
-  period: string;
   badge?: string;
   accentColor: string;
   features: string[];
-  checkoutUrl?: string;
 }
 
 const TIERS: Tier[] = [
   {
     key: 'free',
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
+    name: 'Free Score',
     accentColor: Colors.textMuted,
     features: [
       'V1 Score assessment',
-      'Phase 1: Know Reality',
+      'Your recruiting tier (JUCO → FBS)',
+      'Public athlete profile',
     ],
   },
   {
     key: 'pro',
     name: 'Pro',
-    price: '$97',
-    period: '/month',
     accentColor: Colors.primary,
     features: [
       'Everything in Free',
@@ -58,13 +50,10 @@ const TIERS: Tier[] = [
       'Outreach pipeline',
       'Profile completion tools',
     ],
-    checkoutUrl: 'https://v1portal.com/pricing',
   },
   {
     key: 'elite',
     name: 'Elite',
-    price: '$297',
-    period: '/month',
     badge: 'Most Popular',
     accentColor: GOLD,
     features: [
@@ -75,7 +64,6 @@ const TIERS: Tier[] = [
       'Task manager & recruiting tracker',
       'Priority support',
     ],
-    checkoutUrl: 'https://v1portal.com/pricing',
   },
 ];
 
@@ -340,10 +328,6 @@ export default function UpgradeScreen() {
     return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
   }, [fetchPlan]);
 
-  const handleRestore = () => {
-    showToast('Contact support at support@v1portal.com to restore your purchase.');
-  };
-
   return (
     <View style={styles.root}>
       <ScrollView
@@ -397,16 +381,8 @@ export default function UpgradeScreen() {
           ))}
         </View>
 
-        {/* Manage subscription */}
-        <Pressable
-          style={({ pressed }) => [styles.restoreBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => WebBrowser.openBrowserAsync('https://v1portal.com/dashboard')}
-        >
-          <Text style={styles.restoreText}>Manage Subscription</Text>
-        </Pressable>
-
         <Text style={styles.legalText}>
-          Subscriptions are managed at v1portal.com. By subscribing you agree to our Terms of Service and Privacy Policy.
+          Plans are available at v1portal.com. Your subscription and access level sync automatically when you log in.
         </Text>
       </ScrollView>
 
@@ -483,9 +459,6 @@ const styles = StyleSheet.create({
   },
   trustItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   trustText: { fontSize: 12, color: Colors.textMuted },
-
-  restoreBtn: { alignSelf: 'center', paddingVertical: 10, marginBottom: 16 },
-  restoreText: { fontSize: 14, color: Colors.textMuted, textDecorationLine: 'underline' },
 
   legalText: {
     fontSize: 11,

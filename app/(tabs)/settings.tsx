@@ -173,6 +173,10 @@ export default function SettingsScreen() {
     router.replace('/onboarding');
   };
 
+  const handleDeleteAccount = () => router.push('/delete-account' as any);
+
+  const handleUnsubscribe = () => router.push('/unsubscribe' as any);
+
   return (
     <ScrollView
       style={s.scroll}
@@ -241,9 +245,20 @@ export default function SettingsScreen() {
       <View style={s.group}>
         <View style={s.groupCard}>
           <SettingsRow
+            icon="mail-unread-outline"
+            label="Unsubscribe from Emails"
+            onPress={handleUnsubscribe}
+          />
+          <SettingsRow
             icon="log-out-outline"
             label="Sign Out"
             onPress={handleSignOut}
+            destructive
+          />
+          <SettingsRow
+            icon="trash-outline"
+            label="Delete Account"
+            onPress={handleDeleteAccount}
             destructive
           />
         </View>

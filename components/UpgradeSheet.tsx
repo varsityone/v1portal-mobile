@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -96,17 +95,11 @@ export function UpgradeSheet({
           {' '}to unlock this phase of The Gameplan and get access to the full recruiting system.
         </Text>
 
-        <Pressable
-          style={({ pressed }) => [styles.upgradeBtn, pressed && styles.btnPressed]}
-          onPress={() => {
-            onClose();
-            Linking.openURL('https://v1portal.com/pricing');
-          }}
-        >
-          <Text style={styles.upgradeBtnText}>
-            Upgrade to {planLabel} at v1portal.com →
+        <View style={styles.upgradeInfo}>
+          <Text style={styles.upgradeInfoText}>
+            {planLabel} plan is available at v1portal.com
           </Text>
-        </Pressable>
+        </View>
 
         <Pressable style={styles.dismissBtn} onPress={onClose}>
           <Text style={styles.dismissText}>Not now</Text>
@@ -180,22 +173,22 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontWeight: '700',
   },
-  upgradeBtn: {
+  upgradeInfo: {
     width: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: `${Colors.primary}14`,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: `${Colors.primary}30`,
   },
-  btnPressed: {
-    opacity: 0.85,
-  },
-  upgradeBtnText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '700',
+  upgradeInfoText: {
+    color: Colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
     letterSpacing: 0.1,
+    textAlign: 'center',
   },
   dismissBtn: {
     paddingVertical: 12,

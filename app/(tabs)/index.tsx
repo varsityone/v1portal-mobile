@@ -552,12 +552,7 @@ export default function DashboardScreen() {
               <View key={bar.label} style={styles.barRow}>
                 <Text style={styles.barLabel}>{bar.label}</Text>
                 <View style={styles.barTrack}>
-                  <LinearGradient
-                    colors={['#833AB4', '#C13584', '#E1306C', '#FCAF45']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.barFill, { width: `${bar.val}%` }]}
-                  />
+                  <View style={[styles.barFill, { width: `${bar.val}%` as any, backgroundColor: '#b2b2b2' }]} />
                 </View>
                 <Text style={styles.barValue}>{bar.val}</Text>
               </View>
