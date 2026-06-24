@@ -195,7 +195,7 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleHelp = () => Linking.openURL('mailto:support@v1portal.com');
+  const handleHelp = () => router.push('/help' as any);
 
   const handleAbout = () => {
     Alert.alert(
