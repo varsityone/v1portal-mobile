@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
+import { GradientButton } from '../../components/GradientButton';
 import { Colors, ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
 
@@ -295,7 +296,7 @@ export default function CalendarScreen() {
             <Text style={s.title}>Recruiting Calendar</Text>
             <Text style={s.subtitle}>Class of {gradYear}</Text>
           </View>
-          <Pressable style={s.addBtn} onPress={openAdd} hitSlop={4}>
+          <GradientButton style={s.addBtn} onPress={openAdd} hitSlop={4}>
             <Ionicons name="add" size={22} color="#fff" />
           </Pressable>
         </View>
@@ -399,7 +400,7 @@ export default function CalendarScreen() {
 
               {/* Actions */}
               <View style={s.modalActions}>
-                <Pressable
+                <GradientButton
                   style={[s.saveBtn, (!formTitle.trim() || saving) && { opacity: 0.5 }]}
                   onPress={handleSave}
                   disabled={!formTitle.trim() || saving}

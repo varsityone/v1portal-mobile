@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useColors } from '../context/ThemeContext';
 import { ThemeColors } from '../constants/Colors';
+import { GradientButton } from '../components/GradientButton';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
@@ -61,9 +62,9 @@ export default function DeleteAccountScreen() {
               <Text style={s.body}>
                 Your account and personal data have been permanently removed. Your recruiting history has been anonymized for platform analytics.
               </Text>
-              <Pressable style={s.btnPrimary} onPress={() => router.replace('/(auth)/login' as any)}>
+              <GradientButton style={s.btnPrimary} onPress={() => router.replace('/(auth)/login' as any)}>
                 <Text style={s.btnPrimaryText}>Return to Home</Text>
-              </Pressable>
+              </GradientButton>
             </>
           )}
 

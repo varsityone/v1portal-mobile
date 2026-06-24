@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { GradientButton } from '../../components/GradientButton';
 import { ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
 
@@ -101,8 +102,8 @@ export default function OutreachScreen() {
           <Text style={s.title}>Outreach</Text>
           <Text style={s.subtitle}>Coach recruiting pipeline</Text>
         </View>
-        <Pressable
-          style={({ pressed }) => [s.composeBtn, pressed && { opacity: 0.8 }]}
+        <GradientButton
+          style={s.composeBtn}
           onPress={() => router.push('/outreach/compose')}
         >
           <Ionicons name="add" size={18} color={C.white} />
@@ -133,7 +134,7 @@ export default function OutreachScreen() {
           <Text style={s.emptyBody}>
             Tap "New" to compose your first coach email and start building your pipeline.
           </Text>
-          <Pressable
+          <GradientButton
             style={s.emptyBtn}
             onPress={() => router.push('/outreach/compose')}
           >

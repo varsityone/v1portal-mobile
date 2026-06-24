@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
+import { GradientButton } from '../../components/GradientButton';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -180,13 +181,13 @@ function EditModal({ entry, onSave, onClose }: {
             <Pressable style={em.cancelBtn} onPress={onClose}>
               <Text style={em.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable
+            <GradientButton
               style={[em.saveBtn, saving && { opacity: 0.6 }]}
               onPress={handleSave}
               disabled={saving}
             >
               <Text style={em.saveText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
-            </Pressable>
+            </GradientButton>
           </View>
         </ScrollView>
       </View>
@@ -383,7 +384,7 @@ export default function CoachesScreen() {
           <Text style={s.title}>Coach Tracker</Text>
           <Text style={s.subtitle}>Manage every coach relationship from first contact to offer.</Text>
         </View>
-        <Pressable style={s.addBtn} onPress={() => setAddingCoach(true)}>
+        <GradientButton style={s.addBtn} onPress={() => setAddingCoach(true)}>
           <Ionicons name="add" size={14} color="#fff" />
           <Text style={s.addBtnText}>Add Coach</Text>
         </Pressable>

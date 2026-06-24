@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GradientButton } from '../../components/GradientButton';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
@@ -650,27 +651,20 @@ export default function DashboardScreen() {
           <View style={styles.matchGate}>
             <Ionicons name="lock-closed" size={20} color={C.icon} />
             <Text style={styles.matchGateText}>Upgrade to Pro to see your matched programs</Text>
-            <Pressable
+            <GradientButton
               style={styles.matchGateBtn}
               onPress={() => router.push('/upgrade' as any)}
             >
               <Text style={styles.matchGateBtnText}>Unlock Programs →</Text>
-            </Pressable>
+            </GradientButton>
           </View>
         ) : matchCount === 0 ? (
           <View style={styles.matchGate}>
             <Ionicons name="school-outline" size={22} color={C.icon} />
             <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
-            <Pressable onPress={() => router.push('/assessment' as any)}>
-              <LinearGradient
-                colors={['#ff0000', '#aa00ff']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.matchGateBtn}
-              >
-                <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
-              </LinearGradient>
-            </Pressable>
+            <GradientButton style={styles.matchGateBtn} onPress={() => router.push('/assessment' as any)}>
+              <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
+            </GradientButton>
           </View>
         ) : (
           <Pressable

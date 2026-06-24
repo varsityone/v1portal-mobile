@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useColors } from '../context/ThemeContext';
 import { ThemeColors } from '../constants/Colors';
+import { GradientButton } from '../components/GradientButton';
 
 export default function UnsubscribeScreen() {
   const router = useRouter();
@@ -109,9 +110,9 @@ export default function UnsubscribeScreen() {
                 <Pressable style={s.btnGhost} onPress={handleResubscribe}>
                   <Text style={s.btnGhostText}>Re-enable emails</Text>
                 </Pressable>
-                <Pressable style={s.btnPrimary} onPress={() => router.replace('/(tabs)' as any)}>
+                <GradientButton style={s.btnPrimary} onPress={() => router.replace('/(tabs)' as any)}>
                   <Text style={s.btnPrimaryText}>Go to Dashboard</Text>
-                </Pressable>
+                </GradientButton>
               </View>
             </>
           )}
@@ -125,9 +126,9 @@ export default function UnsubscribeScreen() {
               <Text style={s.body}>
                 We couldn't process your request. Try again or manage your preferences from Settings.
               </Text>
-              <Pressable style={s.btnPrimary} onPress={() => router.back()}>
+              <GradientButton style={s.btnPrimary} onPress={() => router.back()}>
                 <Text style={s.btnPrimaryText}>Go to Settings</Text>
-              </Pressable>
+              </GradientButton>
             </>
           )}
 
