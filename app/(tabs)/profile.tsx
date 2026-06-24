@@ -26,10 +26,10 @@ const IG_GRADIENT: [string, string, string, string] = ['#833AB4', '#C13584', '#E
 const SCORE_GRADIENT: [string, string] = ['#ff0000', '#aa00ff'];
 
 const BREAKDOWN_BARS = [
-  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#3b82f6' },
-  { label: 'Football Production', key: 'production',  fallback: null,         color: '#10b981' },
-  { label: 'Academic',            key: 'academic',    fallback: null,         color: '#22c55e' },
-  { label: 'Intangibles',         key: 'intangibles', fallback: null,         color: '#f59e0b' },
+  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#7b7b7b' },
+  { label: 'Football Production', key: 'production',  fallback: null,         color: '#7b7b7b' },
+  { label: 'Academic',            key: 'academic',    fallback: null,         color: '#7b7b7b' },
+  { label: 'Intangibles',         key: 'intangibles', fallback: null,         color: '#7b7b7b' },
 ];
 
 const TABS = ['Overview', 'Film', 'Stats', 'Schools'] as const;
