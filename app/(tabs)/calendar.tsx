@@ -298,7 +298,7 @@ export default function CalendarScreen() {
           </View>
           <GradientButton style={s.addBtn} onPress={openAdd} hitSlop={4}>
             <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
+          </GradientButton>
         </View>
 
         {/* Legend */}
@@ -406,7 +406,7 @@ export default function CalendarScreen() {
                   disabled={!formTitle.trim() || saving}
                 >
                   <Text style={s.saveBtnText}>{saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Event'}</Text>
-                </Pressable>
+                </GradientButton>
                 {!!editingId && (
                   <Pressable style={s.deleteBtn} onPress={handleDelete} disabled={saving}>
                     <Text style={s.deleteBtnText}>Delete</Text>

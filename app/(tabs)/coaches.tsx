@@ -387,7 +387,7 @@ export default function CoachesScreen() {
         <GradientButton style={s.addBtn} onPress={() => setAddingCoach(true)}>
           <Ionicons name="add" size={14} color="#fff" />
           <Text style={s.addBtnText}>Add Coach</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       {/* ── Stats 2×2 ── */}

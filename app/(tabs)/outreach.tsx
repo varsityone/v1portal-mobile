@@ -108,7 +108,7 @@ export default function OutreachScreen() {
         >
           <Ionicons name="add" size={18} color={C.white} />
           <Text style={s.composeBtnText}>New</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       {/* Pipeline */}
@@ -140,7 +140,7 @@ export default function OutreachScreen() {
           >
             <Ionicons name="add-circle-outline" size={17} color={C.white} />
             <Text style={s.emptyBtnText}>Compose First Email</Text>
-          </Pressable>
+          </GradientButton>
         </View>
       ) : (
         <View style={s.listCard}>
