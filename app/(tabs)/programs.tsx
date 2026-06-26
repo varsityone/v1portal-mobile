@@ -19,12 +19,9 @@ import { useColors } from '../../context/ThemeContext';
 
 interface ProgramMatch {
   id: string;
-  school_name: string;
-  division: string | null;
   match_score: number;
-  position_fit: string | null;
   match_type: string | null;
-  programs?: { logo_url: string | null } | null;
+  programs?: { name: string | null; division: string | null; logo_url: string | null } | null;
 }
 
 function scoreColor(s: number) {
@@ -54,7 +51,7 @@ export default function ProgramsScreen() {
     setLoading(true);
     const { data } = await supabase
       .from('matches')
-      .select('id, school_name, division, match_score, position_fit, match_type, programs(logo_url)')
+      .select('id, match_score, match_type, programs(name, division, logo_url)')
       .eq('athlete_id', athlete.id)
       .order('match_score', { ascending: false });
     setPrograms(data ?? []);
@@ -141,22 +138,19 @@ export default function ProgramsScreen() {
                 <View key={prog.id} style={s.programCard}>
                   {prog.programs?.logo_url ? (
                     <View style={s.programLogo}>
-                      <Image source={{ uri: prog.programs.logo_url }} style={s.programLogoImg} resizeMode="contain" />
+                      <Image source={{ uri: prog.programs?.logo_url }} style={s.programLogoImg} resizeMode="contain" />
                     </View>
                   ) : (
                     <View style={s.programLogoFallback}>
                       <Text style={s.programLogoFallbackText}>
-                        {(prog.school_name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {(prog.programs?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </Text>
                     </View>
                   )}
                   <View style={s.programLeft}>
                     <View style={s.programInfo}>
-                      <Text style={s.programName}>{prog.school_name}</Text>
-                      <Text style={s.programDivision}>{prog.division ?? 'Unknown Division'}</Text>
-                      {!!prog.position_fit && (
-                        <Text style={s.programPosition}>{prog.position_fit}</Text>
-                      )}
+                      <Text style={s.programName}>{prog.programs?.name ?? 'Unknown Program'}</Text>
+                      <Text style={s.programDivision}>{prog.programs?.division ?? 'Unknown Division'}</Text>
                     </View>
                     {!!prog.match_type && (
                       <View style={[

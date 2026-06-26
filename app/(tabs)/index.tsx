@@ -100,16 +100,17 @@ export default function DashboardScreen() {
   const fetchCounts = useCallback(async () => {
     if (!athlete?.id) return;
     const [
-      { data: matchData },
+      { data: matchData, error: matchErr },
       { data: outData },
       { count: pv },
       { count: tCount },
     ] = await Promise.all([
-      supabase.from('matches').select('id').eq('athlete_id', athlete.id).limit(5),
+      supabase.from('matches').select('id').eq('athlete_id', athlete.id).limit(20),
       supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
       supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
       supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
+    if (matchErr) console.error('[dashboard] matches error:', matchErr.message);
     setMatchCount(matchData?.length ?? 0);
     const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
     setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
