@@ -16,7 +16,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
-import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
+import { Colors, GRADIENT, ThemeColors, TIER_COLORS, getTierFromAthlete } from '../../constants/Colors';
 import { useColors, useTheme } from '../../context/ThemeContext';
 import { PHASES } from '../../constants/Phases';
 
@@ -158,18 +158,8 @@ export default function DashboardScreen() {
     return responses.school_classification || null;
   })();
 
-  const tierDisplay = (() => {
-    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Coach+' : 'Commit+';
-    if (athlete?.subscription_status === 'trial') return 'Pro Trial';
-    if (athlete) return 'Scout';
-    return 'Free';
-  })();
-  const tierColor = (() => {
-    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'rgb(199, 0, 156)' : '#FCAF45';
-    if (athlete?.subscription_status === 'trial') return '#F59E0B';
-    if (athlete) return '#10b981';
-    return C.surface;
-  })();
+  const tierDisplay = getTierFromAthlete(athlete?.subscription_status, athlete?.subscription_tier, !!athlete);
+  const tierColor = TIER_COLORS[tierDisplay];
   const tierTextColor = tierDisplay === 'Free' ? C.textMuted : '#fff';
 
   const phaseComplete = [
