@@ -292,12 +292,12 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
                     <Ionicons
                       name={active ? item.icon : item.iconOff}
                       size={17}
-                      color="rgb(199,0,156)"
+                      color={scheme === 'dark' ? '#ffffff' : '#252525'}
                     />
-                    <Text style={[d.navLabel, { color: 'rgb(199,0,156)', fontWeight: active ? '700' : '500' }]}>
+                    <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
                       {item.label}
                     </Text>
-                    {active && <View style={[d.activeBar, { backgroundColor: 'rgb(199,0,156)' }]} />}
+                    {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
                   </Pressable>
                 );
               })}
