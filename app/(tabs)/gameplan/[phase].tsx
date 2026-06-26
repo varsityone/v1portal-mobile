@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -415,102 +419,217 @@ function Phase1({ data, phase, onBack }: {
 
 // ─── Phase 2: Build Your Profile ──────────────────────────────────────────────
 
-const PROFILE_FIELDS: { key: string; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; }[] = [
-  { key: 'full_name',            label: 'Full Name',           icon: 'person-outline' },
-  { key: 'phone',                label: 'Phone Number',        icon: 'call-outline' },
-  { key: 'bio',                  label: 'Bio',                 icon: 'document-text-outline' },
-  { key: 'position',             label: 'Position',            icon: 'football-outline' },
-  { key: 'graduation_year',      label: 'Graduation Year',     icon: 'calendar-outline' },
-  { key: 'height',               label: 'Height',              icon: 'resize-outline' },
-  { key: 'weight',               label: 'Weight',              icon: 'barbell-outline' },
-  { key: 'high_school',          label: 'High School',         icon: 'school-outline' },
-  { key: 'city',                 label: 'City',                icon: 'location-outline' },
-  { key: 'gpa',                  label: 'GPA',                 icon: 'ribbon-outline' },
-  { key: 'ncaa_id',              label: 'NCAA ID (or "Not Yet")', icon: 'card-outline' },
-  { key: 'test_score',           label: 'SAT or ACT Score',   icon: 'calculator-outline' },
-  { key: 'hudl_link',            label: 'Hudl Film Link',      icon: 'videocam-outline' },
-  { key: 'guardian_name',        label: 'Guardian Name',       icon: 'people-outline' },
-  { key: 'guardian_relationship',label: 'Guardian Relationship', icon: 'heart-outline' },
-  { key: 'guardian_phone',       label: 'Guardian Phone',      icon: 'call-outline' },
-  { key: 'guardian_email',       label: 'Guardian Email',      icon: 'mail-outline' },
+type P2Fields = {
+  full_name: string; phone: string; bio: string;
+  position: string; height: string; weight: string; graduation_year: string;
+  gpa: string; sat_score: string; act_score: string; ncaa_id: string;
+  high_school: string; city: string; state: string;
+  hudl_video_link: string;
+  guardian_name: string; guardian_relationship: string; guardian_phone: string; guardian_email: string;
+};
+
+const P2_EMPTY: P2Fields = {
+  full_name: '', phone: '', bio: '',
+  position: '', height: '', weight: '', graduation_year: '',
+  gpa: '', sat_score: '', act_score: '', ncaa_id: '',
+  high_school: '', city: '', state: '',
+  hudl_video_link: '',
+  guardian_name: '', guardian_relationship: '', guardian_phone: '', guardian_email: '',
+};
+
+type P2Row = {
+  label: string; key: keyof P2Fields; multi?: boolean;
+  placeholder?: string; hint?: string;
+  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'phone-pad' | 'email-address' | 'url';
+};
+
+const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>['name']; rows: P2Row[] }[] = [
+  { title: 'Personal', icon: 'person-outline', rows: [
+    { label: 'Full Name', key: 'full_name' },
+    { label: 'Phone', key: 'phone', keyboardType: 'phone-pad' },
+    { label: 'Bio', key: 'bio', multi: true,
+      placeholder: "QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity",
+      hint: 'Keep it short and keyword-rich — works for Twitter/X and Instagram.' },
+  ]},
+  { title: 'Athletic', icon: 'football-outline', rows: [
+    { label: 'Position', key: 'position' },
+    { label: "Height (e.g. 6'2\")", key: 'height' },
+    { label: 'Weight (lbs)', key: 'weight', keyboardType: 'numeric' },
+    { label: 'Graduation Year', key: 'graduation_year', keyboardType: 'numeric' },
+  ]},
+  { title: 'Academic', icon: 'school-outline', rows: [
+    { label: 'GPA', key: 'gpa', keyboardType: 'decimal-pad' },
+    { label: 'SAT Score', key: 'sat_score', keyboardType: 'numeric' },
+    { label: 'ACT Score', key: 'act_score', keyboardType: 'numeric' },
+    { label: 'NCAA Eligibility ID', key: 'ncaa_id', hint: 'Register at eligibilitycenter.org' },
+  ]},
+  { title: 'Location', icon: 'location-outline', rows: [
+    { label: 'High School', key: 'high_school' },
+    { label: 'City', key: 'city' },
+    { label: 'State', key: 'state', placeholder: 'e.g. TX' },
+  ]},
+  { title: 'Film', icon: 'videocam-outline', rows: [
+    { label: 'Hudl Film Link', key: 'hudl_video_link', keyboardType: 'url',
+      hint: 'Your highlight reel URL from hudl.com' },
+  ]},
+  { title: 'Guardian', icon: 'shield-outline', rows: [
+    { label: 'Guardian Name', key: 'guardian_name' },
+    { label: 'Relationship', key: 'guardian_relationship', placeholder: 'e.g. Parent, Grandparent' },
+    { label: 'Guardian Phone', key: 'guardian_phone', keyboardType: 'phone-pad' },
+    { label: 'Guardian Email', key: 'guardian_email', keyboardType: 'email-address' },
+  ]},
 ];
 
-function Phase2({ athlete, phase, onBack }: {
-  athlete: Record<string, unknown> | null; phase: Phase; onBack: () => void;
+const P2_TRACKED: (keyof P2Fields)[] = [
+  'full_name', 'phone', 'bio', 'position', 'graduation_year', 'height', 'weight',
+  'high_school', 'city', 'gpa', 'ncaa_id', 'hudl_video_link',
+  'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
+];
+
+function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
+  athlete: Record<string, unknown> | null;
+  athleteId: string | undefined;
+  phase: Phase;
+  onBack: () => void;
+  refresh: () => void;
 }) {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const completed = PROFILE_FIELDS.filter(f => {
-    if (f.key === 'test_score') return !!(athlete?.['sat_score'] || athlete?.['act_score'] || athlete?.['test_scores_not_taken']);
-    const v = athlete?.[f.key];
-    return v !== null && v !== undefined && v !== '';
-  }).length;
-  const pct = Math.round((completed / PROFILE_FIELDS.length) * 100);
+
+  const [fields, setFields] = useState<P2Fields>(P2_EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!athlete) return;
+    const a = athlete;
+    setFields({
+      full_name:             String(a.full_name             ?? ''),
+      phone:                 String(a.phone                 ?? ''),
+      bio:                   String(a.bio                   ?? ''),
+      position:              String(a.position              ?? ''),
+      height:                String(a.height                ?? ''),
+      weight:                a.weight          != null ? String(a.weight)          : '',
+      graduation_year:       a.graduation_year != null ? String(a.graduation_year) : '',
+      gpa:                   a.gpa             != null ? String(a.gpa)             : '',
+      sat_score:             a.sat_score       != null ? String(a.sat_score)       : '',
+      act_score:             a.act_score       != null ? String(a.act_score)       : '',
+      ncaa_id:               String(a.ncaa_id               ?? ''),
+      high_school:           String(a.high_school           ?? ''),
+      city:                  String(a.city                  ?? ''),
+      state:                 String(a.state                 ?? ''),
+      hudl_video_link:       String(a.hudl_video_link       ?? ''),
+      guardian_name:         String(a.guardian_name         ?? ''),
+      guardian_relationship: String(a.guardian_relationship ?? ''),
+      guardian_phone:        String(a.guardian_phone        ?? ''),
+      guardian_email:        String(a.guardian_email        ?? ''),
+    });
+  }, [athlete]);
+
+  const set = (k: keyof P2Fields) => (v: string) => {
+    setFields(f => ({ ...f, [k]: v }));
+    setSaved(false);
+  };
+
+  const completed = P2_TRACKED.filter(k => { const v = fields[k]; return v !== null && v !== undefined && v !== ''; }).length;
+  const pct = Math.round((completed / P2_TRACKED.length) * 100);
+
+  const buildStarterBio = () => {
+    const pos = fields.position || '[Position]';
+    const yr  = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
+    const sch = fields.high_school || '[High School]';
+    const loc = fields.city && fields.state ? `${fields.city}, ${fields.state}` : fields.city || fields.state || '[City, State]';
+    const ht  = fields.height || '[Height]';
+    const wt  = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
+    const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
+    set('bio')(`${pos} | ${yr} | ${sch} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity`);
+  };
+
+  const handleSave = async () => {
+    if (!athleteId) return;
+    setSaving(true);
+    const updates: Record<string, string | number | null> = {};
+    (Object.keys(fields) as (keyof P2Fields)[]).forEach(k => { updates[k] = fields[k] || null; });
+    const { error } = await supabase.from('athletes').update(updates).eq('id', athleteId);
+    setSaving(false);
+    if (error) { Alert.alert('Error', error.message); return; }
+    await refresh();
+    setSaved(true);
+  };
 
   return (
-    <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <PhaseHeader phase={phase} onBack={onBack} />
 
-      <Card>
-        <SLabel>PROFILE COMPLETION</SLabel>
-        <View style={s.completionRow}>
-          <Text style={s.completionPct}>{pct}%</Text>
-          <Text style={s.completionDesc}>{completed} of {PROFILE_FIELDS.length} fields complete</Text>
-        </View>
-        <View style={s.completionTrack}>
-          <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.completionFill, { width: `${pct}%` }]} />
-        </View>
-      </Card>
-
-      <Card>
-        <SLabel>PROFILE FIELDS</SLabel>
-        {PROFILE_FIELDS.map((field, i) => {
-          const val = field.key === 'test_score'
-            ? (athlete?.['sat_score'] ? `SAT ${athlete['sat_score']}` : athlete?.['act_score'] ? `ACT ${athlete['act_score']}` : athlete?.['test_scores_not_taken'] ? 'Not taken yet ✓' : null)
-            : athlete?.[field.key];
-          const done = val !== null && val !== undefined && val !== '';
-          return (
-            <Pressable
-              key={field.key}
-              style={({ pressed }) => [s.checkRow, i < PROFILE_FIELDS.length - 1 && s.checkRowBorder, pressed && { backgroundColor: C.surfaceAlt }]}
-              onPress={() => router.push('/(tabs)/profile')}
-            >
-              <View style={[s.checkCircle, done && s.checkCircleDone]}>
-                <Ionicons name={done ? 'checkmark' : 'ellipse-outline'} size={15} color={done ? C.white : C.textDim} />
-              </View>
-              <Ionicons name={field.icon} size={16} color={done ? C.textMuted : C.textDim} />
-              <View style={{ flex: 1 }}>
-                <Text style={[s.checkLabel, !done && { color: C.textMuted }]}>{field.label}</Text>
-                {done ? (
-                  <Text style={s.checkVal} numberOfLines={1}>
-                    {field.key === 'highlight_film_url' ? 'Film added ✓' : String(val)}
-                  </Text>
-                ) : (
-                  <Text style={s.checkEmpty}>Not set — tap to add</Text>
-                )}
-              </View>
-              {!done && <Ionicons name="chevron-forward" size={14} color={C.icon} />}
-            </Pressable>
-          );
-        })}
-      </Card>
-
-      {pct === 100 && (
-        <Card style={s.successCard}>
-          <Ionicons name="trophy-outline" size={26} color={C.success} />
-          <Text style={s.successTitle}>Profile Complete</Text>
-          <Text style={s.successBody}>Coaches can now see your full measurables, academics, and film.</Text>
+        <Card>
+          <SLabel>PROFILE COMPLETION</SLabel>
+          <View style={s.completionRow}>
+            <Text style={s.completionPct}>{pct}%</Text>
+            <Text style={s.completionDesc}>{completed} of {P2_TRACKED.length} key fields complete</Text>
+          </View>
+          <View style={s.completionTrack}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.completionFill, { width: `${pct}%` as any }]} />
+          </View>
         </Card>
-      )}
 
-      <Pressable
-        style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
-        onPress={() => router.push('/(tabs)/gameplan/3' as any)}
-      >
-        <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
-      </Pressable>
-    </ScrollView>
+        {P2_SECTIONS.map(section => (
+          <View key={section.title} style={s.p2SectionWrap}>
+            <View style={s.p2SectionHeader}>
+              <Ionicons name={section.icon} size={13} color={C.primary} />
+              <Text style={s.p2SectionTitle}>{section.title.toUpperCase()}</Text>
+            </View>
+            <Card>
+              {section.rows.map((row, idx) => {
+                const isBio = row.key === 'bio';
+                return (
+                  <View key={row.key} style={[s.p2FieldRow, idx > 0 && s.p2FieldRowBorder]}>
+                    <View style={s.p2FieldLabelRow}>
+                      <Text style={s.p2Label}>{row.label}</Text>
+                      {isBio && (
+                        <Pressable onPress={buildStarterBio} style={s.p2StarterBtn}>
+                          <Text style={s.p2StarterBtnText}>✦ Starter Bio</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                    <TextInput
+                      style={[s.p2Input, isBio && s.p2InputMulti]}
+                      value={fields[row.key]}
+                      onChangeText={set(row.key)}
+                      placeholder={row.placeholder ?? row.label}
+                      placeholderTextColor={C.textDim}
+                      multiline={isBio}
+                      textAlignVertical={isBio ? 'top' : 'auto'}
+                      keyboardType={row.keyboardType ?? 'default'}
+                      autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
+                    />
+                    {row.hint ? <Text style={s.p2Hint}>{row.hint}</Text> : null}
+                  </View>
+                );
+              })}
+            </Card>
+          </View>
+        ))}
+
+        <Pressable onPress={handleSave} disabled={saving} style={s.p2SaveWrap}>
+          <LinearGradient
+            colors={['#ff0000', '#aa00ff']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[s.p2SaveBtn, saving && { opacity: 0.6 }]}
+          >
+            <Text style={s.p2SaveBtnText}>{saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Profile'}</Text>
+          </LinearGradient>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [s.primaryBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push('/(tabs)/gameplan/3' as any)}
+        >
+          <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -896,7 +1015,7 @@ export default function PhaseDetailScreen() {
 
   switch (phaseNumber) {
     case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
-    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} phase={phase} onBack={onBack} />;
+    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} refresh={athleteData.refresh} />;
     case 3: return <Phase3 athleteId={athleteData.athlete?.id} targetListSaved={!!athleteData.athlete?.target_list_saved_at} phase={phase} onBack={onBack} />;
     case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 5: return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
@@ -993,6 +1112,23 @@ function createStyles(C: ThemeColors) {
     completionDesc: { fontSize: 13, color: C.textMuted },
     completionTrack: { height: 5, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
     completionFill: { height: '100%', backgroundColor: C.primary, borderRadius: 3 },
+
+    // Phase 2 inline form
+    p2SectionWrap: { marginBottom: 18 },
+    p2SectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+    p2SectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0, color: C.textMuted },
+    p2FieldRow: { paddingHorizontal: 16, paddingVertical: 12 },
+    p2FieldRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+    p2FieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+    p2Label: { fontSize: 12, fontWeight: '500', color: C.textMuted },
+    p2Input: { fontSize: 15, color: C.text, paddingVertical: 0 },
+    p2InputMulti: { height: 80, textAlignVertical: 'top' as const },
+    p2Hint: { fontSize: 11, color: C.textDim, marginTop: 4, lineHeight: 16 },
+    p2StarterBtn: { backgroundColor: `${C.primary}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
+    p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
+    p2SaveWrap: { marginBottom: 12 },
+    p2SaveBtn: { height: 52, borderRadius: 14, alignItems: 'center' as const, justifyContent: 'center' as const },
+    p2SaveBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
 
     // Checklist
     checkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },

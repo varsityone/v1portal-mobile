@@ -21,7 +21,12 @@ interface ProgramMatch {
   id: string;
   match_score: number;
   match_type: string | null;
-  programs?: { name: string | null; division: string | null; logo_url: string | null } | null;
+  programs?: { name: string | null; division: string | null; logo_url: string | null } | { name: string | null; division: string | null; logo_url: string | null }[] | null;
+}
+
+function prog_(p: ProgramMatch['programs']): { name: string | null; division: string | null; logo_url: string | null } | null {
+  if (!p) return null;
+  return Array.isArray(p) ? (p[0] ?? null) : p;
 }
 
 function scoreColor(s: number) {
@@ -136,21 +141,21 @@ export default function ProgramsScreen() {
             <View style={s.list}>
               {filtered.map((prog) => (
                 <View key={prog.id} style={s.programCard}>
-                  {prog.programs?.logo_url ? (
+                  {(() => { const p = prog_(prog.programs); return p?.logo_url ? (
                     <View style={s.programLogo}>
-                      <Image source={{ uri: prog.programs?.logo_url }} style={s.programLogoImg} resizeMode="contain" />
+                      <Image source={{ uri: p.logo_url }} style={s.programLogoImg} resizeMode="contain" />
                     </View>
                   ) : (
                     <View style={s.programLogoFallback}>
                       <Text style={s.programLogoFallbackText}>
-                        {(prog.programs?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {(p?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </Text>
                     </View>
-                  )}
+                  ); })()}
                   <View style={s.programLeft}>
                     <View style={s.programInfo}>
-                      <Text style={s.programName}>{prog.programs?.name ?? 'Unknown Program'}</Text>
-                      <Text style={s.programDivision}>{prog.programs?.division ?? 'Unknown Division'}</Text>
+                      <Text style={s.programName}>{prog_(prog.programs)?.name ?? 'Unknown Program'}</Text>
+                      <Text style={s.programDivision}>{prog_(prog.programs)?.division ?? 'Unknown Division'}</Text>
                     </View>
                     {!!prog.match_type && (
                       <View style={[
