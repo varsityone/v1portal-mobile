@@ -398,6 +398,7 @@ function Phase1({ data, phase, onBack }: {
               style={({ pressed }) => [s.retakeBtn, pressed && { opacity: 0.8 }]}
               onPress={() => router.push('/assessment' as any)}
             >
+              <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Ionicons name="refresh" size={14} color="#fff" />
               <Text style={s.retakeBtnTxt}>Retake</Text>
             </Pressable>
@@ -1106,7 +1107,7 @@ function createStyles(C: ThemeColors) {
     retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     retakeTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3 },
     retakeBody: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
-    retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: `${C.primary}22` },
+    retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, overflow: 'hidden' },
     retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: C.primary },
 
     // Completion

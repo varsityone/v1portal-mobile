@@ -228,9 +228,9 @@ export default function DashboardScreen() {
             <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
           </View>
           {score !== null && (
-            <View style={styles.recruitingLevelBadge}>
+            <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.recruitingLevelBadge}>
               <Text style={styles.recruitingLevelBadgeText}>{getRecruitingLevelFromScore(score)}</Text>
-            </View>
+            </LinearGradient>
           )}
           {schoolClassification && (
             <View style={styles.classificationBadge}>
@@ -587,8 +587,8 @@ function createStyles(C: ThemeColors) {
     tierLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
     tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, borderWidth: 1 },
     tierBadgeText: { fontSize: 12, fontWeight: '700' },
-    recruitingLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.primary + '1A', borderWidth: 1, borderColor: C.primary + '33' },
-    recruitingLevelBadgeText: { fontSize: 11, fontWeight: '700', color: C.primary },
+    recruitingLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
+    recruitingLevelBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
     classificationBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
     classificationBadgeText: { fontSize: 11, fontWeight: '600', color: C.textDim },
 

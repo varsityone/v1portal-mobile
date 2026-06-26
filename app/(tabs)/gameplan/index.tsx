@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAthleteData } from '../../../hooks/useAthleteData';
@@ -35,17 +36,18 @@ function PhaseCard({ phase, status, isLast, locked, requiredPhase, onPress }: Ph
   return (
     <View style={cs.wrapper}>
       <View style={cs.left}>
-        <View style={[
-          cs.badge,
-          status === 'done' && cs.badgeDone,
-          status === 'active' && cs.badgeActive,
-          status === 'upcoming' && cs.badgeUpcoming,
-        ]}>
-          {status === 'done'
-            ? <Ionicons name="checkmark" size={14} color={C.white} />
-            : <Text style={[cs.badgeNum, status === 'upcoming' && cs.badgeNumDim]}>{phase.number}</Text>
-          }
-        </View>
+        {status === 'active' ? (
+          <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cs.badge}>
+            <Text style={cs.badgeNum}>{phase.number}</Text>
+          </LinearGradient>
+        ) : (
+          <View style={[cs.badge, status === 'done' && cs.badgeDone, status === 'upcoming' && cs.badgeUpcoming]}>
+            {status === 'done'
+              ? <Ionicons name="checkmark" size={14} color={C.white} />
+              : <Text style={[cs.badgeNum, cs.badgeNumDim]}>{phase.number}</Text>
+            }
+          </View>
+        )}
         {!isLast && (
           <View style={[cs.connector, status === 'done' && cs.connectorDone]} />
         )}
