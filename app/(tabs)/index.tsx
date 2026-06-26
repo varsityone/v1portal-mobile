@@ -535,47 +535,6 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* ── Tier / features card ── */}
-      <LinearGradient
-        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.tierFeaturesCard}
-      >
-        {/* Header */}
-        <View style={styles.tierFeaturesHeader}>
-          <View style={styles.tierIconCircle}>
-            <Ionicons name="trophy" size={18} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.tierFeaturesTitle}>
-              {tierDisplay} Tier
-            </Text>
-            <Text style={styles.tierFeaturesSub}>Active subscription</Text>
-          </View>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.tierDivider} />
-
-        {/* Feature list */}
-        <View style={styles.featureList}>
-          {[
-            'Full V1 Score Breakdown',
-            'Program Matches',
-            'Coach Contacts',
-            'All 6 Gameplan Phases',
-            'Outreach Templates',
-            'Recruiting Analytics',
-          ].map((label, i) => (
-            <View key={i} style={styles.featureRow}>
-              <Ionicons name="checkmark-circle" size={15} color="#fff" />
-              <Text style={styles.featureLabel}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-      </LinearGradient>
 
       {/* ── Program matches preview ── */}
       <View>
