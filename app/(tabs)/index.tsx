@@ -592,7 +592,7 @@ function createStyles(C: ThemeColors) {
     tierBadgeText: { fontSize: 12, fontWeight: '700' },
     recruitingLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
     recruitingLevelBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-    classificationBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
+    classificationBadge: { paddingHorizontal: 2, paddingVertical: 3 },
     classificationBadgeText: { fontSize: 11, fontWeight: '600', color: C.textDim },
 
     // Score card
