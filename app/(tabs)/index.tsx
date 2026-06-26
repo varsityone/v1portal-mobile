@@ -575,12 +575,6 @@ export default function DashboardScreen() {
           ))}
         </View>
 
-        <Pressable
-          style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
-          onPress={() => Linking.openURL('https://v1portal.com')}
-        >
-          <Text style={styles.seeUpgradeBtnText}>Manage Subscription</Text>
-        </Pressable>
       </LinearGradient>
 
       {/* ── Program matches preview ── */}
