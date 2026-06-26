@@ -29,6 +29,15 @@ function prog_(p: ProgramMatch['programs']): { name: string | null; division: st
   return Array.isArray(p) ? (p[0] ?? null) : p;
 }
 
+const DIV_COLORS: Record<string, { bg: string; text: string }> = {
+  FBS:  { bg: '#1e3a5f', text: '#60a5fa' },
+  FCS:  { bg: '#1e3a5f', text: '#60a5fa' },
+  D2:   { bg: '#14432a', text: '#4ade80' },
+  D3:   { bg: '#78350f', text: '#fbbf24' },
+  NAIA: { bg: '#78350f', text: '#fbbf24' },
+  JUCO: { bg: '#172554', text: '#38bdf8' },
+};
+
 function scoreColor(s: number) {
   const t = Math.min(s / 99.9, 1);
   if (t <= 0.5) return `rgb(0,${Math.round(106 + 74 * (t / 0.5))},255)`;
@@ -141,17 +150,21 @@ export default function ProgramsScreen() {
             <View style={s.list}>
               {filtered.map((prog) => (
                 <View key={prog.id} style={s.programCard}>
-                  {(() => { const p = prog_(prog.programs); return p?.logo_url ? (
-                    <View style={s.programLogo}>
-                      <Image source={{ uri: p.logo_url }} style={s.programLogoImg} resizeMode="contain" />
-                    </View>
-                  ) : (
-                    <View style={s.programLogoFallback}>
-                      <Text style={s.programLogoFallbackText}>
-                        {(p?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                      </Text>
-                    </View>
-                  ); })()}
+                  {(() => {
+                    const p = prog_(prog.programs);
+                    const dc = DIV_COLORS[p?.division ?? ''] ?? { bg: C.surfaceAlt, text: C.textMuted };
+                    return p?.logo_url ? (
+                      <View style={s.programLogo}>
+                        <Image source={{ uri: p.logo_url }} style={s.programLogoImg} resizeMode="contain" />
+                      </View>
+                    ) : (
+                      <View style={[s.programLogoFallback, { backgroundColor: dc.bg }]}>
+                        <Text style={[s.programLogoFallbackText, { color: dc.text }]}>
+                          {(p?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </Text>
+                      </View>
+                    );
+                  })()}
                   <View style={s.programLeft}>
                     <View style={s.programInfo}>
                       <Text style={s.programName}>{prog_(prog.programs)?.name ?? 'Unknown Program'}</Text>
