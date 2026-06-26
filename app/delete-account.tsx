@@ -32,11 +32,6 @@ export default function DeleteAccountScreen() {
       setStatus('error');
       return;
     }
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // session already invalidated by deletion — ignore
-    }
     setStatus('done');
   };
 
@@ -62,7 +57,13 @@ export default function DeleteAccountScreen() {
               <Text style={s.body}>
                 Your account and personal data have been permanently removed. Your recruiting history has been anonymized for platform analytics.
               </Text>
-              <GradientButton style={s.btnPrimary} onPress={() => router.replace('/(auth)/login' as any)}>
+              <GradientButton
+                style={s.btnPrimary}
+                onPress={async () => {
+                  try { await supabase.auth.signOut(); } catch {}
+                  router.replace('/(auth)/login' as any);
+                }}
+              >
                 <Text style={s.btnPrimaryText}>Return to Home</Text>
               </GradientButton>
             </>

@@ -147,8 +147,6 @@ export default function AnalyticsScreen() {
   const [recruiting, setRecruiting] = useState<RecruitingData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const isElite = athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite';
-
   const fetchData = useCallback(async () => {
     if (!athlete?.id) return;
     setLoading(true);
@@ -217,8 +215,8 @@ export default function AnalyticsScreen() {
     };
     setOutreach(outreachStats);
 
-    // ── Recruiting Intelligence (Elite only) ───────────────────────────────────
-    if (isElite) {
+    // ── Recruiting Intelligence ────────────────────────────────────────────────
+    {
       const { data: trackerData } = await supabase
         .from('coach_tracker')
         .select('id, status, coach:coaches(id, name, programs(id, name, division))')
@@ -299,7 +297,7 @@ export default function AnalyticsScreen() {
     }
 
     setLoading(false);
-  }, [athlete?.id, isElite]);
+  }, [athlete?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -402,10 +400,9 @@ export default function AnalyticsScreen() {
       </View>
 
       {/* ── Recruiting Intelligence ── */}
-      {isElite ? (
-        <>
-          <View style={{ gap: 4 }}>
-            <Text style={s.intelligenceTitle}>🎓 Recruiting Intelligence</Text>
+      <>
+        <View style={{ gap: 4 }}>
+          <Text style={s.intelligenceTitle}>🎓 Recruiting Intelligence</Text>
             <Text style={s.intelligenceSub}>
               Deep insights into your recruiting strategy — conversion by tier, template performance, and engagement trends.
             </Text>
@@ -515,18 +512,6 @@ export default function AnalyticsScreen() {
             </View>
           )}
         </>
-      ) : (
-        <LinearGradient
-          colors={['rgba(80,26,255,0.12)', 'rgba(167,139,250,0.05)']}
-          style={s.eliteGate}
-        >
-          <Text style={s.eliteGateIcon}>🎓</Text>
-          <Text style={s.eliteGateTitle}>Recruiting Intelligence</Text>
-          <Text style={s.eliteGateSub}>
-            Unlock conversion funnels by tier, email template performance, response time benchmarks, and momentum tracking.
-          </Text>
-        </LinearGradient>
-      )}
     </ScrollView>
   );
 }

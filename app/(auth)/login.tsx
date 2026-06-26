@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -37,8 +38,8 @@ export default function LoginScreen() {
     setError('');
     const { error: gErr } = await signInWithGoogle();
     setGoogleLoading(false);
-    if (gErr) { setError(gErr); return; }
-    router.replace('/(tabs)');
+    if (gErr) setError(gErr);
+    // _layout.tsx SIGNED_IN handler routes based on subscription status
   };
 
   const handleAppleSignIn = async () => {
@@ -66,9 +67,8 @@ export default function LoginScreen() {
 
     if (authError) {
       setError(authError.message);
-    } else {
-      router.replace('/(tabs)');
     }
+    // _layout.tsx SIGNED_IN handler routes based on subscription status
   };
 
   return (
@@ -92,6 +92,13 @@ export default function LoginScreen() {
         <View style={styles.heading}>
           <Text style={styles.title}>Welcome Back.</Text>
           <Text style={styles.subtitle}>Sign in to your V1Portal® account</Text>
+          <Text style={styles.subscriptionNote}>
+            Requires an active V1Portal account. Visit{' '}
+            <Text style={styles.subscriptionLink} onPress={() => Linking.openURL('https://v1portal.com')}>
+              v1portal.com
+            </Text>
+            {' '}to get started.
+          </Text>
         </View>
 
         {/* Error */}
@@ -123,9 +130,7 @@ export default function LoginScreen() {
 
         {/* Divider */}
         <View style={styles.divider}>
-          <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or sign in with email</Text>
-          <View style={styles.dividerLine} />
         </View>
 
         {/* Fields */}
@@ -166,9 +171,9 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <Pressable onPress={() => router.replace('/(auth)/signup')}>
-            <Text style={styles.footerLink}>Sign up free</Text>
+          <Text style={styles.footerText}>Not yet a subscriber? </Text>
+          <Pressable onPress={() => Linking.openURL('https://v1portal.com')} hitSlop={8}>
+            <Text style={styles.footerLink}>Visit v1portal.com</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -207,6 +212,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '300',
     color: Colors.textMuted,
+    marginBottom: 8,
+  },
+  subscriptionNote: {
+    fontSize: 12,
+    color: Colors.textDim,
+    lineHeight: 18,
+  },
+  subscriptionLink: {
+    color: Colors.primary,
+    fontWeight: '600',
   },
   errorBanner: {
     backgroundColor: 'rgba(220,38,38,0.08)',
@@ -259,11 +274,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
   },
   dividerText: {
     fontSize: 11,

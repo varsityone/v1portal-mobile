@@ -10,10 +10,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
-interface UpgradeSheetProps {
+interface PhaseGateSheetProps {
   visible: boolean;
   onClose: () => void;
-  requiredPlan: 'pro' | 'elite';
+  requiredPhaseNumber: number;
+  requiredPhaseName: string;
   phaseNumber: number;
   phaseName: string;
 }
@@ -21,10 +22,11 @@ interface UpgradeSheetProps {
 export function UpgradeSheet({
   visible,
   onClose,
-  requiredPlan,
+  requiredPhaseNumber,
+  requiredPhaseName,
   phaseNumber,
   phaseName,
-}: UpgradeSheetProps) {
+}: PhaseGateSheetProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(420)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -62,8 +64,6 @@ export function UpgradeSheet({
     }
   }, [visible]);
 
-  const planLabel = requiredPlan === 'pro' ? 'Pro' : 'Elite';
-
   return (
     <Modal
       transparent
@@ -72,37 +72,36 @@ export function UpgradeSheet({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      {/* Backdrop */}
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Sheet */}
       <Animated.View
         style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
       >
         <View style={styles.handle} />
 
         <View style={styles.iconCircle}>
-          <Ionicons name="lock-closed" size={24} color={Colors.primary} />
+          <Ionicons name="arrow-up-circle-outline" size={26} color={Colors.primary} />
         </View>
 
         <Text style={styles.phaseTag}>Phase {phaseNumber}</Text>
         <Text style={styles.title}>{phaseName}</Text>
         <Text style={styles.body}>
-          Upgrade to{' '}
-          <Text style={styles.planName}>{planLabel}</Text>
-          {' '}to unlock this phase of The Gameplan and get access to the full recruiting system.
+          Complete{' '}
+          <Text style={styles.bold}>Phase {requiredPhaseNumber} — {requiredPhaseName}</Text>
+          {' '}before moving on to this phase.
         </Text>
 
-        <View style={styles.upgradeInfo}>
-          <Text style={styles.upgradeInfoText}>
-            {planLabel} plan is available at v1portal.com
+        <View style={styles.infoBox}>
+          <Ionicons name="checkmark-circle-outline" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>
+            Finish Phase {requiredPhaseNumber} to continue your journey
           </Text>
         </View>
 
         <Pressable style={styles.dismissBtn} onPress={onClose}>
-          <Text style={styles.dismissText}>Not now</Text>
+          <Text style={styles.dismissText}>Got it</Text>
         </Pressable>
       </Animated.View>
     </Modal>
@@ -167,28 +166,30 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     lineHeight: 21,
     textAlign: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
-  planName: {
+  bold: {
     color: Colors.text,
     fontWeight: '700',
   },
-  upgradeInfo: {
+  infoBox: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     backgroundColor: `${Colors.primary}14`,
     borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: `${Colors.primary}30`,
   },
-  upgradeInfoText: {
+  infoText: {
     color: Colors.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 0.1,
-    textAlign: 'center',
+    flex: 1,
   },
   dismissBtn: {
     paddingVertical: 12,

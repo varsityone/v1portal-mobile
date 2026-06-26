@@ -1,31 +1,27 @@
 import { Linking, Pressable, StyleSheet, Text, View, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/Colors';
 
-export default function ManageSubscriptionScreen() {
+export default function NoSubscriptionScreen() {
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace('/(auth)/login');
+  };
 
   return (
     <View style={styles.root}>
-      <View style={styles.topBar}>
-        <Pressable
-          style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => router.back()}
-          hitSlop={10}
-        >
-          <Ionicons name="close" size={22} color={Colors.textMuted} />
-        </Pressable>
-      </View>
-
       <View style={styles.content}>
         <View style={styles.iconCircle}>
-          <Ionicons name="globe-outline" size={28} color={Colors.primary} />
+          <Ionicons name="globe-outline" size={32} color={Colors.primary} />
         </View>
 
-        <Text style={styles.title}>Manage Your Subscription</Text>
+        <Text style={styles.title}>Subscription Required</Text>
         <Text style={styles.body}>
-          To upgrade, downgrade, or cancel your V1Portal subscription, visit us on the web.
+          V1Portal is available to active subscribers. Visit v1portal.com to get started or manage your account.
         </Text>
 
         <Pressable
@@ -33,6 +29,13 @@ export default function ManageSubscriptionScreen() {
           onPress={() => Linking.openURL('https://v1portal.com')}
         >
           <Text style={styles.btnText}>Visit v1portal.com</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.6 }]}
+          onPress={handleSignOut}
+        >
+          <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
     </View>
@@ -44,32 +47,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  topBar: {
-    paddingTop: Platform.OS === 'ios' ? 56 : 20,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-    alignItems: 'flex-end',
-  },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingBottom: 60,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     gap: 16,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: `${Colors.primary}18`,
     borderWidth: 1,
     borderColor: `${Colors.primary}35`,
@@ -78,7 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: Colors.text,
     textAlign: 'center',
@@ -88,7 +77,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textMuted,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 23,
   },
   btn: {
     marginTop: 8,
@@ -96,11 +85,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 40,
+    width: '100%',
+    alignItems: 'center',
   },
   btnText: {
     fontSize: 16,
     fontWeight: '800',
     color: Colors.white,
     letterSpacing: 0.2,
+  },
+  signOutBtn: {
+    paddingVertical: 12,
+  },
+  signOutText: {
+    fontSize: 14,
+    color: Colors.textMuted,
   },
 });

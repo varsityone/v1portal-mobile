@@ -12,8 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
-import { useSubscription, Plan } from '../../../hooks/useSubscription';
-import { PHASES, isPhaseUnlocked, Phase } from '../../../constants/Phases';
+import { PHASES, Phase } from '../../../constants/Phases';
 import { Colors, GRADIENT, TIER_BARS, scoreNumColor, ThemeColors } from '../../../constants/Colors';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -176,31 +175,6 @@ function CenteredLoader() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background }}>
       <ActivityIndicator color={C.primary} size="large" />
-    </View>
-  );
-}
-
-function LockedView({ phase }: { phase: Phase }) {
-  const router = useRouter();
-  const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
-  const isElite = phase.upgradeTo === 'elite';
-  return (
-    <View style={[s.scroll, s.center]}>
-      <View style={s.lockCircle}>
-        <Ionicons name="lock-closed" size={28} color={C.icon} />
-      </View>
-      <Text style={s.lockTitle}>Phase {phase.number} Locked</Text>
-      <Text style={s.lockDesc}>
-        Requires a{' '}
-        <Text style={{ color: isElite ? '#F59E0B' : C.primary, fontWeight: '700' }}>
-          {isElite ? 'Elite' : 'Pro'}
-        </Text>{' '}
-        plan to access.
-      </Text>
-      <Pressable style={[s.upgradeBtn, isElite && { backgroundColor: '#F59E0B' }]} onPress={() => router.push('/upgrade')}>
-        <Text style={s.upgradeBtnText}>Upgrade to {isElite ? 'Elite' : 'Pro'} →</Text>
-      </Pressable>
     </View>
   );
 }
@@ -531,8 +505,8 @@ const DIV_COLORS: Record<string, string> = {
   D3: '#888888', NAIA: '#F59E0B', JUCO: '#EF4444',
 };
 
-function Phase3({ athleteId, isElite, targetListSaved: initialSaved, phase, onBack }: {
-  athleteId: string | undefined; isElite: boolean; targetListSaved: boolean; phase: Phase; onBack: () => void;
+function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
+  athleteId: string | undefined; targetListSaved: boolean; phase: Phase; onBack: () => void;
 }) {
   const router = useRouter();
   const C = useColors();
@@ -544,17 +518,17 @@ function Phase3({ athleteId, isElite, targetListSaved: initialSaved, phase, onBa
 
   useEffect(() => {
     if (!athleteId) { setLoading(false); return; }
-    let q = supabase
+    supabase
       .from('program_matches')
       .select('school_name, division, match_score, position_fit')
       .eq('athlete_id', athleteId)
-      .order('match_score', { ascending: false });
-    if (!isElite) q = (q as any).limit(20);
-    q.then(({ data }: { data: unknown }) => {
-      setPrograms((data as ProgramMatch[]) ?? []);
-      setLoading(false);
-    });
-  }, [athleteId, isElite]);
+      .order('match_score', { ascending: false })
+      .limit(25)
+      .then(({ data }: { data: unknown }) => {
+        setPrograms((data as ProgramMatch[]) ?? []);
+        setLoading(false);
+      });
+  }, [athleteId]);
 
   const handleConfirmList = async () => {
     if (!athleteId || listSaved) return;
@@ -570,11 +544,6 @@ function Phase3({ athleteId, isElite, targetListSaved: initialSaved, phase, onBa
 
       <View style={s.rowBetween}>
         <Text style={s.countText}>{loading ? '—' : programs.length} Programs Found</Text>
-        {!isElite && (
-          <View style={s.planChip}>
-            <Text style={s.planChipText}>PRO · MAX 20</Text>
-          </View>
-        )}
       </View>
 
       {loading ? (
@@ -896,13 +865,10 @@ export default function PhaseDetailScreen() {
   const phaseNumber = Number(phaseParam);
   const phase = PHASES.find(p => p.number === phaseNumber);
 
-  const { plan, loading: subLoading } = useSubscription();
   const athleteData = useAthleteData();
-  const isLoading = subLoading || athleteData.loading;
-  const isUnlocked = phase ? isPhaseUnlocked(phase, plan) : false;
   const onBack = () => router.back();
 
-  if (isLoading) return <CenteredLoader />;
+  if (athleteData.loading) return <CenteredLoader />;
 
   if (!phase) {
     return (
@@ -912,12 +878,10 @@ export default function PhaseDetailScreen() {
     );
   }
 
-  if (!isUnlocked) return <LockedView phase={phase} />;
-
   switch (phaseNumber) {
     case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
     case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} phase={phase} onBack={onBack} />;
-    case 3: return <Phase3 athleteId={athleteData.athlete?.id} isElite={plan === 'elite'} targetListSaved={!!athleteData.athlete?.target_list_saved_at} phase={phase} onBack={onBack} />;
+    case 3: return <Phase3 athleteId={athleteData.athlete?.id} targetListSaved={!!athleteData.athlete?.target_list_saved_at} phase={phase} onBack={onBack} />;
     case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 5: return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 6: return <Phase6 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
@@ -939,13 +903,6 @@ function createStyles(C: ThemeColors) {
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background, padding: 32 },
 
     dimText: { fontSize: 14, color: C.textDim, lineHeight: 21 },
-
-    // Locked
-    lockCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-    lockTitle: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 8 },
-    lockDesc: { fontSize: 14, color: C.textMuted, textAlign: 'center', marginBottom: 24 },
-    upgradeBtn: { backgroundColor: C.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-    upgradeBtnText: { fontSize: 15, fontWeight: '700', color: C.white },
 
     // Score card
     scoreGradientBorder: { borderRadius: 17, padding: 1.5 },
@@ -1038,8 +995,6 @@ function createStyles(C: ThemeColors) {
     // Programs
     rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
     countText: { fontSize: 15, fontWeight: '700', color: C.text },
-    planChip: { backgroundColor: C.surfaceAlt, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: C.border },
-    planChipText: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 0.5 },
     listCard: { backgroundColor: C.surface, borderRadius: 14, overflow: 'hidden' },
     programRow: { padding: 16 },
     programRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },

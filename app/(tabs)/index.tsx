@@ -72,7 +72,7 @@ const TIERS = [
 export default function DashboardScreen() {
   const { session } = useAuth();
   const router = useRouter();
-  const { athlete, assessment, isPremium, loading, refresh } = useAthleteData();
+  const { athlete, assessment, loading, refresh } = useAthleteData();
   const C = useColors();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -144,7 +144,6 @@ export default function DashboardScreen() {
   const initials  = fullName
     ? fullName.trim().split(' ').filter(Boolean).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()
     : (session?.user?.email ?? '??').slice(0, 2).toUpperCase();
-  const isElite = athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite';
   const activeTierIdx = getActiveTierIndex(displayScore);
   const numColor = score ? (isScoreAnimating ? getScoreColor(displayScore) : C.text) : C.textDim;
 
@@ -187,18 +186,7 @@ export default function DashboardScreen() {
     outreachCount >= 5,
   ];
 
-  const phaseLocked: boolean[] = [];
-  for (let i = 0; i < PHASES.length; i++) {
-    let locked = false;
-    if (i === 0) locked = false;
-    else if (i >= 1 && i <= 3) locked = !isPremium;
-    else locked = !isElite;
-    if (!locked && i > 0) {
-      const prevEffectiveDone = !phaseLocked[i - 1] && phaseComplete[i - 1];
-      if (!prevEffectiveDone) locked = true;
-    }
-    phaseLocked.push(locked);
-  }
+  const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
 
   const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
   const curPhaseIdx = phaseEffectiveDone.findIndex(c => !c);
@@ -235,13 +223,8 @@ export default function DashboardScreen() {
         <Text style={styles.welcomeSub}>{statusMsg}</Text>
         <View style={styles.badgeRow}>
           <Text style={styles.tierLabel}>Tier:</Text>
-          <View style={[
-            styles.tierBadge,
-            isElite
-              ? { backgroundColor: 'rgb(199, 0, 156)', borderWidth: 0 }
-              : { backgroundColor: tierColor + '28', borderColor: tierColor + '55' },
-          ]}>
-            <Text style={[styles.tierBadgeText, { color: isElite ? '#ffffff' : tierColor }]}>{tierDisplay}</Text>
+          <View style={[styles.tierBadge, { backgroundColor: tierColor + '28', borderColor: tierColor + '55' }]}>
+            <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
           </View>
           {score !== null && (
             <View style={styles.recruitingLevelBadge}>
@@ -349,29 +332,6 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* ── Upgrade banner (free/trial users) ── */}
-      {!isPremium && (
-        <LinearGradient
-          colors={['#833AB4', '#C13584', '#E1306C']}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.upgradeBanner}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.upgradeEyebrow}>LIMITED ACCESS</Text>
-            <Text style={styles.upgradeTitle}>Unlock Pro or Elite</Text>
-            <Text style={styles.upgradeDesc}>
-              Get program matches, coach contacts, outreach tools & more gameplan phases.
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.upgradeBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => router.push('/upgrade' as any)}
-          >
-            <Text style={styles.upgradeBtnText}>Upgrade →</Text>
-          </Pressable>
-        </LinearGradient>
-      )}
 
       {/* ── Phase list — gradient timeline ── */}
 
@@ -410,8 +370,8 @@ export default function DashboardScreen() {
             else if (i === 3) sub = 'Email templates ready';
             else if (i === 4) sub = trackerCount > 0 ? `${trackerCount} coach${trackerCount !== 1 ? 'es' : ''} tracked` : 'Track your first coach';
             else sub = 'Final phase';
-          } else if (locked && i > 1) {
-            sub = i <= 3 ? 'Pro required' : 'Elite required';
+          } else if (locked && i > 0) {
+            sub = `Complete Phase ${i} first`;
           } else if (!locked && !done) {
             sub = `Complete Phase ${i} first`;
           }
@@ -438,9 +398,7 @@ export default function DashboardScreen() {
                 ) : active ? (
                   <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)' }]} />
                 ) : locked ? (
-                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6' }]}>
-                    <Ionicons name="lock-closed" size={14} color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.8)'} />
-                  </View>
+                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6' }]} />
                 ) : (
                   <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6', opacity: 0.7 }]} />
                 )}
@@ -474,7 +432,7 @@ export default function DashboardScreen() {
                       styles.phaseBadgeText,
                       locked && { color: C.warning },
                     ]}>
-                      {done ? `Phase ${phase.number} Completed` : active ? 'In Progress' : locked ? (i <= 3 ? 'Pro' : 'Elite') : 'Up Next'}
+                      {done ? `Phase ${phase.number} Completed` : active ? 'In Progress' : 'Up Next'}
                     </Text>
                   </View>
                 </View>
@@ -593,11 +551,7 @@ export default function DashboardScreen() {
             <Text style={styles.tierFeaturesTitle}>
               {tierDisplay} Tier
             </Text>
-            <Text style={styles.tierFeaturesSub}>
-              {athlete?.subscription_status === 'active'
-                ? (athlete?.subscription_tier === 'elite' ? 'One-time access' : 'Monthly plan')
-                : 'Limited access'}
-            </Text>
+            <Text style={styles.tierFeaturesSub}>Active subscription</Text>
           </View>
         </View>
 
@@ -607,58 +561,39 @@ export default function DashboardScreen() {
         {/* Feature list */}
         <View style={styles.featureList}>
           {[
-            { label: 'Full V1 Score Breakdown', unlocked: !!assessment },
-            { label: 'Program Matches',          unlocked: isPremium },
-            { label: 'Coach Contacts',           unlocked: isPremium },
-            { label: 'Gameplan Phases 1–4',      unlocked: isPremium },
-            { label: 'Phase 5 (Timeline)',        unlocked: isElite  },
-            { label: 'Outreach Templates',        unlocked: isElite  },
-          ].map((feat, i) => (
+            'Full V1 Score Breakdown',
+            'Program Matches',
+            'Coach Contacts',
+            'All 6 Gameplan Phases',
+            'Outreach Templates',
+            'Recruiting Analytics',
+          ].map((label, i) => (
             <View key={i} style={styles.featureRow}>
-              <Ionicons
-                name={feat.unlocked ? 'checkmark-circle' : 'ellipse-outline'}
-                size={15}
-                color={feat.unlocked ? '#fff' : 'rgba(255,255,255,0.3)'}
-              />
-              <Text style={[styles.featureLabel, !feat.unlocked && { opacity: 0.35 }]}>
-                {feat.label}
-              </Text>
+              <Ionicons name="checkmark-circle" size={15} color="#fff" />
+              <Text style={styles.featureLabel}>{label}</Text>
             </View>
           ))}
         </View>
 
-        {!isPremium && (
-          <Pressable
-            style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => router.push('/upgrade' as any)}
-          >
-            <Text style={styles.seeUpgradeBtnText}>See Upgrade Options</Text>
-          </Pressable>
-        )}
+        <Pressable
+          style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => Linking.openURL('https://v1portal.com')}
+        >
+          <Text style={styles.seeUpgradeBtnText}>Manage Subscription</Text>
+        </Pressable>
       </LinearGradient>
 
       {/* ── Program matches preview ── */}
       <View>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Program Matches</Text>
-          {matchCount > 0 && isPremium && (
+          {matchCount > 0 && (
             <Pressable onPress={() => router.push('/(tabs)/programs' as any)}>
               <Text style={styles.sectionLink}>See all →</Text>
             </Pressable>
           )}
         </View>
-        {!isPremium ? (
-          <View style={styles.matchGate}>
-            <Ionicons name="lock-closed" size={20} color={C.icon} />
-            <Text style={styles.matchGateText}>Upgrade to Pro to see your matched programs</Text>
-            <GradientButton
-              style={styles.matchGateBtn}
-              onPress={() => router.push('/upgrade' as any)}
-            >
-              <Text style={styles.matchGateBtnText}>Unlock Programs →</Text>
-            </GradientButton>
-          </View>
-        ) : matchCount === 0 ? (
+        {matchCount === 0 ? (
           <View style={styles.matchGate}>
             <Ionicons name="school-outline" size={22} color={C.icon} />
             <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
@@ -731,14 +666,6 @@ function createStyles(C: ThemeColors) {
     progressBarPillText: { fontSize: 12, fontWeight: '600', color: C.text },
     progressCount: { fontSize: 12, color: C.textMuted },
 
-    // Upgrade banner
-    upgradeBanner: { borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 },
-    upgradeEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 },
-    upgradeTitle: { fontSize: 15, fontWeight: '800', color: C.white, marginBottom: 3 },
-    upgradeDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
-    upgradeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, backgroundColor: '#a3ff47', flexShrink: 0 },
-    upgradeBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
-
     // Phase list — gradient timeline (screenshot style)
     phaseChipsRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
     phaseChipDone: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.surfaceAlt, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center' },
@@ -773,7 +700,6 @@ function createStyles(C: ThemeColors) {
     checkLabel: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 18 },
     upcomingMsg: { marginTop: 10, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 8, alignItems: 'center' },
     upcomingMsgText: { fontSize: 12, color: C.textDim, textAlign: 'center' },
-    lockedUpgradeLink: { fontSize: 12, fontWeight: '700', color: C.primary, textAlign: 'center', paddingVertical: 4 },
 
     // Stats row
     statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
@@ -818,7 +744,7 @@ function createStyles(C: ThemeColors) {
     sectionLink: { fontSize: 13, fontWeight: '600', color: C.primary },
     matchGate: { backgroundColor: C.surface, borderRadius: 14, padding: 22, alignItems: 'center', gap: 10 },
     matchGateText: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
-    matchGateBtn: { backgroundColor: C.primary, borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4 },
+    matchGateBtn: { borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4 },
     matchGateBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
     matchViewAll: { backgroundColor: C.surface, borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
     matchViewAllText: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },

@@ -1,5 +1,3 @@
-import { Plan } from '../hooks/useSubscription';
-
 export interface PhaseItem {
   label: string;
 }
@@ -9,8 +7,6 @@ export interface Phase {
   title: string;
   description: string;
   items: PhaseItem[];
-  minPlan: Plan;
-  upgradeTo: 'pro' | 'elite' | null;
 }
 
 export const PHASES: Phase[] = [
@@ -23,8 +19,6 @@ export const PHASES: Phase[] = [
       { label: 'Review your full V1 Score breakdown' },
       { label: 'Understand your recruiting tier' },
     ],
-    minPlan: 'free',
-    upgradeTo: null,
   },
   {
     number: 2,
@@ -35,8 +29,6 @@ export const PHASES: Phase[] = [
       { label: 'Upload film and game highlights' },
       { label: 'Add academic stats and test scores' },
     ],
-    minPlan: 'pro',
-    upgradeTo: 'pro',
   },
   {
     number: 3,
@@ -47,8 +39,6 @@ export const PHASES: Phase[] = [
       { label: 'Review match scores and why they fit' },
       { label: 'Filter by division, region, and tier' },
     ],
-    minPlan: 'pro',
-    upgradeTo: 'pro',
   },
   {
     number: 4,
@@ -59,8 +49,6 @@ export const PHASES: Phase[] = [
       { label: 'Send your first outreach email' },
       { label: 'Track coach responses and follow up' },
     ],
-    minPlan: 'pro',
-    upgradeTo: 'pro',
   },
   {
     number: 5,
@@ -71,8 +59,6 @@ export const PHASES: Phase[] = [
       { label: 'Build your relationship timeline' },
       { label: 'Monitor recruiting interest levels' },
     ],
-    minPlan: 'elite',
-    upgradeTo: 'elite',
   },
   {
     number: 6,
@@ -83,13 +69,5 @@ export const PHASES: Phase[] = [
       { label: 'Schedule campus visits' },
       { label: 'Execute your recruiting calendar' },
     ],
-    minPlan: 'elite',
-    upgradeTo: 'elite',
   },
 ];
-
-const PLAN_ORDER: Plan[] = ['free', 'pro', 'elite'];
-
-export function isPhaseUnlocked(phase: Phase, userPlan: Plan): boolean {
-  return PLAN_ORDER.indexOf(userPlan) >= PLAN_ORDER.indexOf(phase.minPlan);
-}

@@ -22,6 +22,25 @@ import { handleNotificationResponse, getRouteFromNotification, NotificationScree
 import { Colors } from '../constants/Colors';
 import { ThemeProvider } from '../context/ThemeContext';
 
+// ─── Subscription check ───────────────────────────────────────────────────────
+
+async function hasActiveSubscription(userId: string): Promise<boolean> {
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (sub?.plan) return true;
+
+  const { data: ath } = await supabase
+    .from('athletes')
+    .select('subscription_status')
+    .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
+    .maybeSingle();
+  return ath?.subscription_status === 'active';
+}
+
 // ─── Branded loading screen ───────────────────────────────────────────────────
 
 function LoadingScreen() {
@@ -217,7 +236,7 @@ export default function RootLayout() {
     setBanner(null);
   }, []);
 
-  // ── Bootstrap: check auth + onboarding on first mount ─────────────────────
+  // ── Bootstrap: check auth + subscription on first mount ──────────────────
   useEffect(() => {
     async function bootstrap() {
       const start = Date.now();
@@ -233,7 +252,8 @@ export default function RootLayout() {
       } else if (!seen) {
         router.replace('/onboarding');
       } else {
-        router.replace('/(tabs)');
+        const active = await hasActiveSubscription(session.user.id);
+        router.replace(active ? '/(tabs)' : '/no-subscription');
       }
       setAppReady(true);
     }
@@ -281,14 +301,15 @@ export default function RootLayout() {
         router.replace('/(auth)/login');
       }
       if (event === 'SIGNED_IN') {
-        // Show loading screen during post-login transition
         setAppReady(false);
+        const { data: { session: s } } = await supabase.auth.getSession();
         const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
         await new Promise(r => setTimeout(r, 1500));
         if (!seen) {
           router.replace('/onboarding');
         } else {
-          router.replace('/(tabs)');
+          const active = s ? await hasActiveSubscription(s.user.id) : false;
+          router.replace(active ? '/(tabs)' : '/no-subscription');
         }
         setAppReady(true);
       }
@@ -338,6 +359,7 @@ export default function RootLayout() {
         <StatusBar style="auto" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+          <Stack.Screen name="no-subscription" options={{ animation: 'fade' }} />
         </Stack>
         <NotificationBanner banner={banner} onDismiss={dismissBanner} />
       </View>

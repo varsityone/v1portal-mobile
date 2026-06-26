@@ -36,7 +36,7 @@ function scoreColor(s: number) {
 
 export default function ProgramsScreen() {
   const router = useRouter();
-  const { athlete, assessment, isPremium, loading: dataLoading } = useAthleteData();
+  const { athlete, assessment, loading: dataLoading } = useAthleteData();
   const [programs, setPrograms] = useState<ProgramMatch[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'likely' | 'realistic' | 'reach'>('all');
@@ -97,27 +97,7 @@ export default function ProgramsScreen() {
         </View>
       )}
 
-      {/* Upgrade gate */}
-      {!isPremium ? (
-        <LinearGradient
-          colors={['#833AB4', '#C13584', '#E1306C']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={s.gate}
-        >
-          <Ionicons name="lock-closed" size={28} color="rgba(255,255,255,0.8)" />
-          <Text style={s.gateTitle}>Unlock Program Matches</Text>
-          <Text style={s.gateSub}>
-            Upgrade to Pro to see your top program matches, division fit, and recruiting probability.
-          </Text>
-          <Pressable
-            style={s.gateBtn}
-            onPress={() => router.push('/upgrade' as any)}
-          >
-            <Text style={s.gateBtnText}>See Plans →</Text>
-          </Pressable>
-        </LinearGradient>
-      ) : programs.length === 0 && !loading ? (
+      {programs.length === 0 && !loading ? (
         <View style={s.emptyCard}>
           <Ionicons name="school-outline" size={32} color={C.icon} />
           <Text style={s.emptyTitle}>No matches yet</Text>

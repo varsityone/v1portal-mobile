@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.varsityone.v1portal",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "V1Portal sends recruiting task reminders and coach reply alerts.",
