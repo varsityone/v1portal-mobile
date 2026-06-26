@@ -21,11 +21,11 @@ import { GradientButton } from '../components/GradientButton';
 const FAQS = [
   { q: 'How do I complete my V1 Assessment?', a: 'Tap the Assessment tab or go to Settings → Retake V1 Assessment. Answer the questions about your athletic profile, academics, and recruiting status. It takes about 10–15 minutes. Your V1 Score will be calculated automatically.' },
   { q: 'What is my V1 Score and what does it mean?', a: 'Your V1 Score is a 0–100 rating across four categories: Athletic, Academic, Production, and Intangibles. It determines which division level of college football programs are the best fit for you.' },
-  { q: 'Why am I not seeing any program matches?', a: "Complete your assessment first and make sure you have an active Pro subscription. If you have both, go to the Matches tab and pull to refresh. Still nothing? Submit a support ticket below." },
+  { q: 'Why am I not seeing any program matches?', a: "Complete your assessment first and make sure you have an active V1Portal account. If you have both, go to the Matches tab and pull to refresh. Still nothing? Submit a support ticket below." },
   { q: 'How do I send an outreach email to a coach?', a: "Go to the Outreach tab and tap the compose button. Select a coach from your target list, review the pre-written template, and send." },
   { q: 'How do I update my profile information?', a: 'Go to Settings → Edit Profile. You can update your personal info, athletic stats, academic scores, film links, and social handles.' },
   { q: 'Can a coach reply to my outreach email?', a: 'Yes. When a coach hits reply, their message goes directly to the email address on your account. Make sure it\'s correct in Edit Profile.' },
-  { q: 'How do I cancel my subscription?', a: 'Submit a support ticket below with subject "Cancel Subscription" and your account email. We\'ll process it within 24 hours.' },
+  { q: 'How do I cancel my subscription?', a: 'Visit v1portal.com to manage or cancel your subscription. You can also reach us at support@v1portal.com.' },
 ];
 
 const SUBJECTS = [
