@@ -161,13 +161,16 @@ export default function DashboardScreen() {
   const tierDisplay = (() => {
     if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Coach+' : 'Commit+';
     if (athlete?.subscription_status === 'trial') return 'Pro Trial';
+    if (athlete) return 'Scout';
     return 'Free';
   })();
   const tierColor = (() => {
-    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? '#10b981' : C.primary;
+    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'rgb(199, 0, 156)' : '#FCAF45';
     if (athlete?.subscription_status === 'trial') return '#F59E0B';
-    return C.textMuted;
+    if (athlete) return '#10b981';
+    return C.surface;
   })();
+  const tierTextColor = tierDisplay === 'Free' ? C.textMuted : '#fff';
 
   const phaseComplete = [
     !!assessment?.v1_score,
@@ -225,7 +228,7 @@ export default function DashboardScreen() {
         <View style={styles.badgeRow}>
           <Text style={styles.tierLabel}>Tier:</Text>
           <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
-            <Text style={[styles.tierBadgeText, { color: '#fff' }]}>{tierDisplay}</Text>
+            <Text style={[styles.tierBadgeText, { color: tierTextColor }]}>{tierDisplay}</Text>
           </View>
           {score !== null && (
             <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.recruitingLevelBadge}>
