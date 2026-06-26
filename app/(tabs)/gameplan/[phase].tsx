@@ -104,8 +104,8 @@ function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
     root: { marginBottom: 20 },
     back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20, alignSelf: 'flex-start', paddingVertical: 4 },
     backText: { fontSize: 15, color: C.textMuted },
-    badge: { alignSelf: 'flex-start', backgroundColor: `${C.primary}22`, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10, borderWidth: 1, borderColor: `${C.primary}44` },
-    badgeText: { fontSize: 12, fontWeight: '700', color: C.primary, letterSpacing: 0.4 },
+    badge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
+    badgeText: { fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.4 },
     title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 8 },
     subtitle: { fontSize: 15, color: C.textMuted, lineHeight: 23 },
   }), [C]);
@@ -115,9 +115,9 @@ function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
         <Ionicons name="arrow-back" size={20} color={C.icon} />
         <Text style={sh.backText}>The Gameplan</Text>
       </Pressable>
-      <View style={sh.badge}>
+      <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={sh.badge}>
         <Text style={sh.badgeText}>Phase {phase.number}</Text>
-      </View>
+      </LinearGradient>
       <Text style={sh.title}>{phase.title}</Text>
       <Text style={sh.subtitle}>{phase.description}</Text>
     </View>
@@ -1108,7 +1108,7 @@ function createStyles(C: ThemeColors) {
     retakeTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3 },
     retakeBody: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
     retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, overflow: 'hidden' },
-    retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: C.primary },
+    retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
     // Completion
     completionRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 12 },
