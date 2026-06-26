@@ -110,7 +110,7 @@ function createCardStyles(C: ThemeColors) {
     connector: { flex: 1, width: 2, backgroundColor: C.border, marginVertical: 4 },
     connectorDone: { backgroundColor: C.text, opacity: 0.4 },
     card: {
-      flex: 1, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+      flex: 1, backgroundColor: C.surface,
       borderRadius: 14, padding: 16, marginBottom: 10,
     },
     cardLocked: { opacity: 0.5 },
@@ -275,7 +275,7 @@ function createStyles(C: ThemeColors) {
     subtitle: { fontSize: 15, color: C.textMuted, lineHeight: 22 },
 
     progressCard: {
-      backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+      backgroundColor: C.surface,
       borderRadius: 14, padding: 18, marginBottom: 24,
     },
     progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },

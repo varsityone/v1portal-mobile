@@ -137,7 +137,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: object }
   const C = useColors();
   return (
     <View style={[{
-      backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+      backgroundColor: C.surface,
       borderRadius: 14, padding: 18,
     }, style]}>
       {children}
@@ -725,7 +725,7 @@ function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
           </Pressable>
         </View>
       ) : (
-        <View style={{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, padding: 20, gap: 12 }}>
+        <View style={{ backgroundColor: C.surface, borderRadius: 14, padding: 20, gap: 12 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>Lock In Your Target List</Text>
           <Text style={{ fontSize: 13, color: C.textMuted, lineHeight: 20 }}>
             Review your matched programs above, then confirm your list. This completes Phase 3 and unlocks Phase 4: Intelligent Outreach.
@@ -1106,7 +1106,7 @@ function createStyles(C: ThemeColors) {
     retakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     retakeTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3 },
     retakeBody: { fontSize: 12, color: C.textMuted, lineHeight: 17 },
-    retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: C.primary },
+    retakeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: `${C.primary}22` },
     retakeBtnTxt: { fontSize: 13, fontWeight: '700', color: C.primary },
 
     // Completion
