@@ -127,6 +127,10 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
+  const isElite =
+    athlete?.subscription_status === 'active' &&
+    athlete?.subscription_tier === 'elite';
+
   const isActive = (href: string) => {
     if (href === '/(tabs)') return pathname === '/' || pathname === '/(tabs)';
     const clean = href.replace('/(tabs)', '');
@@ -258,6 +262,48 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
             )}
           </View>
         </View>
+
+        {/* Coach+ section — only for elite subscribers */}
+        {isElite && (
+          <View>
+            <Text style={[d.groupLabel, { color: 'rgba(199,0,156,0.7)', marginTop: 10 }]}>COACH+</Text>
+            <View style={d.navList}>
+              {[
+                { label: 'Advisor Hub',   href: '/(tabs)/coach-plus', icon: 'person' as const,    iconOff: 'person-outline' as const },
+                { label: 'Schedule Call', href: '__schedule_call__',  icon: 'calendar' as const,  iconOff: 'calendar-outline' as const },
+              ].map(item => {
+                const active = isActive(item.href);
+                return (
+                  <Pressable
+                    key={item.href}
+                    style={({ pressed }) => [
+                      d.navItem,
+                      pressed && { backgroundColor: 'rgba(199,0,156,0.06)' },
+                    ]}
+                    onPress={() => {
+                      if (item.href === '__schedule_call__') {
+                        props.navigation.closeDrawer();
+                        Linking.openURL('https://v1portal.com/dashboard/schedule-call');
+                      } else {
+                        navigate(item.href);
+                      }
+                    }}
+                  >
+                    <Ionicons
+                      name={active ? item.icon : item.iconOff}
+                      size={17}
+                      color="rgb(199,0,156)"
+                    />
+                    <Text style={[d.navLabel, { color: 'rgb(199,0,156)', fontWeight: active ? '700' : '500' }]}>
+                      {item.label}
+                    </Text>
+                    {active && <View style={[d.activeBar, { backgroundColor: 'rgb(199,0,156)' }]} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Dashboard Tour */}
         <Pressable

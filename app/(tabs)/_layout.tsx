@@ -91,6 +91,7 @@ export default function DrawerLayout() {
         <Drawer.Screen name="profile"          options={{ title: 'Build Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="edit-profile"     options={{ title: 'Edit Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="settings"         options={{ title: 'Profile Settings', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="coach-plus"       options={{ title: 'Advisor Hub',       drawerItemStyle: { display: 'none' } }} />
       </Drawer>
     </GestureHandlerRootView>
   );
