@@ -334,19 +334,6 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
           <Text style={[d.voText, { color: C.textMuted }]}>Visit VarsityOne →</Text>
         </Pressable>
 
-        {/* Upgrade CTA */}
-        <Pressable
-          style={[d.upgradeBanner, { borderColor: `${C.primary}30` }]}
-          onPress={() => { props.navigation.closeDrawer(); router.push('/upgrade'); }}
-        >
-          <Ionicons name="trophy" size={15} color="#F59E0B" />
-          <View style={{ flex: 1 }}>
-            <Text style={[d.upgradeTitle, { color: C.text }]}>Go Pro or Elite</Text>
-            <Text style={[d.upgradeSub, { color: C.textMuted }]}>Unlock all 6 phases</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={13} color={C.textDim} />
-        </Pressable>
-
       </ScrollView>
 
       {/* Footer */}
@@ -479,7 +466,7 @@ const d = StyleSheet.create({
   divider: { height: 1, marginHorizontal: 16, marginVertical: 12 },
 
   socialSection: { marginBottom: 20 },
-  socialRow: { flexDirection: 'row', gap: 18, paddingHorizontal: 20, alignItems: 'center' },
+  socialRow: { flexDirection: 'row', gap: 0, paddingHorizontal: 20, alignItems: 'center' },
   socialIcon: { padding: 4 },
   themeToggle: {
     flexDirection: 'row',
@@ -509,18 +496,6 @@ const d = StyleSheet.create({
   },
   voText: { fontSize: 13, fontWeight: '500' },
 
-  upgradeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    margin: 16,
-    marginTop: 6,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  upgradeTitle: { fontSize: 13, fontWeight: '700' },
-  upgradeSub: { fontSize: 11, marginTop: 1 },
 
   footer: { borderTopWidth: 1, padding: 16, gap: 10 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

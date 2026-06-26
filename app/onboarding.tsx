@@ -62,13 +62,20 @@ function ScreenDashboard() {
           ))}
         </View>
       </View>
-      {/* Upgrade banner */}
-      <LinearGradient colors={['#833AB4','#E1306C']} style={sc.upgradeBanner}>
-        <Text style={sc.upgradeTitle}>LIMITED ACCESS</Text>
-        <Text style={sc.upgradeHead}>Unlock Pro or Elite</Text>
-        <Text style={sc.upgradeSub}>Get program matches, coach contacts, outreach tools & more</Text>
-        <View style={sc.upgradeBtn}><Text style={sc.upgradeBtnTxt}>Upgrade →</Text></View>
-      </LinearGradient>
+      {/* Phase progress */}
+      <View style={sc.section}>
+        <View style={sc.progressHeader}>
+          <Text style={sc.sectionLabel}>Your Phases</Text>
+          <Text style={sc.sectionSub}>Phase 1 of 6</Text>
+        </View>
+        <View style={sc.phaseRow}>
+          {[1,2,3,4,5,6].map(n=>(
+            <View key={n} style={[sc.phaseDot, n===1 && sc.phaseDotDone]}>
+              <Text style={sc.phaseDotTxt}>{n}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
       {/* Tab bar */}
       <View style={sc.tabBar}>
         {(['home','person','school','time','person-circle'] as const).map((ic,i)=>(
@@ -247,7 +254,7 @@ function ScreenGameplan() {
       {[
         {n:1,label:'Know Your Value',status:'COMPLETED',c:'#10b981'},
         {n:2,label:'Build Your Profile',status:'IN PROGRESS',c:'#3ab7ed'},
-        {n:3,label:'Strategic Program Targeting',status:'PRO',c:'rgba(255,255,255,0.3)'},
+        {n:3,label:'Strategic Program Targeting',status:'NEXT',c:'rgba(255,255,255,0.3)'},
       ].map((p,i)=>(
         <View key={i} style={sc.phaseItem}>
           <View style={[sc.phaseNum, {backgroundColor: p.c+'22', borderColor: p.c}]}>
@@ -301,12 +308,6 @@ const sc = StyleSheet.create({
   phaseDotDone: { backgroundColor:'#10b981' },
   phaseDotActive: { backgroundColor:'rgba(131,58,180,0.4)', borderWidth:1, borderColor:'#833AB4' },
   phaseDotTxt: { fontSize:6, fontWeight:'800', color:'rgba(255,255,255,0.7)' },
-  upgradeBanner: { marginHorizontal:8, borderRadius:10, padding:10 },
-  upgradeTitle: { fontSize:6, fontWeight:'700', color:'rgba(255,255,255,0.7)', letterSpacing:1, marginBottom:2 },
-  upgradeHead: { fontSize:10, fontWeight:'900', color:'#fff', marginBottom:2 },
-  upgradeSub: { fontSize:7, color:'rgba(255,255,255,0.75)', lineHeight:10, marginBottom:8 },
-  upgradeBtn: { backgroundColor:'rgba(255,255,255,0.2)', borderRadius:20, paddingHorizontal:12, paddingVertical:5, alignSelf:'flex-start' },
-  upgradeBtnTxt: { fontSize:8, fontWeight:'800', color:'#fff' },
   tabBar: {
     position:'absolute', bottom:0, left:0, right:0,
     flexDirection:'row', backgroundColor:'rgba(10,10,18,0.97)',
