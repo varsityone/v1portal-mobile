@@ -481,7 +481,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ── Profile card ── */}
-      <LinearGradient colors={['#ff0000', '#ffd000']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profileCard}>
+      <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profileCard}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarRing}>
           <View style={styles.avatarInner}>
             {athlete?.profile_photo_url ? (
@@ -550,9 +550,10 @@ export default function DashboardScreen() {
           <View style={styles.matchGate}>
             <Ionicons name="school-outline" size={22} color={C.icon} />
             <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
-            <GradientButton style={styles.matchGateBtn} onPress={() => router.push('/assessment' as any)}>
+            <Pressable style={styles.matchGateBtn} onPress={() => router.push('/assessment' as any)}>
+              <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
-            </GradientButton>
+            </Pressable>
           </View>
         ) : (
           <Pressable
@@ -661,7 +662,7 @@ function createStyles(C: ThemeColors) {
     statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '500', textAlign: 'center', lineHeight: 14 },
 
     // Profile card
-    profileCard: { borderRadius: 18, padding: 22, alignItems: 'center', gap: 6, overflow: 'hidden' },
+    profileCard: { borderRadius: 20, padding: 22, alignItems: 'center', gap: 6, overflow: 'hidden' },
     avatarRing: { borderRadius: 44, padding: 2.5, marginBottom: 8 },
     avatarInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
     avatarPhoto: { width: 72, height: 72, borderRadius: 36 },
@@ -697,7 +698,7 @@ function createStyles(C: ThemeColors) {
     sectionLink: { fontSize: 13, fontWeight: '600', color: C.primary },
     matchGate: { backgroundColor: C.surface, borderRadius: 14, padding: 22, alignItems: 'center', gap: 10 },
     matchGateText: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
-    matchGateBtn: { borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4 },
+    matchGateBtn: { borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4, overflow: 'hidden' },
     matchGateBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
     matchViewAll: { backgroundColor: C.surface, borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
     matchViewAllText: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },
