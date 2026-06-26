@@ -158,7 +158,7 @@ export default function DashboardScreen() {
   })();
 
   const tierDisplay = (() => {
-    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Elite' : 'Pro';
+    if (athlete?.subscription_status === 'active') return athlete?.subscription_tier === 'elite' ? 'Coach+' : 'Commit+';
     if (athlete?.subscription_status === 'trial') return 'Pro Trial';
     return 'Free';
   })();
