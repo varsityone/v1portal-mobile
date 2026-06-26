@@ -561,7 +561,7 @@ export default function DashboardScreen() {
             style={styles.matchViewAll}
             onPress={() => router.push('/(tabs)/programs' as any)}
           >
-            <Ionicons name="school-outline" size={18} color={C.primary} />
+            <Ionicons name="school" size={18} color="#fff" />
             <Text style={styles.matchViewAllText}>View {matchCount} matched program{matchCount !== 1 ? 's' : ''}</Text>
             <Ionicons name="chevron-forward" size={14} color={C.icon} />
           </Pressable>

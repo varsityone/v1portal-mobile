@@ -135,7 +135,7 @@ export default function UnsubscribeScreen() {
           {(status === 'idle' || status === 'loading') && (
             <>
               <View style={[s.iconCircle, s.iconPrimary]}>
-                <Ionicons name="mail-outline" size={22} color={C.primary} />
+                <Ionicons name="mail" size={22} color="#fff" />
               </View>
               <Text style={s.title}>Unsubscribe from emails</Text>
               <Text style={s.body}>

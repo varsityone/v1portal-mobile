@@ -40,7 +40,7 @@ type Section = {
 const SECTIONS: Section[] = [
   {
     title: 'Personal',
-    icon: 'person-outline',
+    icon: 'person',
     rows: [
       { label: 'Full Name',           key: 'full_name' },
       { label: 'Phone',               key: 'phone',              keyboardType: 'phone-pad' },
@@ -52,7 +52,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Athletic',
-    icon: 'football-outline',
+    icon: 'football',
     rows: [
       { label: 'Position',        key: 'position' },
       { label: "Height (e.g. 6'2\")", key: 'height' },
@@ -70,7 +70,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Academic',
-    icon: 'school-outline',
+    icon: 'school',
     rows: [
       { label: 'GPA',             key: 'gpa',             keyboardType: 'decimal-pad' },
       { label: 'SAT Score',       key: 'sat_score',       keyboardType: 'numeric' },
@@ -82,7 +82,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Location',
-    icon: 'location-outline',
+    icon: 'location',
     rows: [
       { label: 'City',  key: 'city' },
       { label: 'State', key: 'state', placeholder: 'e.g. TX' },
@@ -90,7 +90,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Coaching Staff',
-    icon: 'people-outline',
+    icon: 'people',
     rows: [
       { label: 'Head Coach Name',        key: 'head_coach_name' },
       { label: 'Head Coach Phone',       key: 'head_coach_phone',  keyboardType: 'phone-pad' },
@@ -102,7 +102,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Guardian',
-    icon: 'shield-outline',
+    icon: 'shield',
     rows: [
       { label: 'Guardian Name',         key: 'guardian_name' },
       { label: 'Relationship',          key: 'guardian_relationship', placeholder: 'e.g. Parent, Grandparent' },
@@ -112,7 +112,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Film & Social',
-    icon: 'play-circle-outline',
+    icon: 'play-circle',
     rows: [
       { label: 'Hudl Video URL',    key: 'hudl_video_link',   keyboardType: 'url' },
       { label: 'YouTube URL',       key: 'youtube_link',      keyboardType: 'url' },
@@ -316,7 +316,7 @@ export default function EditProfileScreen() {
         {profileSlug ? (
           <View style={s.sectionWrap}>
             <View style={s.sectionHeader}>
-              <Ionicons name="link-outline" size={14} color={C.primary} />
+              <Ionicons name="link" size={14} color="#fff" />
               <Text style={s.sectionTitle}>PUBLIC PROFILE</Text>
             </View>
             <View style={[s.card, { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 10 }]}>
@@ -340,7 +340,7 @@ export default function EditProfileScreen() {
         {SECTIONS.map(section => (
           <View key={section.title} style={s.sectionWrap}>
             <View style={s.sectionHeader}>
-              <Ionicons name={section.icon} size={14} color={C.primary} />
+              <Ionicons name={section.icon} size={14} color="#fff" />
               <Text style={s.sectionTitle}>{section.title.toUpperCase()}</Text>
             </View>
 

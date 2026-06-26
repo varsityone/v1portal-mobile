@@ -385,7 +385,7 @@ export default function ProfileScreen() {
               <Text style={s.heroClass}>Class of {profile.graduation_year}</Text>
             )}
             <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
-              <Ionicons name="create-outline" size={14} color={C.primary} />
+              <Ionicons name="create" size={14} color="#fff" />
               <Text style={s.editBtnText}>Edit Profile</Text>
             </Pressable>
           </View>

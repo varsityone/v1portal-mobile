@@ -398,7 +398,7 @@ function Phase1({ data, phase, onBack }: {
               style={({ pressed }) => [s.retakeBtn, pressed && { opacity: 0.8 }]}
               onPress={() => router.push('/assessment' as any)}
             >
-              <Ionicons name="refresh" size={14} color={C.primary} />
+              <Ionicons name="refresh" size={14} color="#fff" />
               <Text style={s.retakeBtnTxt}>Retake</Text>
             </Pressable>
           </View>
@@ -445,35 +445,35 @@ type P2Row = {
 };
 
 const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>['name']; rows: P2Row[] }[] = [
-  { title: 'Personal', icon: 'person-outline', rows: [
+  { title: 'Personal', icon: 'person', rows: [
     { label: 'Full Name', key: 'full_name' },
     { label: 'Phone', key: 'phone', keyboardType: 'phone-pad' },
     { label: 'Bio', key: 'bio', multi: true,
       placeholder: "QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity",
       hint: 'Keep it short and keyword-rich — works for Twitter/X and Instagram.' },
   ]},
-  { title: 'Athletic', icon: 'football-outline', rows: [
+  { title: 'Athletic', icon: 'football', rows: [
     { label: 'Position', key: 'position' },
     { label: "Height (e.g. 6'2\")", key: 'height' },
     { label: 'Weight (lbs)', key: 'weight', keyboardType: 'numeric' },
     { label: 'Graduation Year', key: 'graduation_year', keyboardType: 'numeric' },
   ]},
-  { title: 'Academic', icon: 'school-outline', rows: [
+  { title: 'Academic', icon: 'school', rows: [
     { label: 'GPA', key: 'gpa', keyboardType: 'decimal-pad' },
     { label: 'SAT Score', key: 'sat_score', keyboardType: 'numeric' },
     { label: 'ACT Score', key: 'act_score', keyboardType: 'numeric' },
     { label: 'NCAA Eligibility ID', key: 'ncaa_id', hint: 'Register at eligibilitycenter.org' },
   ]},
-  { title: 'Location', icon: 'location-outline', rows: [
+  { title: 'Location', icon: 'location', rows: [
     { label: 'High School', key: 'high_school' },
     { label: 'City', key: 'city' },
     { label: 'State', key: 'state', placeholder: 'e.g. TX' },
   ]},
-  { title: 'Film', icon: 'videocam-outline', rows: [
+  { title: 'Film', icon: 'videocam', rows: [
     { label: 'Hudl Film Link', key: 'hudl_video_link', keyboardType: 'url',
       hint: 'Your highlight reel URL from hudl.com' },
   ]},
-  { title: 'Guardian', icon: 'shield-outline', rows: [
+  { title: 'Guardian', icon: 'shield', rows: [
     { label: 'Guardian Name', key: 'guardian_name' },
     { label: 'Relationship', key: 'guardian_relationship', placeholder: 'e.g. Parent, Grandparent' },
     { label: 'Guardian Phone', key: 'guardian_phone', keyboardType: 'phone-pad' },
@@ -578,7 +578,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
         {P2_SECTIONS.map(section => (
           <View key={section.title} style={s.p2SectionWrap}>
             <View style={s.p2SectionHeader}>
-              <Ionicons name={section.icon} size={13} color={C.primary} />
+              <Ionicons name={section.icon} size={13} color="#fff" />
               <Text style={s.p2SectionTitle}>{section.title.toUpperCase()}</Text>
             </View>
             <Card>
