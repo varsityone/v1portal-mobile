@@ -400,6 +400,15 @@ function Phase1({ data, phase, onBack }: {
           </View>
         </Card>
       )}
+
+      {score !== null && (
+        <Pressable
+          style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push('/(tabs)/gameplan/2' as any)}
+        >
+          <Text style={s.primaryBtnText}>Continue to Phase 2 →</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -494,6 +503,13 @@ function Phase2({ athlete, phase, onBack }: {
           <Text style={s.successBody}>Coaches can now see your full measurables, academics, and film.</Text>
         </Card>
       )}
+
+      <Pressable
+        style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
+        onPress={() => router.push('/(tabs)/gameplan/3' as any)}
+      >
+        <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
+      </Pressable>
     </ScrollView>
   );
 }
