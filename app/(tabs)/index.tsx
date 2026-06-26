@@ -676,7 +676,7 @@ function createStyles(C: ThemeColors) {
     barFill: { height: '100%', borderRadius: 2 },
     barValue: { fontSize: 10, fontWeight: '800', color: '#fff', width: 22, textAlign: 'right' },
     profileActions: { flexDirection: 'row', gap: 6, width: '100%' },
-    profileBtn: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    profileBtn: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
     profileBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
 
     // Tier features card
