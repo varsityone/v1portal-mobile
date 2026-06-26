@@ -407,9 +407,10 @@ function Phase1({ data, phase, onBack }: {
 
       {score !== null && (
         <Pressable
-          style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [s.primaryBtn, s.continueBtn, pressed && { opacity: 0.85 }]}
           onPress={() => router.push('/(tabs)/gameplan/2' as any)}
         >
+          <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 2 →</Text>
         </Pressable>
       )}
@@ -623,9 +624,10 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
         </Pressable>
 
         <Pressable
-          style={({ pressed }) => [s.primaryBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [s.primaryBtn, s.continueBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
           onPress={() => router.push('/(tabs)/gameplan/3' as any)}
         >
+          <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
         </Pressable>
       </ScrollView>
@@ -717,7 +719,8 @@ function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
           <Ionicons name="checkmark-circle" size={24} color={C.success} />
           <Text style={s.successTitle}>Target List Locked In</Text>
           <Text style={s.successBody}>Phase 3 complete. Head to Phase 4 to start contacting coaches.</Text>
-          <Pressable style={s.primaryBtn} onPress={() => router.push('/(tabs)/gameplan/4' as any)}>
+          <Pressable style={[s.primaryBtn, s.continueBtn]} onPress={() => router.push('/(tabs)/gameplan/4' as any)}>
+            <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Text style={s.primaryBtnText}>Continue to Phase 4 →</Text>
           </Pressable>
         </View>
@@ -1161,6 +1164,7 @@ function createStyles(C: ThemeColors) {
 
     // Outreach
     primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 14, marginBottom: 2 },
+    continueBtn: { backgroundColor: 'transparent', overflow: 'hidden' },
     primaryBtnText: { fontSize: 15, fontWeight: '700', color: C.white },
     contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
     contactRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
