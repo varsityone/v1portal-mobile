@@ -224,8 +224,8 @@ export default function DashboardScreen() {
         <Text style={styles.welcomeSub}>{statusMsg}</Text>
         <View style={styles.badgeRow}>
           <Text style={styles.tierLabel}>Tier:</Text>
-          <View style={[styles.tierBadge, { backgroundColor: tierColor + '28', borderColor: tierColor + '55' }]}>
-            <Text style={[styles.tierBadgeText, { color: tierColor }]}>{tierDisplay}</Text>
+          <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
+            <Text style={[styles.tierBadgeText, { color: '#fff' }]}>{tierDisplay}</Text>
           </View>
           {score !== null && (
             <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.recruitingLevelBadge}>
@@ -585,7 +585,7 @@ function createStyles(C: ThemeColors) {
     welcomeSub: { fontSize: 13, color: C.textMuted, lineHeight: 18, marginBottom: 14 },
     badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     tierLabel: { fontSize: 11, fontWeight: '600', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-    tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, borderWidth: 1 },
+    tierBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
     tierBadgeText: { fontSize: 12, fontWeight: '700' },
     recruitingLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
     recruitingLevelBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
