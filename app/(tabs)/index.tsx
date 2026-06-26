@@ -481,7 +481,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ── Profile card ── */}
-      <View style={styles.profileCard}>
+      <LinearGradient colors={['#ff0000', '#ffd000']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profileCard}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarRing}>
           <View style={styles.avatarInner}>
             {athlete?.profile_photo_url ? (
@@ -533,7 +533,7 @@ export default function DashboardScreen() {
             <Text style={styles.profileBtnText}>View Analytics</Text>
           </Pressable>
         </View>
-      </View>
+      </LinearGradient>
 
 
       {/* ── Program matches preview ── */}
@@ -661,22 +661,22 @@ function createStyles(C: ThemeColors) {
     statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '500', textAlign: 'center', lineHeight: 14 },
 
     // Profile card
-    profileCard: { backgroundColor: C.surface, borderRadius: 18, padding: 22, alignItems: 'center', gap: 6 },
+    profileCard: { borderRadius: 18, padding: 22, alignItems: 'center', gap: 6, overflow: 'hidden' },
     avatarRing: { borderRadius: 44, padding: 2.5, marginBottom: 8 },
     avatarInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
     avatarPhoto: { width: 72, height: 72, borderRadius: 36 },
     avatarInitials: { fontSize: 24, fontWeight: '800', color: C.text },
-    profileName: { fontSize: 14, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: 4 },
-    profileLevel: { fontSize: 11, color: C.textDim, textAlign: 'center', marginBottom: 14, lineHeight: 16 },
-    scoreBars: { width: '100%', gap: 7, marginBottom: 14, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 10 },
+    profileName: { fontSize: 14, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 4 },
+    profileLevel: { fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginBottom: 14, lineHeight: 16 },
+    scoreBars: { width: '100%', gap: 7, marginBottom: 14, padding: 12, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10 },
     barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    barLabel: { fontSize: 10, fontWeight: '500', color: C.textDim, width: 68 },
-    barTrack: { flex: 1, height: 4, backgroundColor: C.border, borderRadius: 2, overflow: 'hidden' },
+    barLabel: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.75)', width: 68 },
+    barTrack: { flex: 1, height: 4, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2, overflow: 'hidden' },
     barFill: { height: '100%', borderRadius: 2 },
-    barValue: { fontSize: 10, fontWeight: '800', color: C.textMuted, width: 22, textAlign: 'right' },
+    barValue: { fontSize: 10, fontWeight: '800', color: '#fff', width: 22, textAlign: 'right' },
     profileActions: { flexDirection: 'row', gap: 6, width: '100%' },
-    profileBtn: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
-    profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
+    profileBtn: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    profileBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
 
     // Tier features card
     tierFeaturesCard: { borderRadius: 20, padding: 22, gap: 16, overflow: 'hidden' },
