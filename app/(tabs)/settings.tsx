@@ -26,9 +26,10 @@ type RowProps = {
   label: string;
   onPress?: () => void;
   destructive?: boolean;
+  iconColor?: string;
 };
 
-function SettingsRow({ icon, label, onPress, destructive }: RowProps) {
+function SettingsRow({ icon, label, onPress, destructive, iconColor }: RowProps) {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   return (
@@ -40,7 +41,7 @@ function SettingsRow({ icon, label, onPress, destructive }: RowProps) {
         <Ionicons
           name={icon}
           size={18}
-          color={destructive ? C.error : C.textMuted}
+          color={iconColor ?? (destructive ? C.error : C.textMuted)}
         />
       </View>
       <Text style={[s.rowLabel, destructive && s.rowDestructive]}>
@@ -196,6 +197,7 @@ export default function SettingsScreen() {
   };
 
   const handleHelp = () => router.push('/help' as any);
+  const handleFeedback = () => Linking.openURL('mailto:support@v1portal.com?subject=V1Portal%20Feedback');
 
   const handleAbout = () => {
     Alert.alert(
@@ -270,6 +272,18 @@ export default function SettingsScreen() {
             icon="shield-checkmark-outline"
             label="Privacy Policy"
             onPress={() => router.push('/privacy')}
+          />
+        </View>
+      </View>
+
+      <View style={s.group}>
+        <Text style={s.groupLabel}>Feedback</Text>
+        <View style={s.groupCard}>
+          <SettingsRow
+            icon="chatbubble-outline"
+            label="Share Feedback"
+            onPress={handleFeedback}
+            iconColor="#fff"
           />
         </View>
       </View>

@@ -505,7 +505,7 @@ export default function DashboardScreen() {
               <View key={bar.label} style={styles.barRow}>
                 <Text style={styles.barLabel}>{bar.label}</Text>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${bar.val}%` as any, backgroundColor: '#b2b2b2' }]} />
+                  <View style={[styles.barFill, { width: `${bar.val}%` as any, backgroundColor: '#fff' }]} />
                 </View>
                 <Text style={styles.barValue}>{bar.val}</Text>
               </View>
