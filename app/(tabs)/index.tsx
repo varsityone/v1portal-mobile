@@ -79,6 +79,7 @@ export default function DashboardScreen() {
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [matchCount, setMatchCount] = useState(0);
+  const [matches, setMatches] = useState<Array<{ id: string; match_score: number; programs: { name: string; division: string; state?: string; logo_url?: string | null } | null }>>([]);
   const [outreachCount, setOutreachCount] = useState(0);
   const [trackerCount, setTrackerCount] = useState(0);
   const [profileViews, setProfileViews] = useState(0);
@@ -100,20 +101,22 @@ export default function DashboardScreen() {
   const fetchCounts = useCallback(async () => {
     if (!athlete?.id) return;
     const [
-      { data: matchData, error: matchErr },
+      { count: mCount },
+      { data: matchRows },
       { data: outData },
       { count: pv },
       { count: tCount },
     ] = await Promise.all([
-      supabase.from('matches').select('id').eq('athlete_id', athlete.id).limit(20),
+      supabase.from('matches').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
+      supabase.from('matches').select('id, match_score, programs(name, division, state, logo_url)').eq('athlete_id', athlete.id).order('match_score', { ascending: false }).limit(5),
       supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
       supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
       supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
-    if (matchErr) console.error('[dashboard] matches error:', matchErr.message);
-    setMatchCount(matchData?.length ?? 0);
+    setMatchCount(mCount ?? 0);
+    setMatches((matchRows ?? []) as typeof matches);
     const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
-    setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
+    setOutreachCount(sent);
     setProfileViews(pv ?? 0);
     setTrackerCount(tCount ?? 0);
   }, [athlete?.id]);
@@ -163,7 +166,7 @@ export default function DashboardScreen() {
   const tierTextColor = tierDisplay === 'Free' ? C.textMuted : '#fff';
 
   const phaseComplete = [
-    !!assessment?.v1_score,
+    athlete?.v1_score != null,
     !!(
       athlete?.full_name && athlete?.phone && athlete?.bio &&
       athlete?.position && athlete?.graduation_year && athlete?.height &&
