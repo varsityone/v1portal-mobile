@@ -127,10 +127,6 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const isElite =
-    athlete?.subscription_status === 'active' &&
-    athlete?.subscription_tier === 'elite';
-
   const isActive = (href: string) => {
     if (href === '/(tabs)') return pathname === '/' || pathname === '/(tabs)';
     const clean = href.replace('/(tabs)', '');
@@ -263,48 +259,6 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
           </View>
         </View>
 
-        {/* Coach+ section — only for elite subscribers */}
-        {isElite && (
-          <View>
-            <Text style={[d.groupLabel, { color: 'rgba(199,0,156,0.7)', marginTop: 10 }]}>COACH+</Text>
-            <View style={d.navList}>
-              {[
-                { label: 'Advisor Hub',   href: '/(tabs)/coach-plus', icon: 'person' as const,    iconOff: 'person-outline' as const },
-                { label: 'Schedule Call', href: '__schedule_call__',  icon: 'calendar' as const,  iconOff: 'calendar-outline' as const },
-              ].map(item => {
-                const active = isActive(item.href);
-                return (
-                  <Pressable
-                    key={item.href}
-                    style={({ pressed }) => [
-                      d.navItem,
-                      pressed && { backgroundColor: 'rgba(199,0,156,0.06)' },
-                    ]}
-                    onPress={() => {
-                      if (item.href === '__schedule_call__') {
-                        props.navigation.closeDrawer();
-                        Linking.openURL('https://v1portal.com/dashboard/schedule-call');
-                      } else {
-                        navigate(item.href);
-                      }
-                    }}
-                  >
-                    <Ionicons
-                      name={active ? item.icon : item.iconOff}
-                      size={17}
-                      color={scheme === 'dark' ? '#ffffff' : '#252525'}
-                    />
-                    <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
-                      {item.label}
-                    </Text>
-                    {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
         {/* Dashboard Tour */}
         <Pressable
           style={[d.tourBtn]}
@@ -370,15 +324,6 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
             </View>
           </View>
         </View>
-
-        {/* Visit VarsityOne */}
-        <Pressable
-          style={[d.voLink, { borderColor: C.border }]}
-          onPress={() => Linking.openURL('https://varsityone.com')}
-        >
-          <Ionicons name="globe-outline" size={14} color={C.textMuted} />
-          <Text style={[d.voText, { color: C.textMuted }]}>Visit VarsityOne →</Text>
-        </Pressable>
 
       </ScrollView>
 
@@ -528,20 +473,6 @@ const d = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  voLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  voText: { fontSize: 13, fontWeight: '500' },
-
 
   footer: { borderTopWidth: 1, padding: 16, gap: 10 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
