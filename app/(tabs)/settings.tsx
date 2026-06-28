@@ -197,15 +197,9 @@ export default function SettingsScreen() {
   };
 
   const handleHelp = () => router.push('/help' as any);
-  const handleFeedback = () => Linking.openURL('mailto:support@v1portal.com?subject=V1Portal%20Feedback');
+  const handleFeedback = () => router.push('/help' as any);
 
-  const handleAbout = () => {
-    Alert.alert(
-      'V1Portal',
-      'Version 1.0\n\nThe recruiting platform built for student-athletes who want an honest, data-driven path to college football.',
-      [{ text: 'OK' }],
-    );
-  };
+  const handleAbout = () => Linking.openURL('https://v1portal.com');
 
   const handleDeleteAccount = () => router.push('/delete-account' as any);
 
