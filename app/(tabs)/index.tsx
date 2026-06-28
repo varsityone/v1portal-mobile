@@ -323,21 +323,16 @@ export default function DashboardScreen() {
 
 
       {/* ── Phase list — timeline ── */}
-      <View style={{ position: 'relative' }}>
-        {/* Single vertical line running behind all nodes */}
-        <View style={{
-          position: 'absolute',
-          left: 21,
-          top: 29,
-          bottom: 29,
-          width: 2,
-          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)',
-        }} />
-
+      <View>
         {PHASES.map((phase, i) => {
           const locked = phaseLocked[i];
           const done = phaseEffectiveDone[i];
           const active = i === activePhaseIdx && !locked;
+          const isLast = i === PHASES.length - 1;
+
+          const connColor = done
+            ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)')
+            : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)');
 
           let sub = '';
           if (done) {
@@ -374,8 +369,8 @@ export default function DashboardScreen() {
 
           return (
             <View key={i} style={[styles.phaseTimelineItem, { alignItems: 'flex-start' }]}>
-              {/* Left: node pinned to top, aligned with title */}
-              <View style={[styles.phaseTimelineLeft, { paddingTop: 10 }]}>
+              {/* Left: node + connector (connector omitted on last phase) */}
+              <View style={[styles.phaseTimelineLeft, { alignSelf: 'stretch', paddingTop: 8 }]}>
                 {done ? (
                   <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: '#000' }}>{phase.number}</Text>
@@ -388,6 +383,9 @@ export default function DashboardScreen() {
                   <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6', borderWidth: 1.5, borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)' }]}>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.3)' }}>{phase.number}</Text>
                   </View>
+                )}
+                {!isLast && (
+                  <View style={{ flex: 1, width: 8, backgroundColor: connColor, marginTop: 4, alignSelf: 'center' }} />
                 )}
               </View>
 

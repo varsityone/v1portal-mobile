@@ -22,7 +22,7 @@ export const DARK_THEME: ThemeColors = {
   primary:    '#833AB4',
   primaryDark:'#6B2D96',
   background: '#1d1f23',
-  surface:    '#28292e',
+  surface:    '#121212',
   surfaceAlt: '#303238',
   scoreCard:  '#18191d',
   border:     'rgba(255,255,255,0.09)',
