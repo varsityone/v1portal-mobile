@@ -381,15 +381,17 @@ export default function DashboardScreen() {
                   />
                 )}
                 {done ? (
-                  <View style={[styles.phaseNode, { backgroundColor: C.text }]}>
-                    <Ionicons name="checkmark" size={16} color={C.background} />
+                  <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#000' }}>{phase.number}</Text>
                   </View>
                 ) : active ? (
-                  <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)' }]} />
-                ) : locked ? (
-                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6' }]} />
+                  <View style={[styles.phaseNode, { backgroundColor: C.background, borderWidth: 3, borderColor: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)' }]}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.4)' }}>{phase.number}</Text>
+                  </View>
                 ) : (
-                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6', opacity: 0.7 }]} />
+                  <View style={[styles.phaseNode, { backgroundColor: isDark ? '#1a1a1f' : '#d1d1d6', borderWidth: 1.5, borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)' }]}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.3)' }}>{phase.number}</Text>
+                  </View>
                 )}
                 {!isLast && (
                   <LinearGradient
@@ -405,10 +407,10 @@ export default function DashboardScreen() {
               </View>
 
               {/* Right: content */}
-              <View style={[styles.phaseTimelineContent, locked && { opacity: 0.38 }]}>
+              <View style={styles.phaseTimelineContent}>
                 <View style={styles.phaseTimelineRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.phaseTimelineTitle, !done && !active && { color: C.textMuted }]}>
+                    <Text style={styles.phaseTimelineTitle}>
                       {phase.title}
                     </Text>
                     {sub ? <Text style={styles.phaseTimelineSub}>{sub}</Text> : null}
@@ -417,10 +419,7 @@ export default function DashboardScreen() {
                     styles.phaseBadge,
                     done ? styles.phaseBadgeDone : active ? styles.phaseBadgeActive : locked ? styles.phaseBadgeLocked : styles.phaseBadgeUpcoming,
                   ]}>
-                    <Text style={[
-                      styles.phaseBadgeText,
-                      locked && { color: C.warning },
-                    ]}>
+                    <Text style={styles.phaseBadgeText}>
                       {done ? `Phase ${phase.number} Completed` : active ? 'In Progress' : 'Up Next'}
                     </Text>
                   </View>
