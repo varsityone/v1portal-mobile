@@ -532,55 +532,8 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* ── Tier features card ── */}
-      <LinearGradient
-        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={styles.tierFeaturesCard}
-      >
-        <View style={styles.tierFeaturesHeader}>
-          <View style={styles.tierIconCircle}>
-            <Ionicons name="trophy-outline" size={18} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.tierFeaturesTitle}>{tierDisplay} Tier</Text>
-            <Text style={styles.tierFeaturesSub}>
-              {athlete?.subscription_status === 'active' ? 'Active subscription' : 'Limited access'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.tierDivider} />
-        <View style={styles.featureList}>
-          {[
-            { label: 'Full V1 Score Breakdown', active: true },
-            { label: 'Program Matches', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
-            { label: 'Coach Contacts', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
-            { label: 'Full Gameplan (All Phases)', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
-            { label: 'Dedicated Advisor', active: athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite' },
-            { label: 'Weekly 1-on-1 Calls', active: athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite' },
-          ].map((item, i) => (
-            <View key={i} style={styles.featureRow}>
-              <Ionicons
-                name={item.active ? 'checkmark-circle' : 'ellipse-outline'}
-                size={15}
-                color={item.active ? '#fff' : 'rgba(255,255,255,0.3)'}
-              />
-              <Text style={[styles.featureLabel, !item.active && { opacity: 0.35 }]}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-        {!(athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial') && (
-          <Pressable
-            style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => router.push('/upgrade' as any)}
-          >
-            <Text style={styles.seeUpgradeBtnText}>Manage Account</Text>
-          </Pressable>
-        )}
-      </LinearGradient>
-
       {/* ── Program matches ── */}
-      <View style={styles.profileCard}>
+      <View style={styles.matchCard}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Program Matches</Text>
           {matchCount > 0 && (
@@ -590,37 +543,39 @@ export default function DashboardScreen() {
           )}
         </View>
         {matchCount === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 12, gap: 8 }}>
-            <Ionicons name="school-outline" size={22} color={C.textMuted} />
+          <View style={{ alignItems: 'center', paddingVertical: 20, gap: 8 }}>
+            <Ionicons name="school-outline" size={26} color={C.textMuted} />
             <Text style={styles.matchGateText}>
               {assessment ? 'Matches generating...' : 'Complete your assessment to see matched programs.'}
             </Text>
           </View>
         ) : (
           <>
-            <View style={{ gap: 10, marginBottom: 12 }}>
-              {matches.map(m => {
-                const prog = Array.isArray(m.programs) ? (m.programs as any)[0] : m.programs;
-                const nameInitials = (prog?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                return (
-                  <View key={m.id} style={styles.matchRow}>
+            {matches.map((m, idx) => {
+              const prog = Array.isArray(m.programs) ? (m.programs as any)[0] : m.programs;
+              const nameInitials = (prog?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+              return (
+                <View key={m.id} style={[styles.matchRow, idx < matches.length - 1 && styles.matchRowBorder]}>
+                  {prog?.logo_url ? (
+                    <Image source={{ uri: prog.logo_url }} style={styles.matchLogo} resizeMode="contain" />
+                  ) : (
                     <View style={styles.matchAv}>
                       <Text style={styles.matchAvText}>{nameInitials}</Text>
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.matchName} numberOfLines={1}>{prog?.name ?? 'Program'}</Text>
-                      <Text style={styles.matchDiv}>{prog?.division ?? 'FCS'}{prog?.state ? ` · ${prog.state}` : ''}</Text>
-                    </View>
-                    <Text style={styles.matchPct}>{m.match_score}%</Text>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.matchName} numberOfLines={1}>{prog?.name ?? 'Program'}</Text>
+                    <Text style={styles.matchDiv}>{prog?.division ?? ''}{prog?.state ? ` · ${prog.state}` : ''}</Text>
                   </View>
-                );
-              })}
-            </View>
+                  <Text style={styles.matchPct}>{m.match_score}%</Text>
+                </View>
+              );
+            })}
             <Pressable
-              style={({ pressed }) => [styles.profileBtn, { alignItems: 'center' }, pressed && { opacity: 0.75 }]}
+              style={({ pressed }) => [styles.matchViewAllBtn, pressed && { opacity: 0.75 }]}
               onPress={() => router.push('/(tabs)/programs' as any)}
             >
-              <Text style={styles.profileBtnText}>View All Programs</Text>
+              <Text style={styles.matchViewAllText}>View All Programs</Text>
             </Pressable>
           </>
         )}
@@ -738,29 +693,21 @@ function createStyles(C: ThemeColors) {
     profileBtn: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
     profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
 
-    // Tier features card (gradient, matching web right-panel card)
-    tierFeaturesCard: { borderRadius: 16, padding: 22, gap: 16, overflow: 'hidden' },
-    tierFeaturesHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    tierIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.2)' },
-    tierFeaturesTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#fff' },
-    tierFeaturesSub: { fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
-    tierDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)' },
-    featureList: { gap: 11 },
-    featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    featureLabel: { fontSize: 13, color: '#fff', fontWeight: '500' },
-    seeUpgradeBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 2 },
-    seeUpgradeBtnText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
-
-    // Program matches (card + match rows matching web)
-    cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, width: '100%' },
-    cardTitle: { fontSize: 14, fontWeight: '800', color: C.text },
+    // Program matches card
+    matchCard: { backgroundColor: C.surface, borderRadius: 16, padding: 18, gap: 0 },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: C.text },
     sectionLink: { fontSize: 12, fontWeight: '600', color: C.primary },
-    matchGateText: { fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
-    matchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, width: '100%' },
-    matchAv: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(131,58,180,0.14)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    matchAvText: { fontSize: 10, fontWeight: '700', color: '#c084fc', letterSpacing: -0.2 },
-    matchName: { fontSize: 12, fontWeight: '600', color: C.text },
-    matchDiv: { fontSize: 10, color: C.textMuted },
-    matchPct: { fontSize: 13, fontWeight: '800', color: C.text, flexShrink: 0 },
+    matchGateText: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+    matchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+    matchRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    matchLogo: { width: 36, height: 36, borderRadius: 6, flexShrink: 0 },
+    matchAv: { width: 36, height: 36, borderRadius: 8, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    matchAvText: { fontSize: 11, fontWeight: '800', color: C.textMuted, letterSpacing: -0.3 },
+    matchName: { fontSize: 13, fontWeight: '700', color: C.text },
+    matchDiv: { fontSize: 11, color: C.textMuted, marginTop: 1 },
+    matchPct: { fontSize: 15, fontWeight: '900', color: C.text, flexShrink: 0 },
+    matchViewAllBtn: { marginTop: 14, backgroundColor: C.surfaceAlt, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    matchViewAllText: { fontSize: 13, fontWeight: '700', color: C.textMuted },
   });
 }
