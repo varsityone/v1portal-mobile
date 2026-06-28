@@ -16,7 +16,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
-import { Colors, GRADIENT, ThemeColors, TIER_COLORS, getTierFromAthlete } from '../../constants/Colors';
+import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
 import { useColors, useTheme } from '../../context/ThemeContext';
 import { PHASES } from '../../constants/Phases';
 
@@ -161,10 +161,6 @@ export default function DashboardScreen() {
     return responses.school_classification || null;
   })();
 
-  const tierDisplay = getTierFromAthlete(athlete?.subscription_status, athlete?.subscription_tier, !!athlete);
-  const tierColor = TIER_COLORS[tierDisplay];
-  const tierTextColor = tierDisplay === 'Free' ? C.textMuted : '#fff';
-
   const phaseComplete = [
     athlete?.v1_score != null,
     !!(
@@ -219,10 +215,6 @@ export default function DashboardScreen() {
         </Text>
         <Text style={styles.welcomeSub}>{statusMsg}</Text>
         <View style={styles.badgeRow}>
-          <Text style={styles.tierLabel}>Tier:</Text>
-          <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
-            <Text style={[styles.tierBadgeText, { color: tierTextColor }]}>{tierDisplay}</Text>
-          </View>
           {score !== null && (
             <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.recruitingLevelBadge}>
               <Text style={styles.recruitingLevelBadgeText}>{getRecruitingLevelFromScore(score)}</Text>
@@ -690,7 +682,7 @@ function createStyles(C: ThemeColors) {
     barFill: { height: '100%', borderRadius: 2, backgroundColor: '#b2b2b2' },
     barValue: { fontSize: 10, fontWeight: '800', color: C.textMuted, width: 22, textAlign: 'right' },
     profileActions: { flexDirection: 'row', gap: 6, width: '100%' },
-    profileBtn: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    profileBtn: { flex: 1, backgroundColor: C.background, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
     profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
 
     // Program matches card
