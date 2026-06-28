@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
-export default function ManageSubscriptionScreen() {
+export default function ManageAccountScreen() {
   const router = useRouter();
 
   return (
@@ -23,9 +23,9 @@ export default function ManageSubscriptionScreen() {
           <Ionicons name="globe-outline" size={28} color={Colors.primary} />
         </View>
 
-        <Text style={styles.title}>Manage Your Subscription</Text>
+        <Text style={styles.title}>Manage Your Account</Text>
         <Text style={styles.body}>
-          To upgrade, downgrade, or cancel your V1Portal subscription, visit us on the web.
+          Visit v1portal.com to manage your account settings and preferences.
         </Text>
 
         <Pressable

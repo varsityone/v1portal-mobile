@@ -25,7 +25,7 @@ const FAQS = [
   { q: 'How do I send an outreach email to a coach?', a: "Go to the Outreach tab and tap the compose button. Select a coach from your target list, review the pre-written template, and send." },
   { q: 'How do I update my profile information?', a: 'Go to Settings → Edit Profile. You can update your personal info, athletic stats, academic scores, film links, and social handles.' },
   { q: 'Can a coach reply to my outreach email?', a: 'Yes. When a coach hits reply, their message goes directly to the email address on your account. Make sure it\'s correct in Edit Profile.' },
-  { q: 'How do I cancel my subscription?', a: 'Visit v1portal.com to manage or cancel your subscription. You can also reach us at support@v1portal.com.' },
+  { q: 'How do I manage my account?', a: 'Visit v1portal.com to manage your account. You can also reach us at support@v1portal.com.' },
 ];
 
 const SUBJECTS = [
@@ -33,8 +33,7 @@ const SUBJECTS = [
   'V1 Score Problem',
   'Program Matches',
   'Outreach / Email',
-  'Billing / Subscription',
-  'Cancel Subscription',
+  'Account Management',
   'Bug Report',
   'Other',
 ];

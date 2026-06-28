@@ -1,4 +1,4 @@
-import { Linking, Pressable, StyleSheet, Text, View, Platform } from 'react-native';
+import { Pressable, StyleSheet, Text, View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -16,20 +16,13 @@ export default function NoSubscriptionScreen() {
     <View style={styles.root}>
       <View style={styles.content}>
         <View style={styles.iconCircle}>
-          <Ionicons name="globe-outline" size={32} color={Colors.primary} />
+          <Ionicons name="lock-closed-outline" size={32} color={Colors.primary} />
         </View>
 
-        <Text style={styles.title}>Subscription Required</Text>
+        <Text style={styles.title}>Access Restricted</Text>
         <Text style={styles.body}>
-          V1Portal is available to active subscribers. Visit v1portal.com to get started or manage your account.
+          You don't have access to this area. Please sign in with a valid V1Portal account.
         </Text>
-
-        <Pressable
-          style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
-          onPress={() => Linking.openURL('https://v1portal.com')}
-        >
-          <Text style={styles.btnText}>Visit v1portal.com</Text>
-        </Pressable>
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.6 }]}
@@ -79,23 +72,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 23,
   },
-  btn: {
-    marginTop: 8,
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    width: '100%',
-    alignItems: 'center',
-  },
-  btnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.white,
-    letterSpacing: 0.2,
-  },
   signOutBtn: {
     paddingVertical: 12,
+    marginTop: 8,
   },
   signOutText: {
     fontSize: 14,

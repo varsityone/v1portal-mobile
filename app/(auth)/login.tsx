@@ -39,7 +39,6 @@ export default function LoginScreen() {
     const { error: gErr } = await signInWithGoogle();
     setGoogleLoading(false);
     if (gErr) setError(gErr);
-    // _layout.tsx SIGNED_IN handler routes based on subscription status
   };
 
   const handleAppleSignIn = async () => {
@@ -68,7 +67,6 @@ export default function LoginScreen() {
     if (authError) {
       setError(authError.message);
     }
-    // _layout.tsx SIGNED_IN handler routes based on subscription status
   };
 
   return (
