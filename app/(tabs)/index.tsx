@@ -574,7 +574,7 @@ export default function DashboardScreen() {
             style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
             onPress={() => router.push('/upgrade' as any)}
           >
-            <Text style={styles.seeUpgradeBtnText}>See Upgrade Options</Text>
+            <Text style={styles.seeUpgradeBtnText}>Manage Account</Text>
           </Pressable>
         )}
       </LinearGradient>

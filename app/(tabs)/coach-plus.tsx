@@ -117,10 +117,10 @@ export default function CoachPlusScreen() {
         </Text>
         <Pressable
           style={s.lockCta}
-          onPress={() => Linking.openURL('https://v1portal.com/dashboard/upgrade')}
+          onPress={() => Linking.openURL('https://v1portal.com')}
         >
           <LinearGradient colors={['#ff0000', '#ffd000']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.lockCtaGrad}>
-            <Text style={s.lockCtaText}>Apply for Coach+ — $697/mo</Text>
+            <Text style={s.lockCtaText}>Learn More at v1portal.com</Text>
           </LinearGradient>
         </Pressable>
       </ScrollView>
