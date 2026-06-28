@@ -322,15 +322,22 @@ export default function DashboardScreen() {
       </View>
 
 
-      {/* ── Phase list — gradient timeline ── */}
+      {/* ── Phase list — timeline ── */}
+      <View style={{ position: 'relative' }}>
+        {/* Single vertical line running behind all nodes */}
+        <View style={{
+          position: 'absolute',
+          left: 21,
+          top: 29,
+          bottom: 29,
+          width: 2,
+          backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)',
+        }} />
 
-      {/* Vertical gradient timeline */}
-      <View>
         {PHASES.map((phase, i) => {
           const locked = phaseLocked[i];
           const done = phaseEffectiveDone[i];
           const active = i === activePhaseIdx && !locked;
-          const isLast = i === PHASES.length - 1;
 
           let sub = '';
           if (done) {
@@ -366,20 +373,9 @@ export default function DashboardScreen() {
           }
 
           return (
-            <View key={i} style={styles.phaseTimelineItem}>
-              {/* Left: connector + node + connector */}
-              <View style={styles.phaseTimelineLeft}>
-                {i > 0 && (
-                  <LinearGradient
-                    colors={[
-                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
-                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
-                    ]}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={styles.phaseConnector}
-                  />
-                )}
+            <View key={i} style={[styles.phaseTimelineItem, { alignItems: 'flex-start' }]}>
+              {/* Left: node pinned to top, aligned with title */}
+              <View style={[styles.phaseTimelineLeft, { paddingTop: 10 }]}>
                 {done ? (
                   <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: '#000' }}>{phase.number}</Text>
@@ -393,26 +389,13 @@ export default function DashboardScreen() {
                     <Text style={{ fontSize: 14, fontWeight: '700', color: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.3)' }}>{phase.number}</Text>
                   </View>
                 )}
-                {!isLast && (
-                  <LinearGradient
-                    colors={[
-                      done ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
-                      phaseEffectiveDone[i + 1] ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
-                    ]}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={styles.phaseConnector}
-                  />
-                )}
               </View>
 
               {/* Right: content */}
               <View style={styles.phaseTimelineContent}>
                 <View style={styles.phaseTimelineRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.phaseTimelineTitle}>
-                      {phase.title}
-                    </Text>
+                    <Text style={styles.phaseTimelineTitle}>{phase.title}</Text>
                     {sub ? <Text style={styles.phaseTimelineSub}>{sub}</Text> : null}
                   </View>
                   <View style={[
