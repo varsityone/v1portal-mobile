@@ -370,7 +370,7 @@ export default function DashboardScreen() {
           return (
             <View key={i} style={[styles.phaseTimelineItem, { alignItems: 'flex-start' }]}>
               {/* Left: node + connector (connector omitted on last phase) */}
-              <View style={[styles.phaseTimelineLeft, { alignSelf: 'stretch', paddingTop: 8 }]}>
+              <View style={[styles.phaseTimelineLeft, { alignSelf: 'stretch' }]}>
                 {done ? (
                   <View style={[styles.phaseNode, { backgroundColor: '#ffffff' }]}>
                     <Text style={{ fontSize: 14, fontWeight: '800', color: '#000' }}>{phase.number}</Text>
@@ -385,7 +385,7 @@ export default function DashboardScreen() {
                   </View>
                 )}
                 {!isLast && (
-                  <View style={{ flex: 1, width: 8, backgroundColor: connColor, marginTop: 4, alignSelf: 'center' }} />
+                  <View style={{ flex: 1, width: 8, backgroundColor: connColor, alignSelf: 'center' }} />
                 )}
               </View>
 
