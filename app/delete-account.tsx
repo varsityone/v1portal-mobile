@@ -147,7 +147,7 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#111',
+    backgroundColor: C.surface,
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',
@@ -217,7 +217,7 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: C.border2,
     alignItems: 'center',
   },
   btnPrimaryText: {
