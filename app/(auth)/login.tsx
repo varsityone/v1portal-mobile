@@ -171,7 +171,7 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Not yet a subscriber? </Text>
+          <Text style={styles.footerText}>Don't have an account? </Text>
           <Pressable onPress={() => Linking.openURL('https://v1portal.com')} hitSlop={8}>
             <Text style={styles.footerLink}>Visit v1portal.com</Text>
           </Pressable>
