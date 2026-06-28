@@ -217,7 +217,7 @@ export default function RootLayout() {
     setBanner(null);
   }, []);
 
-  // ── Bootstrap: check auth + subscription on first mount ──────────────────
+  // ── Bootstrap: check auth on first mount ──────────────────────────────────
   useEffect(() => {
     async function bootstrap() {
       const start = Date.now();
