@@ -114,7 +114,7 @@ export default function DashboardScreen() {
       supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
     setMatchCount(mCount ?? 0);
-    setMatches((matchRows ?? []) as typeof matches);
+    setMatches((matchRows ?? []) as unknown as typeof matches);
     const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
     setOutreachCount(sent);
     setProfileViews(pv ?? 0);
@@ -478,7 +478,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* ── Profile card ── */}
-      <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profileCard}>
+      <View style={styles.profileCard}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarRing}>
           <View style={styles.avatarInner}>
             {athlete?.profile_photo_url ? (
@@ -492,7 +492,7 @@ export default function DashboardScreen() {
           </View>
         </LinearGradient>
 
-        <Text style={styles.profileName}>{fullName || athlete?.email || 'Complete your profile'}</Text>
+        <Text style={styles.profileName}>{fullName || 'Complete your profile'}</Text>
         <Text style={styles.profileLevel}>
           {score !== null ? getRecruitingLevelFromScore(score) : 'Complete assessment to see your tier'}
         </Text>
@@ -508,7 +508,7 @@ export default function DashboardScreen() {
               <View key={bar.label} style={styles.barRow}>
                 <Text style={styles.barLabel}>{bar.label}</Text>
                 <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${bar.val}%` as any, backgroundColor: '#fff' }]} />
+                  <View style={[styles.barFill, { width: `${bar.val}%` as any }]} />
                 </View>
                 <Text style={styles.barValue}>{bar.val}</Text>
               </View>
@@ -530,37 +530,99 @@ export default function DashboardScreen() {
             <Text style={styles.profileBtnText}>View Analytics</Text>
           </Pressable>
         </View>
+      </View>
+
+      {/* ── Tier features card ── */}
+      <LinearGradient
+        colors={['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={styles.tierFeaturesCard}
+      >
+        <View style={styles.tierFeaturesHeader}>
+          <View style={styles.tierIconCircle}>
+            <Ionicons name="trophy-outline" size={18} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tierFeaturesTitle}>{tierDisplay} Tier</Text>
+            <Text style={styles.tierFeaturesSub}>
+              {athlete?.subscription_status === 'active' ? 'Active subscription' : 'Limited access'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.tierDivider} />
+        <View style={styles.featureList}>
+          {[
+            { label: 'Full V1 Score Breakdown', active: true },
+            { label: 'Program Matches', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
+            { label: 'Coach Contacts', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
+            { label: 'Full Gameplan (All Phases)', active: athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial' },
+            { label: 'Dedicated Advisor', active: athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite' },
+            { label: 'Weekly 1-on-1 Calls', active: athlete?.subscription_status === 'active' && athlete?.subscription_tier === 'elite' },
+          ].map((item, i) => (
+            <View key={i} style={styles.featureRow}>
+              <Ionicons
+                name={item.active ? 'checkmark-circle' : 'ellipse-outline'}
+                size={15}
+                color={item.active ? '#fff' : 'rgba(255,255,255,0.3)'}
+              />
+              <Text style={[styles.featureLabel, !item.active && { opacity: 0.35 }]}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
+        {!(athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial') && (
+          <Pressable
+            style={({ pressed }) => [styles.seeUpgradeBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push('/upgrade' as any)}
+          >
+            <Text style={styles.seeUpgradeBtnText}>See Upgrade Options</Text>
+          </Pressable>
+        )}
       </LinearGradient>
 
-
-      {/* ── Program matches preview ── */}
-      <View>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Program Matches</Text>
+      {/* ── Program matches ── */}
+      <View style={styles.profileCard}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Program Matches</Text>
           {matchCount > 0 && (
             <Pressable onPress={() => router.push('/(tabs)/programs' as any)}>
-              <Text style={styles.sectionLink}>See all →</Text>
+              <Text style={styles.sectionLink}>See All</Text>
             </Pressable>
           )}
         </View>
         {matchCount === 0 ? (
-          <View style={styles.matchGate}>
-            <Ionicons name="school-outline" size={22} color={C.icon} />
-            <Text style={styles.matchGateText}>Complete your assessment to generate program matches</Text>
-            <Pressable style={styles.matchGateBtn} onPress={() => router.push('/assessment' as any)}>
-              <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Text style={styles.matchGateBtnText}>Take Assessment →</Text>
-            </Pressable>
+          <View style={{ alignItems: 'center', paddingVertical: 12, gap: 8 }}>
+            <Ionicons name="school-outline" size={22} color={C.textMuted} />
+            <Text style={styles.matchGateText}>
+              {assessment ? 'Matches generating...' : 'Complete your assessment to see matched programs.'}
+            </Text>
           </View>
         ) : (
-          <Pressable
-            style={styles.matchViewAll}
-            onPress={() => router.push('/(tabs)/programs' as any)}
-          >
-            <Ionicons name="school" size={18} color="#fff" />
-            <Text style={styles.matchViewAllText}>View {matchCount} matched program{matchCount !== 1 ? 's' : ''}</Text>
-            <Ionicons name="chevron-forward" size={14} color={C.icon} />
-          </Pressable>
+          <>
+            <View style={{ gap: 10, marginBottom: 12 }}>
+              {matches.map(m => {
+                const prog = Array.isArray(m.programs) ? (m.programs as any)[0] : m.programs;
+                const nameInitials = (prog?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                return (
+                  <View key={m.id} style={styles.matchRow}>
+                    <View style={styles.matchAv}>
+                      <Text style={styles.matchAvText}>{nameInitials}</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.matchName} numberOfLines={1}>{prog?.name ?? 'Program'}</Text>
+                      <Text style={styles.matchDiv}>{prog?.division ?? 'FCS'}{prog?.state ? ` · ${prog.state}` : ''}</Text>
+                    </View>
+                    <Text style={styles.matchPct}>{m.match_score}%</Text>
+                  </View>
+                );
+              })}
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.profileBtn, { alignItems: 'center' }, pressed && { opacity: 0.75 }]}
+              onPress={() => router.push('/(tabs)/programs' as any)}
+            >
+              <Text style={styles.profileBtnText}>View All Programs</Text>
+            </Pressable>
+          </>
         )}
       </View>
     </ScrollView>
@@ -658,26 +720,26 @@ function createStyles(C: ThemeColors) {
     statValue: { fontSize: 24, fontWeight: '900', color: C.text, letterSpacing: -1, lineHeight: 28 },
     statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '500', textAlign: 'center', lineHeight: 14 },
 
-    // Profile card
-    profileCard: { borderRadius: 20, padding: 22, alignItems: 'center', gap: 6, overflow: 'hidden' },
+    // Profile card (surface card matching web gp-card)
+    profileCard: { backgroundColor: C.surface, borderRadius: 16, padding: 18, alignItems: 'center', gap: 6 },
     avatarRing: { borderRadius: 44, padding: 2.5, marginBottom: 8 },
-    avatarInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-    avatarPhoto: { width: 72, height: 72, borderRadius: 36 },
-    avatarInitials: { fontSize: 24, fontWeight: '800', color: C.text },
-    profileName: { fontSize: 14, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 4 },
-    profileLevel: { fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginBottom: 14, lineHeight: 16 },
-    scoreBars: { width: '100%', gap: 7, marginBottom: 14, padding: 12, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10 },
+    avatarInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+    avatarPhoto: { width: 68, height: 68, borderRadius: 34 },
+    avatarInitials: { fontSize: 22, fontWeight: '900', color: C.text },
+    profileName: { fontSize: 14, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: 4 },
+    profileLevel: { fontSize: 11, color: C.textMuted, textAlign: 'center', marginBottom: 14, lineHeight: 16 },
+    scoreBars: { width: '100%', gap: 7, marginBottom: 14, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 10 },
     barRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    barLabel: { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.75)', width: 68 },
-    barTrack: { flex: 1, height: 4, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2, overflow: 'hidden' },
-    barFill: { height: '100%', borderRadius: 2 },
-    barValue: { fontSize: 10, fontWeight: '800', color: '#fff', width: 22, textAlign: 'right' },
+    barLabel: { fontSize: 10, fontWeight: '500', color: C.textMuted, width: 68 },
+    barTrack: { flex: 1, height: 4, backgroundColor: C.background, borderRadius: 2, overflow: 'hidden' },
+    barFill: { height: '100%', borderRadius: 2, backgroundColor: '#b2b2b2' },
+    barValue: { fontSize: 10, fontWeight: '800', color: C.textMuted, width: 22, textAlign: 'right' },
     profileActions: { flexDirection: 'row', gap: 6, width: '100%' },
-    profileBtn: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
-    profileBtnText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+    profileBtn: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 8, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+    profileBtnText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
 
-    // Tier features card
-    tierFeaturesCard: { borderRadius: 20, padding: 22, gap: 16, overflow: 'hidden' },
+    // Tier features card (gradient, matching web right-panel card)
+    tierFeaturesCard: { borderRadius: 16, padding: 22, gap: 16, overflow: 'hidden' },
     tierFeaturesHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     tierIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.2)' },
     tierFeaturesTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#fff' },
@@ -689,15 +751,16 @@ function createStyles(C: ThemeColors) {
     seeUpgradeBtn: { borderRadius: 12, paddingVertical: 13, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 2 },
     seeUpgradeBtnText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
 
-    // Program matches preview
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    sectionTitle: { fontSize: 17, fontWeight: '800', color: C.text, letterSpacing: -0.2 },
-    sectionLink: { fontSize: 13, fontWeight: '600', color: C.primary },
-    matchGate: { backgroundColor: C.surface, borderRadius: 14, padding: 22, alignItems: 'center', gap: 10 },
-    matchGateText: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
-    matchGateBtn: { borderRadius: 100, paddingHorizontal: 22, paddingVertical: 11, marginTop: 4, overflow: 'hidden' },
-    matchGateBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
-    matchViewAll: { backgroundColor: C.surface, borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
-    matchViewAllText: { flex: 1, fontSize: 14, fontWeight: '600', color: C.text },
+    // Program matches (card + match rows matching web)
+    cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, width: '100%' },
+    cardTitle: { fontSize: 14, fontWeight: '800', color: C.text },
+    sectionLink: { fontSize: 12, fontWeight: '600', color: C.primary },
+    matchGateText: { fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+    matchRow: { flexDirection: 'row', alignItems: 'center', gap: 9, width: '100%' },
+    matchAv: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(131,58,180,0.14)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    matchAvText: { fontSize: 10, fontWeight: '700', color: '#c084fc', letterSpacing: -0.2 },
+    matchName: { fontSize: 12, fontWeight: '600', color: C.text },
+    matchDiv: { fontSize: 10, color: C.textMuted },
+    matchPct: { fontSize: 13, fontWeight: '800', color: C.text, flexShrink: 0 },
   });
 }
