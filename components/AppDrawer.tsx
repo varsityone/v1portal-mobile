@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useAuth } from '../hooks/useAuth';
 import { useAthleteData } from '../hooks/useAthleteData';
@@ -274,7 +274,7 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
         {/* Divider */}
         <View style={[d.divider, { backgroundColor: C.border }]} />
 
-        {/* Social links + theme toggle row */}
+        {/* Social links */}
         <View style={d.socialSection}>
           <Text style={[d.groupLabel, { color: C.textDim }]}>GET IN TOUCH</Text>
           <View style={d.socialRow}>
@@ -288,41 +288,57 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
                 <s.Icon color={C.textMuted} />
               </Pressable>
             ))}
-
-            {/* Theme toggle — matches web: moon/sun, gradient active state */}
-            <View style={[d.themeToggle, { backgroundColor: C.surface }]}>
-              <Pressable onPress={() => setTheme('dark')}>
-                {scheme === 'dark' ? (
-                  <LinearGradient
-                    colors={['#ff0000', '#aa00ff']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={d.themeBtn}
-                  >
-                    <IconMoon color="#fff" />
-                  </LinearGradient>
-                ) : (
-                  <View style={d.themeBtn}>
-                    <IconMoon color={C.textMuted} />
-                  </View>
-                )}
-              </Pressable>
-              <Pressable onPress={() => setTheme('light')}>
-                {scheme === 'light' ? (
-                  <LinearGradient
-                    colors={['#ff0000', '#aa00ff']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={d.themeBtn}
-                  >
-                    <IconSun color="#fff" />
-                  </LinearGradient>
-                ) : (
-                  <View style={d.themeBtn}>
-                    <IconSun color={C.textMuted} />
-                  </View>
-                )}
-              </Pressable>
-            </View>
           </View>
+
+          {/* Pill theme toggle */}
+          <Pressable
+            onPress={() => setTheme(scheme === 'dark' ? 'light' : 'dark')}
+            style={{ marginHorizontal: 4, marginTop: 14, alignSelf: 'flex-start', width: '50%' }}
+            accessibilityLabel={scheme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}
+          >
+            <LinearGradient
+              colors={scheme === 'dark' ? ['red', 'rgb(255,208,0)'] : ['#EFEFEF', '#EFEFEF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                height: 64,
+                borderRadius: 100,
+                flexDirection: scheme === 'dark' ? 'row' : 'row-reverse',
+                alignItems: 'center',
+                padding: 4,
+                borderWidth: 1,
+                borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.09)',
+              }}
+            >
+              {/* Knob */}
+              <LinearGradient
+                colors={scheme === 'dark' ? ['#ffffff', '#ffffff'] : ['red', 'rgb(255,208,0)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: 56, height: 56, borderRadius: 28,
+                  alignItems: 'center', justifyContent: 'center',
+                  shadowColor: '#000', shadowOpacity: scheme === 'dark' ? 0.5 : 0.22,
+                  shadowOffset: { width: 0, height: 2 }, shadowRadius: 5,
+                  elevation: 4,
+                }}
+              >
+                {scheme === 'dark'
+                  ? <Svg width={20} height={20} viewBox="0 0 24 24"><Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#3A3A3C" /></Svg>
+                  : <Svg width={22} height={22} viewBox="0 0 24 24" fill="none"><Circle cx={12} cy={12} r={4} fill="#ffffff" /><Path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" /></Svg>
+                }
+              </LinearGradient>
+              {/* Label */}
+              <Text style={{
+                flex: 1, textAlign: 'center',
+                color: scheme === 'dark' ? 'rgba(255,255,255,0.55)' : 'rgba(30,30,32,0.45)',
+                fontSize: 10, fontWeight: '800', letterSpacing: 1.3,
+                textTransform: 'uppercase',
+              }}>
+                {scheme === 'dark' ? 'Night Mode' : 'Day Mode'}
+              </Text>
+            </LinearGradient>
+          </Pressable>
         </View>
 
       </ScrollView>
@@ -459,20 +475,6 @@ const d = StyleSheet.create({
   socialSection: { marginBottom: 20 },
   socialRow: { flexDirection: 'row', gap: 0, paddingHorizontal: 20, alignItems: 'center' },
   socialIcon: { padding: 4 },
-  themeToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 100,
-    gap: 2,
-    marginLeft: 'auto',
-  },
-  themeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   footer: { borderTopWidth: 1, padding: 16, gap: 10 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
