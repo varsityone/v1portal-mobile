@@ -37,6 +37,9 @@ export interface Athlete {
   profile_slug: string | null;
   is_profile_public: boolean | null;
   coach_info: Record<string, string | null> | null;
+  is_admin: boolean | null;
+  manual_access: boolean | null;
+  assessment_completed: boolean | null;
 }
 
 export interface ScoreBreakdown {
@@ -84,7 +87,7 @@ export function useAthleteData(): AthleteData {
 
     const { data: ath } = await supabase
       .from('athletes')
-      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info')
+      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info, is_admin, manual_access, assessment_completed')
       .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
       .maybeSingle();
 
