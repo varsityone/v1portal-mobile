@@ -26,7 +26,6 @@ interface ProgramMatch {
   school_name: string;
   division: string;
   match_score: number;
-  position_fit: string | null;
 }
 
 interface CoachContact {
@@ -657,13 +656,21 @@ function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
   useEffect(() => {
     if (!athleteId) { setLoading(false); return; }
     supabase
-      .from('program_matches')
-      .select('school_name, division, match_score, position_fit')
+      .from('matches')
+      .select('match_score, programs(name, division)')
       .eq('athlete_id', athleteId)
       .order('match_score', { ascending: false })
       .limit(25)
       .then(({ data }: { data: unknown }) => {
-        setPrograms((data as ProgramMatch[]) ?? []);
+        const rows = (data as any[]) ?? [];
+        setPrograms(rows.map(r => {
+          const program = Array.isArray(r.programs) ? r.programs[0] : r.programs;
+          return {
+            school_name: program?.name ?? 'Unknown Program',
+            division: program?.division ?? '',
+            match_score: r.match_score,
+          };
+        }));
         setLoading(false);
       });
   }, [athleteId]);
@@ -706,7 +713,6 @@ function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
                   <View style={[s.divBadge, { borderColor: dc }]}>
                     <Text style={[s.divBadgeText, { color: dc }]}>{p.division}</Text>
                   </View>
-                  {p.position_fit ? <Text style={s.posFit}>{p.position_fit} fit</Text> : null}
                   <Text style={s.matchLabel}>match score</Text>
                 </View>
               </View>
