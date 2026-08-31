@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { useColors } from '../../context/ThemeContext';
@@ -65,10 +64,6 @@ export default function CoachPlusScreen() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [refreshing, setRefreshing]     = useState(false);
 
-  const isElite =
-    athlete?.subscription_status === 'active' &&
-    athlete?.subscription_tier === 'elite';
-
   const fetchSlots = useCallback(async () => {
     if (!athlete?.id) return;
     setSlotsLoading(true);
@@ -83,8 +78,8 @@ export default function CoachPlusScreen() {
   }, [athlete?.id]);
 
   useEffect(() => {
-    if (isElite) fetchSlots();
-  }, [isElite, fetchSlots]);
+    fetchSlots();
+  }, [fetchSlots]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -98,32 +93,6 @@ export default function CoachPlusScreen() {
       <View style={[s.center, { backgroundColor: C.background }]}>
         <ActivityIndicator color={COACH_PINK} size="large" />
       </View>
-    );
-  }
-
-  // ── Not Coach+ ──
-  if (!isElite) {
-    return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: C.background }}
-        contentContainerStyle={[s.center, { padding: 32 }]}
-      >
-        <View style={[s.lockIconWrap, { backgroundColor: COACH_PINK_BG, borderColor: COACH_PINK_BORDER }]}>
-          <Ionicons name="person" size={28} color={COACH_PINK} />
-        </View>
-        <Text style={[s.lockTitle, { color: C.text }]}>Advisor Hub</Text>
-        <Text style={[s.lockBody, { color: C.textMuted }]}>
-          Biweekly 1-on-1 strategy calls with a dedicated V1 recruiting advisor are a Coach+ exclusive.
-        </Text>
-        <Pressable
-          style={s.lockCta}
-          onPress={() => Linking.openURL('https://v1portal.com')}
-        >
-          <LinearGradient colors={['#ff0000', '#ffd000']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.lockCtaGrad}>
-            <Text style={s.lockCtaText}>Learn More at v1portal.com</Text>
-          </LinearGradient>
-        </Pressable>
-      </ScrollView>
     );
   }
 
@@ -252,10 +221,10 @@ export default function CoachPlusScreen() {
               onPress: () => router.push('/(tabs)/analytics' as any),
             },
             {
-              icon: 'school' as const,
-              label: 'My Programs',
-              sub: 'View matched programs',
-              onPress: () => router.push('/(tabs)/programs' as any),
+              icon: 'heart' as const,
+              label: 'My Matches',
+              sub: 'View your program matches',
+              onPress: () => router.push('/(tabs)/match' as any),
             },
           ].map((action, idx, arr) => (
             <Pressable

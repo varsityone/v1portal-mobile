@@ -22,19 +22,6 @@ import { useColors } from '../../../context/ThemeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ProgramMatch {
-  school_name: string;
-  division: string;
-  match_score: number;
-}
-
-interface CoachContact {
-  id: string;
-  coach_name: string | null;
-  school_name: string | null;
-  status: 'sent' | 'opened' | 'replied' | 'bounced' | 'interested';
-}
-
 interface RecruitingTask {
   id: string;
   title: string;
@@ -86,13 +73,6 @@ function taskGroup(task: RecruitingTask): 'Today' | 'This Week' | 'Upcoming' {
   if (diffDays < 1) return 'Today';
   if (diffDays < 7) return 'This Week';
   return 'Upcoming';
-}
-
-function getMatchScoreColor(score: number): string {
-  const t = Math.min(score / 99.9, 1);
-  if (t <= 0.5) return `rgb(0,${Math.round(106 + 74 * (t / 0.5))},255)`;
-  const p = (t - 0.5) / 0.5;
-  return `rgb(0,${Math.round(180 + 75 * p)},${Math.round(255 - 225 * p)})`;
 }
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
@@ -637,282 +617,71 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
 
 // ─── Phase 3: Strategic Targeting ────────────────────────────────────────────
 
-const DIV_COLORS: Record<string, string> = {
-  FBS: '#006aff', FCS: '#00b4ff', D2: '#22C55E',
-  D3: '#888888', NAIA: '#F59E0B', JUCO: '#EF4444',
-};
-
-function Phase3({ athleteId, targetListSaved: initialSaved, phase, onBack }: {
-  athleteId: string | undefined; targetListSaved: boolean; phase: Phase; onBack: () => void;
+function Phase3({ athleteId, phase, onBack }: {
+  athleteId: string | undefined; phase: Phase; onBack: () => void;
 }) {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const [programs, setPrograms] = useState<ProgramMatch[]>([]);
+  const [matchCount, setMatchCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [listSaved, setListSaved] = useState(initialSaved);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!athleteId) { setLoading(false); return; }
     supabase
-      .from('matches')
-      .select('match_score, programs(name, division)')
+      .from('mutual_matches')
+      .select('id', { count: 'exact', head: true })
       .eq('athlete_id', athleteId)
-      .order('match_score', { ascending: false })
-      .limit(25)
-      .then(({ data }: { data: unknown }) => {
-        const rows = (data as any[]) ?? [];
-        setPrograms(rows.map(r => {
-          const program = Array.isArray(r.programs) ? r.programs[0] : r.programs;
-          return {
-            school_name: program?.name ?? 'Unknown Program',
-            division: program?.division ?? '',
-            match_score: r.match_score,
-          };
-        }));
+      .eq('status', 'active')
+      .then(({ count }: { count: number | null }) => {
+        setMatchCount(count ?? 0);
         setLoading(false);
       });
   }, [athleteId]);
 
-  const handleConfirmList = async () => {
-    if (!athleteId || listSaved) return;
-    setSaving(true);
-    await supabase.from('athletes').update({ target_list_saved_at: new Date().toISOString() }).eq('id', athleteId);
-    setListSaved(true);
-    setSaving(false);
-  };
-
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} onBack={onBack} />
-
-      <View style={s.rowBetween}>
-        <Text style={s.countText}>{loading ? '—' : programs.length} Programs Found</Text>
-      </View>
 
       {loading ? (
         <CenteredLoader />
-      ) : programs.length === 0 ? (
-        <EmptyState
-          icon="school-outline"
-          title="No matches yet"
-          body="Program matches are generated from your V1 Score and position. Complete your assessment to get matched."
-        />
-      ) : (
-        <View style={s.listCard}>
-          {programs.map((p, i) => {
-            const dc = DIV_COLORS[p.division] ?? C.textDim;
-            return (
-              <View key={i} style={[s.programRow, i < programs.length - 1 && s.programRowBorder]}>
-                <View style={s.programTop}>
-                  <Text style={s.programName}>{p.school_name}</Text>
-                  <Text style={[s.matchNum, { color: C.text }]}>{p.match_score}</Text>
-                </View>
-                <View style={s.programBottom}>
-                  <View style={[s.divBadge, { borderColor: dc }]}>
-                    <Text style={[s.divBadgeText, { color: dc }]}>{p.division}</Text>
-                  </View>
-                  <Text style={s.matchLabel}>match score</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {listSaved ? (
+      ) : matchCount > 0 ? (
         <View style={[s.successCard, { alignItems: 'flex-start', gap: 10 }]}>
-          <Ionicons name="checkmark-circle" size={24} color={C.success} />
-          <Text style={s.successTitle}>Target List Locked In</Text>
-          <Text style={s.successBody}>Phase 3 complete. Head to Phase 4 to start contacting coaches.</Text>
-          <Pressable style={[s.primaryBtn, s.continueBtn]} onPress={() => router.push('/(tabs)/gameplan/4' as any)}>
-            <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Text style={s.primaryBtnText}>Continue to Phase 4 →</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={{ backgroundColor: C.surface, borderRadius: 14, padding: 20, gap: 12 }}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>Lock In Your Target List</Text>
-          <Text style={{ fontSize: 13, color: C.textMuted, lineHeight: 20 }}>
-            Review your matched programs above, then confirm your list. This completes Phase 3 and unlocks Phase 4: Intelligent Outreach.
+          <Ionicons name="heart" size={24} color={C.success} />
+          <Text style={s.successTitle}>{matchCount} Mutual Match{matchCount === 1 ? '' : 'es'}</Text>
+          <Text style={s.successBody}>
+            A coach swiped back — that means real interest. Head in and start the conversation.
           </Text>
-          <Pressable
-            style={[s.primaryBtn, { opacity: saving || programs.length === 0 ? 0.6 : 1 }]}
-            onPress={handleConfirmList}
-            disabled={saving || programs.length === 0}
-          >
-            <Text style={s.primaryBtnText}>{saving ? 'Saving…' : 'Lock In My Target List →'}</Text>
+          <Pressable style={s.primaryBtn} onPress={() => router.push('/(tabs)/match' as any)}>
+            <Text style={s.primaryBtnText}>View My Matches →</Text>
           </Pressable>
         </View>
-      )}
-    </ScrollView>
-  );
-}
-
-// ─── Phase 4: Intelligent Outreach ───────────────────────────────────────────
-
-function Phase4({ athleteId, phase, onBack }: {
-  athleteId: string | undefined; phase: Phase; onBack: () => void;
-}) {
-  const router = useRouter();
-  const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
-
-  const STATUS_META = useMemo(() => ({
-    sent:       { label: 'Sent',       color: C.textDim },
-    opened:     { label: 'Opened',     color: C.primary },
-    replied:    { label: 'Replied',    color: C.success },
-    bounced:    { label: 'Bounced',    color: C.error },
-    interested: { label: 'Interested', color: C.warning },
-  }), [C]);
-
-  const [contacts, setContacts] = useState<CoachContact[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!athleteId) { setLoading(false); return; }
-    supabase
-      .from('coach_outreach')
-      .select('id, coach_name, school_name, status')
-      .eq('athlete_id', athleteId)
-      .order('created_at', { ascending: false })
-      .then(({ data }: { data: unknown }) => {
-        setContacts((data as CoachContact[]) ?? []);
-        setLoading(false);
-      });
-  }, [athleteId]);
-
-  return (
-    <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
-      <Pressable style={s.primaryBtn} onPress={() => router.push('/outreach/compose')}>
-        <Ionicons name="add-circle-outline" size={18} color={C.white} />
-        <Text style={s.primaryBtnText}>New Outreach</Text>
-      </Pressable>
-      {loading ? <CenteredLoader /> : contacts.length === 0 ? (
-        <EmptyState icon="mail-outline" title="No outreach yet" body="Start contacting coaches at your matched programs. Each email you send is tracked here." />
       ) : (
-        <Card>
-          <SLabel>COACH CONTACTS</SLabel>
-          {contacts.map((c, i) => {
-            const meta = STATUS_META[c.status] ?? STATUS_META.sent;
-            return (
-              <View key={c.id} style={[s.contactRow, i < contacts.length - 1 && s.contactRowBorder]}>
-                <View style={s.avatar}>
-                  <Text style={s.avatarText}>{(c.coach_name ?? 'C')[0].toUpperCase()}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.contactName}>{c.coach_name ?? 'Unknown Coach'}</Text>
-                  <Text style={s.contactSchool}>{c.school_name ?? '—'}</Text>
-                </View>
-                <View style={[s.statusBadge, { borderColor: meta.color }]}>
-                  <Text style={[s.statusText, { color: meta.color }]}>{meta.label}</Text>
-                </View>
-              </View>
-            );
-          })}
-        </Card>
+        <EmptyState
+          icon="heart-outline"
+          title="No matches yet"
+          body="Swipe on programs that fit your level. When a coach swipes back, that's a real mutual match — and messaging opens up."
+          cta="Start Swiping"
+          onCta={() => router.push('/(tabs)/match' as any)}
+        />
       )}
+
+      <View style={{ backgroundColor: C.surface, borderRadius: 14, padding: 20, gap: 12 }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>How It Works</Text>
+        <Text style={{ fontSize: 13, color: C.textMuted, lineHeight: 20 }}>
+          Browse programs at your level and like the ones you want to hear from. No cold emails, no
+          guessing who to contact — messaging only opens once a coach matches back with you.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
-// ─── Phase 5: Relationship Management ────────────────────────────────────────
-
-function Phase5({ athleteId, phase, onBack }: {
-  athleteId: string | undefined; phase: Phase; onBack: () => void;
-}) {
-  const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
-
-  const PIPELINE = useMemo(() => [
-    { key: 'sent',       label: 'Contacted',  color: C.textDim },
-    { key: 'opened',     label: 'Opened',     color: C.primary },
-    { key: 'replied',    label: 'Replied',    color: C.success },
-    { key: 'interested', label: 'Interested', color: C.warning },
-  ], [C]);
-
-  const [contacts, setContacts] = useState<CoachContact[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!athleteId) { setLoading(false); return; }
-    supabase
-      .from('coach_outreach')
-      .select('id, coach_name, school_name, status')
-      .eq('athlete_id', athleteId)
-      .then(({ data }: { data: unknown }) => {
-        setContacts((data as CoachContact[]) ?? []);
-        setLoading(false);
-      });
-  }, [athleteId]);
-
-  const counts = PIPELINE.reduce<Record<string, number>>((acc, stage) => {
-    acc[stage.key] = contacts.filter(c => c.status === stage.key).length;
-    return acc;
-  }, {});
-
-  const schoolMap = contacts.reduce<Record<string, number>>((acc, c) => {
-    if (c.school_name) acc[c.school_name] = (acc[c.school_name] ?? 0) + 1;
-    return acc;
-  }, {});
-  const leaderboard = Object.entries(schoolMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-  return (
-    <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
-      {loading ? <CenteredLoader /> : (
-        <>
-          <Card>
-            <SLabel>RECRUITING PIPELINE</SLabel>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: 10, paddingBottom: 4 }}>
-                {PIPELINE.map(stage => (
-                  <View key={stage.key} style={s.pipelineCol}>
-                    <Text style={[s.pipelineStage, { color: stage.color }]}>{stage.label}</Text>
-                    <Text style={s.pipelineCount}>{counts[stage.key] ?? 0}</Text>
-                    <Text style={s.pipelineUnit}>schools</Text>
-                    {contacts.filter(c => c.status === stage.key).slice(0, 3).map(c => (
-                      <View key={c.id} style={s.pipelineItem}>
-                        <Text style={s.pipelineItemText} numberOfLines={1}>{c.school_name ?? '—'}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-          </Card>
-
-          <Card>
-            <SLabel>MOMENTUM LEADERBOARD</SLabel>
-            {leaderboard.length === 0 ? (
-              <Text style={s.dimText}>No outreach data yet. Start contacting coaches to build momentum.</Text>
-            ) : (
-              leaderboard.map(([school, count], i) => (
-                <View key={school} style={[s.leaderRow, i < leaderboard.length - 1 && s.leaderRowBorder]}>
-                  <Text style={s.leaderRank}>#{i + 1}</Text>
-                  <Text style={s.leaderSchool}>{school}</Text>
-                  <Text style={s.leaderCount}>{count} contact{count !== 1 ? 's' : ''}</Text>
-                </View>
-              ))
-            )}
-          </Card>
-
-          {contacts.length === 0 && (
-            <EmptyState icon="people-outline" title="Pipeline empty" body="Use Phase 4 to start contacting coaches. Your pipeline data will appear here." />
-          )}
-        </>
-      )}
-    </ScrollView>
-  );
-}
-
-// ─── Phase 6: Execute the Timeline ───────────────────────────────────────────
+// ─── Phase 4: Execute the Timeline ───────────────────────────────────────────
 
 const GROUP_ORDER = ['Today', 'This Week', 'Upcoming'] as const;
 
-function Phase6({ athleteId, phase, onBack }: {
+function Phase4({ athleteId, phase, onBack }: {
   athleteId: string | undefined; phase: Phase; onBack: () => void;
 }) {
   const C = useColors();
@@ -1026,10 +795,8 @@ export default function PhaseDetailScreen() {
   switch (phaseNumber) {
     case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
     case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} refresh={athleteData.refresh} />;
-    case 3: return <Phase3 athleteId={athleteData.athlete?.id} targetListSaved={!!athleteData.athlete?.target_list_saved_at} phase={phase} onBack={onBack} />;
+    case 3: return <Phase3 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
-    case 5: return <Phase5 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
-    case 6: return <Phase6 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
     default:
       return (
         <View style={s.center}>

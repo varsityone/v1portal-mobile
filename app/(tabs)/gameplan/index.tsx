@@ -143,8 +143,7 @@ export default function GameplanScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
 
-  const [outreachCount, setOutreachCount] = useState(0);
-  const [trackerCount, setTrackerCount] = useState(0);
+  const [matchCount, setMatchCount] = useState(0);
 
   const [sheet, setSheet] = useState<{
     visible: boolean;
@@ -154,13 +153,12 @@ export default function GameplanScreen() {
 
   const fetchCounts = useCallback(async () => {
     if (!athlete?.id) return;
-    const [{ data: outData }, { count: tCount }] = await Promise.all([
-      supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
-      supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
-    ]);
-    const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
-    setOutreachCount(sent > 0 ? sent : (outData?.length ?? 0));
-    setTrackerCount(tCount ?? 0);
+    const { count } = await supabase
+      .from('mutual_matches')
+      .select('id', { count: 'exact', head: true })
+      .eq('athlete_id', athlete.id)
+      .eq('status', 'active');
+    setMatchCount(count ?? 0);
   }, [athlete?.id]);
 
   const phaseComplete = [
@@ -175,10 +173,8 @@ export default function GameplanScreen() {
       athlete?.guardian_name && athlete?.guardian_relationship &&
       athlete?.guardian_phone && athlete?.guardian_email
     ),
-    !!athlete?.target_list_saved_at,
-    outreachCount > 0,
-    trackerCount >= 1,
-    outreachCount >= 5,
+    matchCount >= 1,
+    false,
   ];
 
   const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
@@ -216,14 +212,14 @@ export default function GameplanScreen() {
         <View style={s.header}>
           <Text style={s.title}>The Gameplan</Text>
           <Text style={s.subtitle}>
-            Six phases. One roadmap to a scholarship offer.
+            {PHASES.length} phases. One roadmap to a scholarship offer.
           </Text>
         </View>
 
         <View style={s.progressCard}>
           <View style={s.progressTop}>
             <Text style={s.progressLabel}>PHASES COMPLETED</Text>
-            <Text style={s.progressCount}>{loading ? '…' : `${completedCount} / 6`}</Text>
+            <Text style={s.progressCount}>{loading ? '…' : `${completedCount} / ${PHASES.length}`}</Text>
           </View>
           <View style={s.progressTrack}>
             {PHASES.map((_, i) => (

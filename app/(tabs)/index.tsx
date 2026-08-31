@@ -79,9 +79,6 @@ export default function DashboardScreen() {
   const styles = useMemo(() => createStyles(C), [C]);
 
   const [matchCount, setMatchCount] = useState(0);
-  const [matches, setMatches] = useState<Array<{ id: string; match_score: number; programs: { name: string; division: string; state?: string; logo_url?: string | null } | null }>>([]);
-  const [outreachCount, setOutreachCount] = useState(0);
-  const [trackerCount, setTrackerCount] = useState(0);
   const [profileViews, setProfileViews] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
   const [isScoreAnimating, setIsScoreAnimating] = useState(true);
@@ -102,23 +99,13 @@ export default function DashboardScreen() {
     if (!athlete?.id) return;
     const [
       { count: mCount },
-      { data: matchRows },
-      { data: outData },
       { count: pv },
-      { count: tCount },
     ] = await Promise.all([
-      supabase.from('matches').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
-      supabase.from('matches').select('id, match_score, programs(name, division, state, logo_url)').eq('athlete_id', athlete.id).order('match_score', { ascending: false }).limit(5),
-      supabase.from('coach_outreach').select('status').eq('athlete_id', athlete.id),
+      supabase.from('mutual_matches').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id).eq('status', 'active'),
       supabase.from('profile_views').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
-      supabase.from('coach_tracker').select('id', { count: 'exact', head: true }).eq('athlete_id', athlete.id),
     ]);
     setMatchCount(mCount ?? 0);
-    setMatches((matchRows ?? []) as unknown as typeof matches);
-    const sent = (outData ?? []).filter(o => ['sent', 'opened', 'bounced', 'replied'].includes(o.status ?? '')).length;
-    setOutreachCount(sent);
     setProfileViews(pv ?? 0);
-    setTrackerCount(tCount ?? 0);
   }, [athlete?.id]);
 
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
@@ -173,25 +160,23 @@ export default function DashboardScreen() {
       athlete?.guardian_name && athlete?.guardian_relationship &&
       athlete?.guardian_phone && athlete?.guardian_email
     ),
-    !!athlete?.target_list_saved_at,
-    outreachCount > 0,
-    trackerCount >= 1,
-    outreachCount >= 5,
+    matchCount >= 1,
+    false,
   ];
 
   const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
 
   const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
   const curPhaseIdx = phaseEffectiveDone.findIndex(c => !c);
-  const activePhaseIdx = curPhaseIdx === -1 ? 5 : curPhaseIdx;
+  const activePhaseIdx = curPhaseIdx === -1 ? PHASES.length - 1 : curPhaseIdx;
   const completedCount = phaseEffectiveDone.filter(Boolean).length;
-  const progressPct = (completedCount / 6) * 100;
+  const progressPct = (completedCount / PHASES.length) * 100;
 
   const statusMsg = completedCount === 0
     ? "Let's get you recruited. Start with Phase 1 below."
-    : completedCount === 6
-    ? "You've completed all 6 phases. Stay active and keep pushing."
-    : `You're on Phase ${activePhaseIdx + 1} of 6. Keep the momentum going.`;
+    : completedCount === PHASES.length
+    ? `You've completed all ${PHASES.length} phases. Stay active and keep pushing.`
+    : `You're on Phase ${activePhaseIdx + 1} of ${PHASES.length}. Keep the momentum going.`;
 
   const handleRefresh = async () => {
     await Promise.all([refresh(), fetchCounts()]);
@@ -315,7 +300,7 @@ export default function DashboardScreen() {
           {/* Floating pill label */}
           <View style={styles.progressBarPill}>
             <Text style={styles.progressBarPillText}>
-              {completedCount === 6 ? 'Complete!' : `Phase ${activePhaseIdx + 1} of 6`}
+              {completedCount === PHASES.length ? 'Complete!' : `Phase ${activePhaseIdx + 1} of ${PHASES.length}`}
             </Text>
           </View>
         </View>
@@ -338,9 +323,7 @@ export default function DashboardScreen() {
           if (done) {
             if (i === 0) sub = 'Takes ~12 minutes';
             else if (i === 1) sub = 'Profile complete';
-            else if (i === 2) sub = 'Target list locked in';
-            else if (i === 3) sub = 'Outreach sent';
-            else if (i === 4) sub = 'Coaches tracked';
+            else if (i === 2) sub = 'Matched with a program';
             else sub = 'Phase complete';
           } else if (active) {
             if (i === 0) sub = 'Takes ~12 minutes';
@@ -357,9 +340,7 @@ export default function DashboardScreen() {
               ];
               const left = fields.filter(f => !f).length;
               sub = left > 0 ? `${left} of 17 fields left` : 'Ready to complete';
-            } else if (i === 2) sub = athlete?.target_list_saved_at ? 'Target list locked in' : 'Review your list';
-            else if (i === 3) sub = 'Email templates ready';
-            else if (i === 4) sub = trackerCount > 0 ? `${trackerCount} coach${trackerCount !== 1 ? 'es' : ''} tracked` : 'Track your first coach';
+            } else if (i === 2) sub = matchCount > 0 ? `${matchCount} match${matchCount !== 1 ? 'es' : ''} so far` : 'Start swiping';
             else sub = 'Final phase';
           } else if (locked && i > 0) {
             sub = `Complete Phase ${i} first`;
@@ -438,8 +419,7 @@ export default function DashboardScreen() {
       <View style={styles.statsRow}>
         {[
           { label: 'Profile Views', value: profileViews, icon: 'eye-outline' as const },
-          { label: 'Emails Sent', value: outreachCount, icon: 'mail-outline' as const },
-          { label: 'Programs', value: matchCount, icon: 'school-outline' as const },
+          { label: 'Programs Matched', value: matchCount, icon: 'heart-outline' as const },
         ].map((stat, i) => (
           <View key={i} style={styles.statCard}>
             <Ionicons name={stat.icon} size={16} color={C.icon} />
@@ -508,49 +488,18 @@ export default function DashboardScreen() {
       <View style={styles.matchCard}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Program Matches</Text>
-          {matchCount > 0 && (
-            <Pressable onPress={() => router.push('/(tabs)/programs' as any)}>
-              <Text style={styles.sectionLink}>See All</Text>
-            </Pressable>
-          )}
         </View>
-        {matchCount === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 20, gap: 8 }}>
-            <Ionicons name="school-outline" size={26} color={C.textMuted} />
-            <Text style={styles.matchGateText}>
-              {assessment ? 'Matches generating...' : 'Complete your assessment to see matched programs.'}
-            </Text>
-          </View>
-        ) : (
-          <>
-            {matches.map((m, idx) => {
-              const prog = Array.isArray(m.programs) ? (m.programs as any)[0] : m.programs;
-              const nameInitials = (prog?.name ?? 'P').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-              return (
-                <View key={m.id} style={[styles.matchRow, idx < matches.length - 1 && styles.matchRowBorder]}>
-                  {prog?.logo_url ? (
-                    <Image source={{ uri: prog.logo_url }} style={styles.matchLogo} resizeMode="contain" />
-                  ) : (
-                    <View style={styles.matchAv}>
-                      <Text style={styles.matchAvText}>{nameInitials}</Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.matchName} numberOfLines={1}>{prog?.name ?? 'Program'}</Text>
-                    <Text style={styles.matchDiv}>{prog?.division ?? ''}{prog?.state ? ` · ${prog.state}` : ''}</Text>
-                  </View>
-                  <Text style={styles.matchPct}>{m.match_score}%</Text>
-                </View>
-              );
-            })}
-            <Pressable
-              style={({ pressed }) => [styles.matchViewAllBtn, pressed && { opacity: 0.75 }]}
-              onPress={() => router.push('/(tabs)/programs' as any)}
-            >
-              <Text style={styles.matchViewAllText}>View All Programs</Text>
-            </Pressable>
-          </>
-        )}
+        <Text style={styles.matchGateText}>
+          {matchCount > 0
+            ? `You have ${matchCount} mutual match${matchCount === 1 ? '' : 'es'} waiting.`
+            : 'Swipe on programs that fit your level to start getting matched with coaches.'}
+        </Text>
+        <Pressable
+          style={({ pressed }) => [styles.matchViewAllBtn, pressed && { opacity: 0.75 }]}
+          onPress={() => router.push('/(tabs)/match' as any)}
+        >
+          <Text style={styles.matchViewAllText}>{matchCount > 0 ? 'View My Matches' : 'Start Swiping'}</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

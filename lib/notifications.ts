@@ -100,14 +100,14 @@ export async function scheduleLocalNotification(
 
 // ─── Routing ──────────────────────────────────────────────────────────────────
 
-export type NotificationScreen = '/(tabs)' | '/(tabs)/outreach' | '/(tabs)/gameplan' | '/(tabs)/profile';
+export type NotificationScreen = '/(tabs)' | '/(tabs)/match' | '/(tabs)/gameplan' | '/(tabs)/profile';
 
 export function getRouteFromNotification(
   notification: Notifications.Notification,
 ): NotificationScreen {
   const data = notification.request.content.data as Record<string, unknown>;
   switch (data?.screen as string | undefined) {
-    case 'outreach': return '/(tabs)/outreach';
+    case 'match':    return '/(tabs)/match';
     case 'gameplan': return '/(tabs)/gameplan';
     case 'profile':  return '/(tabs)/profile';
     default:         return '/(tabs)';
