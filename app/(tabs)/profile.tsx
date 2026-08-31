@@ -6,7 +6,6 @@ import {
   Linking,
   Modal,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,22 +16,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { ThemeColors } from '../../constants/Colors';
+import { GRADIENT, SCORE_GRADIENT, ThemeColors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const IG_GRADIENT: [string, string, string, string] = ['#833AB4', '#C13584', '#E1306C', '#FCAF45'];
-const SCORE_GRADIENT: [string, string] = ['#ff0000', '#aa00ff'];
+const API_BASE = 'https://v1portal.com';
 
 const BREAKDOWN_BARS = [
-  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical',   color: '#7b7b7b' },
-  { label: 'Football Production', key: 'production',  fallback: null,         color: '#7b7b7b' },
-  { label: 'Academic',            key: 'academic',    fallback: null,         color: '#7b7b7b' },
-  { label: 'Intangibles',         key: 'intangibles', fallback: null,         color: '#7b7b7b' },
+  { label: 'Athletic / Physical', key: 'athletic',    fallback: 'physical' },
+  { label: 'Football Production', key: 'production',  fallback: null },
+  { label: 'Academic',            key: 'academic',    fallback: null },
+  { label: 'Intangibles',         key: 'intangibles', fallback: null },
 ];
 
-const TABS = ['Overview', 'Film', 'Stats', 'Schools'] as const;
+const TABS = ['Overview', 'Film', 'Stats'] as const;
 type Tab = typeof TABS[number];
 
 function getRecruitingLevel(score: number | null): string {
@@ -70,6 +67,16 @@ interface ProfileData {
   twitter_handle: string | null;
   instagram_handle: string | null;
   v1_score: number | null;
+  profile_slug: string | null;
+}
+
+interface TopFitProgram {
+  id: string;
+  name: string;
+  division: string;
+  logoUrl: string | null;
+  fitPct: number;
+  tag: string;
 }
 
 // ── Edit Modal ────────────────────────────────────────────────────────────────
@@ -227,11 +234,17 @@ export default function ProfileScreen() {
   const [profile,    setProfile]    = useState<ProfileData | null>(null);
   const [breakdown,  setBreakdown]  = useState<Record<string, any>>({});
   const [seasonStats,setSeasonStats]= useState<Record<string, any>>({});
-  const [matches,    setMatches]    = useState<{ match_score: number | null; programs: { name: string; division: string } | null }[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState<Tab>('Overview');
   const [editing,    setEditing]    = useState(false);
   const [assessRes,  setAssessRes]  = useState<Record<string, any>>({});
+
+  // Computed display-only fields (star rating, completeness badge, fit list) —
+  // sourced from the same API web's own public profile uses, rather than
+  // reimplementing the fit-score/star-rating logic a second time here.
+  const [starRatingNum, setStarRatingNum] = useState(0);
+  const [profileComplete, setProfileComplete] = useState(false);
+  const [topFitPrograms, setTopFitPrograms] = useState<TopFitProgram[]>([]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -243,7 +256,7 @@ export default function ProfileScreen() {
       let athleteRow: ProfileData | null = null;
       const { data: byUser } = await supabase
         .from('athletes')
-        .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score')
+        .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
         .eq('user_id', userId)
         .maybeSingle();
       athleteRow = byUser as ProfileData | null;
@@ -251,7 +264,7 @@ export default function ProfileScreen() {
       if (!athleteRow) {
         const { data: byLinked } = await supabase
           .from('athletes')
-          .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score')
+          .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
           .eq('linked_user_id', userId)
           .maybeSingle();
         athleteRow = byLinked as ProfileData | null;
@@ -260,22 +273,14 @@ export default function ProfileScreen() {
       if (!athleteRow) { setLoading(false); return; }
       setProfile(athleteRow);
 
-      const [{ data: assessRow }, { data: matchRows }] = await Promise.all([
-        supabase
-          .from('assessments')
-          .select('v1_score, score_breakdown, responses')
-          .eq('athlete_id', athleteRow.id)
-          .eq('status', 'completed')
-          .order('completed_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from('matches')
-          .select('match_score, programs(name, division)')
-          .eq('athlete_id', athleteRow.id)
-          .order('match_score', { ascending: false })
-          .limit(20),
-      ]);
+      const { data: assessRow } = await supabase
+        .from('assessments')
+        .select('v1_score, score_breakdown, responses')
+        .eq('athlete_id', athleteRow.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (assessRow) {
         const rawBd = (assessRow as any).score_breakdown;
@@ -301,10 +306,22 @@ export default function ProfileScreen() {
         });
         setSeasonStats(ss);
         setAssessRes(r);
-
       }
 
-      if (matchRows) setMatches(matchRows as any);
+      if (athleteRow.profile_slug) {
+        try {
+          const res = await fetch(`${API_BASE}/api/profile/${athleteRow.profile_slug}`);
+          if (res.ok) {
+            const data = await res.json();
+            setStarRatingNum(data.starRatingNum ?? 0);
+            setProfileComplete(!!data.profileComplete);
+            setTopFitPrograms(data.topFitPrograms ?? []);
+          }
+        } catch {
+          // Falls back to no star rating / no fit list — the core profile still works.
+        }
+      }
+
       setLoading(false);
     }
 
@@ -347,79 +364,84 @@ export default function ProfileScreen() {
   const threeCone   = profile?.three_cone    || assessRes.three_cone   || null;
   const broadJump   = profile?.broad_jump    || assessRes.broad_jump   || null;
 
-  const metrics = [
-    profile?.height ? { label: 'HEIGHT',  value: profile.height,        sub: ''    }            : null,
-    profile?.weight ? { label: 'WEIGHT',  value: String(profile.weight), sub: 'lbs' }            : null,
-    fortyYard       ? { label: '40-YARD', value: String(fortyYard),      sub: 's',  green: true } : null,
-    profile?.gpa    ? { label: 'GPA',     value: String(profile.gpa),    sub: '',   green: true } : null,
-  ].filter(Boolean) as { label: string; value: string; sub: string; green?: boolean }[];
+  const metaParts = [profile?.position, profile?.height, profile?.weight ? `${profile.weight} lbs` : null, profile?.graduation_year ? `Class of ${profile.graduation_year}` : null].filter(Boolean);
+  const locationText = [profile?.city, profile?.state].filter(Boolean).join(', ');
+
+  const combineStats = [
+    { label: '40 YD', value: fortyYard, suffix: 's' },
+    { label: 'Shuttle', value: proShuttle, suffix: 's' },
+    { label: 'Vert', value: vertical, suffix: '"' },
+  ].filter(st => st.value);
 
   return (
     <>
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* ── Hero ── */}
-        <View style={s.heroRow}>
-          {/* Left: photo + basic info */}
-          <View style={s.heroLeft}>
-            {profile?.profile_photo_url ? (
-              <Image source={{ uri: profile.profile_photo_url }} style={s.photo} />
-            ) : (
-              <LinearGradient colors={IG_GRADIENT} style={s.photo} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Text style={s.initials}>{initials}</Text>
+        <View style={s.hero}>
+          {profile?.profile_photo_url ? (
+            <Image source={{ uri: profile.profile_photo_url }} style={StyleSheet.absoluteFill} />
+          ) : (
+            <LinearGradient colors={['#1a1a2e', '#0a0a0c']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <View style={s.initialsWrap}><Text style={s.initials}>{initials}</Text></View>
+            </LinearGradient>
+          )}
+          <View style={s.heroScrim} />
+
+          {score !== null && (
+            <View style={s.scoreRing}>
+              <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreRingGradient}>
+                <View style={s.scoreRingInner}>
+                  <Text style={s.scoreNum}>{score}</Text>
+                  <Text style={s.scoreLabel}>V1 SCORE</Text>
+                </View>
               </LinearGradient>
-            )}
-            <Text style={s.heroName}>{name}</Text>
-            {!!(profile?.position || level) && (
-              <Text style={s.heroSub}>{[profile?.position, level].filter(Boolean).join(' · ')}</Text>
-            )}
-            {!!(profile?.high_school || profile?.city || profile?.state) && (
-              <Text style={s.heroLocation}>
-                {[profile?.high_school, profile?.city, profile?.state].filter(Boolean).join(' · ')}
-              </Text>
-            )}
-            {!!profile?.graduation_year && (
-              <Text style={s.heroClass}>Class of {profile.graduation_year}</Text>
+            </View>
+          )}
+
+          <View style={s.heroInfo}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <Text style={s.heroName}>{name}</Text>
+              {profileComplete && (
+                <Image source={require('../../assets/logo-mark.png')} style={{ width: 16, height: 20 }} resizeMode="contain" />
+              )}
+            </View>
+            {metaParts.length > 0 && <Text style={s.heroMeta}>{metaParts.join(' · ')}</Text>}
+            {(locationText || starRatingNum > 0) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }}>
+                {locationText ? <Text style={s.heroLocation}>{locationText}</Text> : null}
+                {starRatingNum > 0 && (
+                  <View style={{ flexDirection: 'row', gap: 2 }}>
+                    {[0, 1, 2, 3, 4].map(i => (
+                      <Ionicons key={i} name="star" size={11} color={i < starRatingNum ? '#F6BA00' : 'rgba(255,255,255,0.25)'} />
+                    ))}
+                  </View>
+                )}
+              </View>
             )}
             <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
-              <Ionicons name="create" size={14} color="#fff" />
+              <Ionicons name="create-outline" size={13} color="#fff" />
               <Text style={s.editBtnText}>Edit Profile</Text>
             </Pressable>
           </View>
-
-          {/* Right: 2x2 metrics grid + V1 score card */}
-          <View style={s.heroRight}>
-            {metrics.length > 0 && (
-              <View style={s.metricsGrid}>
-                {metrics.slice(0, 4).map(m => (
-                  <View key={m.label} style={s.metricBox}>
-                    <Text style={s.metricLabel}>{m.label}</Text>
-                    <Text style={[s.metricValue, m.green && { color: '#10b981' }]}>
-                      {m.value}
-                      {m.sub ? <Text style={s.metricSub}>{' '}{m.sub}</Text> : null}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {score !== null && (
-              <LinearGradient colors={SCORE_GRADIENT} style={s.scoreCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Text style={s.scoreLabel}>V1 Score</Text>
-                <Text style={s.scoreNum}>{score}</Text>
-                {level ? <Text style={s.scoreLevel}>{level}</Text> : null}
-              </LinearGradient>
-            )}
-          </View>
         </View>
+
+        {/* ── Combine stats ── */}
+        {combineStats.length > 0 && (
+          <View style={s.statsRow}>
+            {combineStats.map(st => (
+              <View key={st.label} style={s.statCard}>
+                <Text style={s.statCardLabel}>{st.label.toUpperCase()}</Text>
+                <Text style={s.statCardValue}>{st.value}{st.suffix}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ── Tab Bar ── */}
         <View style={s.tabBar}>
           {TABS.map(t => (
             <Pressable key={t} style={s.tabBtn} onPress={() => setTab(t)}>
-              <Text style={[s.tabText, tab === t && s.tabActive]}>{t}</Text>
+              <Text style={[s.tabText, tab === t && s.tabActive]}>{t.toUpperCase()}</Text>
               {tab === t && <View style={s.tabUnderline} />}
             </Pressable>
           ))}
@@ -448,14 +470,40 @@ export default function ProfileScreen() {
                       <View key={bar.key}>
                         <View style={s.barLabelRow}>
                           <Text style={s.barLabel}>{bar.label}</Text>
-                          <Text style={[s.barValue, { color: bar.color }]}>{val}</Text>
+                          <Text style={s.barValue}>{val}</Text>
                         </View>
                         <View style={s.barTrack}>
-                          <View style={[s.barFill, { width: `${val}%` as any, backgroundColor: bar.color }]} />
+                          <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.barFill, { width: `${val}%` as any }]} />
                         </View>
                       </View>
                     );
                   })}
+                </View>
+              </View>
+            )}
+
+            {topFitPrograms.length > 0 && (
+              <View style={s.card}>
+                <Text style={s.cardTitle}>Top Fit Programs</Text>
+                <View style={{ gap: 2 }}>
+                  {topFitPrograms.map(p => (
+                    <View key={p.id} style={s.fitRow}>
+                      {p.logoUrl ? (
+                        <Image source={{ uri: p.logoUrl }} style={s.fitLogo} resizeMode="contain" />
+                      ) : (
+                        <View style={[s.fitLogo, { backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' }]}>
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: C.textMuted }}>{p.name.slice(0, 2).toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.fitName}>{p.name}</Text>
+                        <Text style={s.fitMeta}>{p.fitPct}% Fit · {p.tag}</Text>
+                      </View>
+                      <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.fitBadge}>
+                        <Text style={s.fitBadgeText}>{p.fitPct}</Text>
+                      </LinearGradient>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
@@ -471,7 +519,7 @@ export default function ProfileScreen() {
                 { label: 'GPA',         value: profile?.gpa },
                 { label: 'Grad Year',   value: profile?.graduation_year },
                 { label: 'High School', value: profile?.high_school },
-                { label: 'Location',    value: [profile?.city, profile?.state].filter(Boolean).join(', ') || null },
+                { label: 'Location',    value: locationText || null },
               ].filter(r => r.value).map((row, i, arr) => (
                 <View key={row.label} style={[s.infoRow, i < arr.length - 1 && s.infoRowBorder]}>
                   <Text style={s.infoLabel}>{row.label}</Text>
@@ -485,7 +533,6 @@ export default function ProfileScreen() {
         {/* ── Film ── */}
         {tab === 'Film' && (
           <View style={s.section}>
-            <Text style={s.sectionHeading}>Film</Text>
             {hasHudl && (
               <Pressable style={s.filmCard} onPress={() => hudlHref && Linking.openURL(hudlHref)}>
                 <View style={s.filmPlayCircle}>
@@ -529,9 +576,9 @@ export default function ProfileScreen() {
             {Object.keys(seasonStats).length > 0 ? (
               <View style={s.statsGrid}>
                 {Object.entries(seasonStats).map(([label, val]) => (
-                  <View key={label} style={s.statBox}>
-                    <Text style={s.statLabel}>{label}</Text>
-                    <Text style={s.statValue}>{String(val)}</Text>
+                  <View key={label} style={s.miniStatBox}>
+                    <Text style={s.miniStatLabel}>{label}</Text>
+                    <Text style={s.miniStatValue}>{String(val)}</Text>
                   </View>
                 ))}
               </View>
@@ -554,45 +601,13 @@ export default function ProfileScreen() {
                     { label: '3-Cone',      value: threeCone,   unit: 's' },
                     { label: 'Broad Jump',  value: broadJump,   unit: '"' },
                   ].filter(r => r.value).map(r => (
-                    <View key={r.label} style={s.statBox}>
-                      <Text style={s.statLabel}>{r.label}</Text>
-                      <Text style={s.statValue}>{r.value}{r.unit}</Text>
+                    <View key={r.label} style={s.miniStatBox}>
+                      <Text style={s.miniStatLabel}>{r.label}</Text>
+                      <Text style={s.miniStatValue}>{r.value}{r.unit}</Text>
                     </View>
                   ))}
                 </View>
               </>
-            )}
-          </View>
-        )}
-
-        {/* ── Schools ── */}
-        {tab === 'Schools' && (
-          <View style={s.section}>
-            <Text style={s.sectionHeading}>Top Program Matches</Text>
-            {matches.length > 0 ? (
-              <View style={{ gap: 10 }}>
-                {matches.map((m, i) => (
-                  <View key={i} style={s.matchRow}>
-                    <View style={s.matchRank}>
-                      <Text style={s.matchRankText}>{i + 1}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.matchName}>{m.programs?.name ?? '—'}</Text>
-                      <Text style={s.matchDiv}>{m.programs?.division ?? ''}</Text>
-                    </View>
-                    {m.match_score !== null && (
-                      <Text style={s.matchScore}>{Math.round(m.match_score)}%</Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-                <Ionicons name="school-outline" size={32} color={C.icon} />
-                <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
-                  No program matches yet.{'\n'}Complete your profile and assessment.
-                </Text>
-              </View>
             )}
           </View>
         )}
@@ -628,75 +643,73 @@ function createStyles(C: ThemeColors) {
     scroll: { flex: 1, backgroundColor: C.background },
     container: { paddingBottom: 60 },
 
-    heroRow: { flexDirection: 'row', gap: 14, paddingTop: 24, paddingHorizontal: 16, paddingBottom: 16, alignItems: 'flex-start' },
-    heroLeft: { width: 148, gap: 5 },
-    heroRight: { flex: 1, gap: 10 },
-    photo: { width: 140, height: 140, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-    initials: { fontSize: 48, fontWeight: '900', color: '#fff' },
-    heroName: { fontSize: 18, fontWeight: '900', color: C.text, letterSpacing: -0.3, lineHeight: 22 },
-    heroSub: { fontSize: 12, fontWeight: '700', color: C.textMuted },
-    heroLocation: { fontSize: 11, color: C.textMuted, lineHeight: 15 },
-    heroClass: { fontSize: 11, color: C.textDim },
-    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100, backgroundColor: C.primary + '18', marginTop: 6, alignSelf: 'flex-start' },
-    editBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
+    hero: { height: 340, position: 'relative', overflow: 'hidden' },
+    heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', borderBottomWidth: 0 },
+    initialsWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    initials: { fontFamily: FontFamily.headline, fontSize: 72, color: 'rgba(255,255,255,0.15)' },
 
-    metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    metricBox: { backgroundColor: C.surface, borderRadius: 10, padding: 10, flexBasis: '47%', flexGrow: 1 },
-    metricLabel: { fontSize: 9, fontWeight: '700', color: C.textDim, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
-    metricValue: { fontSize: 20, fontWeight: '900', color: C.text, letterSpacing: -0.5 },
-    metricSub: { fontSize: 11, color: C.textDim, fontWeight: '400' },
+    scoreRing: { position: 'absolute', top: 56, right: 18, width: 76, height: 76, borderRadius: 38 },
+    scoreRingGradient: { flex: 1, borderRadius: 38, padding: 3 },
+    scoreRingInner: { flex: 1, borderRadius: 35, backgroundColor: '#0c0d0e', alignItems: 'center', justifyContent: 'center' },
+    scoreNum: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
+    scoreLabel: { fontFamily: FontFamily.mono, fontSize: 7, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
 
-    scoreCard: { borderRadius: 14, padding: 16 },
-    scoreLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginBottom: 4 },
-    scoreNum: { fontSize: 40, fontWeight: '900', color: '#fff', lineHeight: 44, letterSpacing: -2 },
-    scoreLevel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-    scoreDesc: { fontSize: 12, lineHeight: 18, color: 'rgba(255,255,255,0.85)' },
+    heroInfo: { position: 'absolute', left: 18, right: 18, bottom: 18 },
+    heroName: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
+    heroMeta: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 6 },
+    heroLocation: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.65)' },
+    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 7, marginTop: 12, alignSelf: 'flex-start' },
+    editBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
-    tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 20, gap: 24, borderBottomWidth: 1, borderBottomColor: C.border },
-    tabBtn: { paddingBottom: 12, position: 'relative' },
-    tabText: { fontSize: 13, fontWeight: '500', color: C.textMuted },
-    tabActive: { color: C.text, fontWeight: '700' },
-    tabUnderline: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, backgroundColor: C.primary, borderRadius: 1 },
+    statsRow: { flexDirection: 'row', gap: 10, marginTop: -24, marginHorizontal: 16, position: 'relative', zIndex: 2 },
+    statCard: { flex: 1, backgroundColor: C.surface, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+    statCardLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, marginBottom: 6 },
+    statCardValue: { fontFamily: FontFamily.headline, fontSize: 20, color: C.text },
+
+    tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 24, gap: 22 },
+    tabBtn: { paddingBottom: 10, position: 'relative' },
+    tabText: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 0.5 },
+    tabActive: { color: C.text },
+    tabUnderline: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, backgroundColor: '#F6BA00', borderRadius: 1 },
 
     section: { paddingHorizontal: 20, paddingTop: 20, gap: 16, paddingBottom: 8 },
-    sectionHeading: { fontSize: 18, fontWeight: '800', color: C.text },
-    card: { backgroundColor: C.surface, borderRadius: 14, padding: 18, gap: 12 },
-    cardTitle: { fontSize: 16, fontWeight: '800', color: C.text },
-    bio: { fontSize: 14, lineHeight: 21, color: C.textMuted },
+    sectionHeading: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+    card: { backgroundColor: C.surface, borderRadius: 16, padding: 18, gap: 12 },
+    cardTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text },
+    bio: { fontFamily: FontFamily.body, fontSize: 14, lineHeight: 21, color: C.textMuted },
 
     barLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    barLabel: { fontSize: 13, fontWeight: '600', color: C.text },
-    barValue: { fontSize: 13, fontWeight: '800' },
+    barLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
+    barValue: { fontFamily: FontFamily.headline, fontSize: 14, color: C.text },
     barTrack: { height: 6, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-    barFill: { height: '100%' },
+    barFill: { height: '100%', borderRadius: 3 },
+
+    fitRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 },
+    fitLogo: { width: 32, height: 32, borderRadius: 8 },
+    fitName: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
+    fitMeta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textMuted, marginTop: 2 },
+    fitBadge: { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 5 },
+    fitBadgeText: { fontFamily: FontFamily.headline, fontSize: 12, color: '#fff' },
 
     infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
     infoRowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
-    infoLabel: { fontSize: 12, color: C.textDim, fontWeight: '500' },
-    infoValue: { fontSize: 13, color: C.text, fontWeight: '700' },
+    infoLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
+    infoValue: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
 
     filmCard: { backgroundColor: '#1a1a2e', borderRadius: 16, padding: 28, alignItems: 'center', gap: 12, minHeight: 200, justifyContent: 'center' },
     filmPlayCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    filmCardTitle: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
-    filmCardSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
+    filmCardTitle: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
+    filmCardSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center' },
     filmLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100, marginTop: 4 },
-    filmLinkText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+    filmLinkText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
     ytCard: { backgroundColor: C.surfaceAlt, borderRadius: 10, padding: 24, alignItems: 'center', gap: 10 },
-    ytText: { fontSize: 13, fontWeight: '600', color: C.text },
+    ytText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.text },
     addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary + '20' },
-    addFilmText: { fontSize: 13, fontWeight: '700', color: C.primary },
+    addFilmText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
 
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    statBox: { width: '47%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
-    statLabel: { fontSize: 11, fontWeight: '700', color: C.textMuted, letterSpacing: 0.3, textAlign: 'center', marginBottom: 8 },
-    statValue: { fontSize: 28, fontWeight: '900', color: C.textMuted },
-
-    matchRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: 12, padding: 16 },
-    matchRank: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-    matchRankText: { fontSize: 15, fontWeight: '700', color: C.text },
-    matchName: { fontSize: 14, fontWeight: '700', color: C.text },
-    matchDiv: { fontSize: 12, color: C.textMuted, marginTop: 2 },
-    matchScore: { fontSize: 22, fontWeight: '900', color: C.text },
-
+    miniStatBox: { width: '47%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
+    miniStatLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textMuted, textAlign: 'center', marginBottom: 8 },
+    miniStatValue: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
   });
 }
