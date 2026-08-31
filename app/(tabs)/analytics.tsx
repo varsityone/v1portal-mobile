@@ -14,11 +14,11 @@ import Svg, {
   Path,
   Stop,
 } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
+import { DIVISION_ORDER, DIVISION_LABELS, Division } from '../../constants/RecruitingLevels';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,20 +32,28 @@ interface ProfileViewStats {
   chartData: ChartPoint[];
 }
 
-interface OutreachStats {
-  total: number;
-  sent: number;
-  opened: number;
-  bounced: number;
+interface MatchActivity {
+  reviewed: number;
+  liked: number;
+  matched: number;
+  messagesSent: number;
+  coachesWhoReplied: number;
 }
 
-interface TierStat { total: number; contacted: number; interested: number; offer: number; }
+interface DivStat { liked: number; matched: number; messaged: number; }
+
+interface CoachMomentum {
+  name: string;
+  school: string;
+  division: string;
+  messagesSent: number;
+  messagesReceived: number;
+}
 
 interface RecruitingData {
-  tierStats: Record<string, TierStat>;
-  templateStats: Record<string, { sent: number; opened: number }>;
-  avgResponseTime: Record<string, number>;
-  coachMomentum: { name: string; status: string; emailsSent: number; emailsOpened: number }[];
+  divStats: Record<Division, DivStat>;
+  avgResponseTime: Partial<Record<Division, number>>;
+  coachMomentum: CoachMomentum[];
 }
 
 // ── Bezier path ───────────────────────────────────────────────────────────────
@@ -87,13 +95,13 @@ function ProfileViewsChart({ data, width, C }: { data: ChartPoint[]; width: numb
     <Svg width={width} height={H}>
       <Defs>
         <SvgGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor="#501aff" stopOpacity="0.35" />
-          <Stop offset="100%" stopColor="#501aff" stopOpacity="0" />
+          <Stop offset="0%" stopColor="#EA0C5F" stopOpacity="0.35" />
+          <Stop offset="100%" stopColor="#EA0C5F" stopOpacity="0" />
         </SvgGradient>
         <SvgGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0%" stopColor="#501aff" />
-          <Stop offset="55%" stopColor="#a855f7" />
-          <Stop offset="100%" stopColor="#ec4899" />
+          <Stop offset="0%" stopColor="#EA0C5F" />
+          <Stop offset="55%" stopColor="#FF5341" />
+          <Stop offset="100%" stopColor="#F6BA00" />
         </SvgGradient>
       </Defs>
       {[0.25, 0.5, 0.75].map(t => (
@@ -105,7 +113,7 @@ function ProfileViewsChart({ data, width, C }: { data: ChartPoint[]; width: numb
         />
       ))}
       {area ? <Path d={area} fill="url(#areaGrad)" /> : null}
-      {line ? <Path d={line} fill="none" stroke="#501aff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.25" /> : null}
+      {line ? <Path d={line} fill="none" stroke="#EA0C5F" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.25" /> : null}
       {line ? <Path d={line} fill="none" stroke="url(#lineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /> : null}
     </Svg>
   );
@@ -143,7 +151,7 @@ export default function AnalyticsScreen() {
   const chartWidth = deviceWidth - 40 - 32;
 
   const [profileViews, setProfileViews] = useState<ProfileViewStats | null>(null);
-  const [outreach, setOutreach] = useState<OutreachStats | null>(null);
+  const [matchActivity, setMatchActivity] = useState<MatchActivity | null>(null);
   const [recruiting, setRecruiting] = useState<RecruitingData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -200,100 +208,106 @@ export default function AnalyticsScreen() {
 
     setProfileViews({ total: totalViews ?? 0, unique: uniqueViews, last7Days, last30Days, chartData });
 
-    // ── Outreach ───────────────────────────────────────────────────────────────
-    const { data: outreachData } = await supabase
-      .from('coach_outreach')
-      .select('status, sent_at, opened_at, template_used, program_id')
+    // ── Match activity — mirrors web's /api/analytics matchActivity block ──────
+    const { data: swipeData } = await supabase
+      .from('swipes')
+      .select('coach_id, direction')
+      .eq('athlete_id', athlete.id)
+      .eq('swiped_by', 'athlete');
+
+    const { data: matchRows } = await supabase
+      .from('mutual_matches')
+      .select('id, coach_id, matched_at, coach:coach_accounts(full_name, school_name, division)')
       .eq('athlete_id', athlete.id);
 
-    const od = outreachData ?? [];
-    const outreachStats: OutreachStats = {
-      total: od.length,
-      sent: od.filter((o: any) => ['sent', 'opened', 'bounced'].includes(o.status ?? '')).length,
-      opened: od.filter((o: any) => o.status === 'opened').length,
-      bounced: od.filter((o: any) => o.status === 'bounced').length,
-    };
-    setOutreach(outreachStats);
+    const mr = matchRows ?? [];
+    const matchIds = mr.map((m: any) => m.id);
 
-    // ── Recruiting Intelligence ────────────────────────────────────────────────
+    let messages: { match_id: string; sender_type: string; created_at: string }[] = [];
+    if (matchIds.length > 0) {
+      const { data: msgRows } = await supabase
+        .from('match_messages')
+        .select('match_id, sender_type, created_at')
+        .in('match_id', matchIds)
+        .order('created_at', { ascending: true });
+      messages = msgRows ?? [];
+    }
+
+    setMatchActivity({
+      reviewed: swipeData?.length ?? 0,
+      liked: swipeData?.filter((sw: any) => sw.direction === 'like').length ?? 0,
+      matched: matchIds.length,
+      messagesSent: messages.filter(m => m.sender_type === 'athlete').length,
+      coachesWhoReplied: new Set(messages.filter(m => m.sender_type === 'coach').map(m => m.match_id)).size,
+    });
+
+    // ── Recruiting Intelligence — mirrors web's recruiting-analytics-section ───
     {
-      const { data: trackerData } = await supabase
-        .from('coach_tracker')
-        .select('id, status, coach:coaches(id, name, programs(id, name, division))')
-        .eq('athlete_id', athlete.id);
+      const likedCoachIds = (swipeData ?? []).filter((sw: any) => sw.direction === 'like').map((sw: any) => sw.coach_id);
+      let likedCoachDivisions: Record<string, string> = {};
+      if (likedCoachIds.length > 0) {
+        const { data: coachRows } = await supabase
+          .from('coach_accounts')
+          .select('id, division')
+          .in('id', likedCoachIds);
+        likedCoachDivisions = Object.fromEntries((coachRows ?? []).map((c: any) => [c.id, c.division]));
+      }
 
-      const td = trackerData ?? [];
+      const divStats = Object.fromEntries(DIVISION_ORDER.map(d => [d, { liked: 0, matched: 0, messaged: 0 }])) as Record<Division, DivStat>;
+      Object.values(likedCoachDivisions).forEach((division: any) => {
+        if (divStats[division as Division]) divStats[division as Division].liked++;
+      });
 
-      const getTier = (division: string | null) => division ? division.split('/')[0] : 'Unknown';
+      const messagedMatchIds = new Set(messages.filter(m => m.sender_type === 'athlete').map(m => m.match_id));
+      mr.forEach((m: any) => {
+        const division = (Array.isArray(m.coach) ? m.coach[0]?.division : m.coach?.division) as Division | undefined;
+        if (!division || !divStats[division]) return;
+        divStats[division].matched++;
+        divStats[division].liked++; // a matched coach was necessarily liked first
+        if (messagedMatchIds.has(m.id)) divStats[division].messaged++;
+      });
 
-      const tierStats: Record<string, TierStat> = {
-        FBS:  { total: 0, contacted: 0, interested: 0, offer: 0 },
-        FCS:  { total: 0, contacted: 0, interested: 0, offer: 0 },
-        D2:   { total: 0, contacted: 0, interested: 0, offer: 0 },
-        D3:   { total: 0, contacted: 0, interested: 0, offer: 0 },
-        NAIA: { total: 0, contacted: 0, interested: 0, offer: 0 },
-        JUCO: { total: 0, contacted: 0, interested: 0, offer: 0 },
-      };
-
-      td.forEach((entry: any) => {
-        const prog = Array.isArray(entry.coach?.programs) ? entry.coach.programs[0] : entry.coach?.programs;
-        const tier = getTier(prog?.division ?? null);
-        if (tierStats[tier]) {
-          tierStats[tier].total++;
-          if (entry.status !== 'not_contacted') tierStats[tier].contacted++;
-          if (['interested', 'serious', 'offer'].includes(entry.status)) tierStats[tier].interested++;
-          if (entry.status === 'offer') tierStats[tier].offer++;
+      const firstCoachReplyByMatch: Record<string, string> = {};
+      messages.forEach(m => {
+        if (m.sender_type === 'coach' && !firstCoachReplyByMatch[m.match_id]) {
+          firstCoachReplyByMatch[m.match_id] = m.created_at;
         }
       });
-
-      const templateStats: Record<string, { sent: number; opened: number }> = {};
-      od.forEach((email: any) => {
-        const tmpl = email.template_used || 'unknown';
-        if (!templateStats[tmpl]) templateStats[tmpl] = { sent: 0, opened: 0 };
-        templateStats[tmpl].sent++;
-        if (email.opened_at) templateStats[tmpl].opened++;
+      const responseTimeByDivision: Partial<Record<Division, number[]>> = {};
+      mr.forEach((m: any) => {
+        const division = (Array.isArray(m.coach) ? m.coach[0]?.division : m.coach?.division) as Division | undefined;
+        const replyAt = firstCoachReplyByMatch[m.id];
+        if (!division || !replyAt) return;
+        const days = Math.max(0, Math.ceil((new Date(replyAt).getTime() - new Date(m.matched_at).getTime()) / 86400000));
+        (responseTimeByDivision[division] ??= []).push(days);
+      });
+      const avgResponseTime: Partial<Record<Division, number>> = {};
+      (Object.entries(responseTimeByDivision) as [Division, number[]][]).forEach(([division, days]) => {
+        avgResponseTime[division] = Math.round(days.reduce((a, b) => a + b, 0) / days.length);
       });
 
-      const responseTimeByTier: Record<string, number[]> = {};
-      od.forEach((email: any) => {
-        if (!email.opened_at || !email.sent_at) return;
-        const tracker = td.find((t: any) => {
-          const prog = Array.isArray(t.coach?.programs) ? t.coach.programs[0] : t.coach?.programs;
-          return prog?.id === email.program_id;
-        });
-        if (tracker) {
-          const prog = Array.isArray(tracker.coach?.programs) ? tracker.coach.programs[0] : tracker.coach?.programs;
-          const tier = getTier(prog?.division ?? null);
-          if (!responseTimeByTier[tier]) responseTimeByTier[tier] = [];
-          const days = Math.ceil(
-            (new Date(email.opened_at).getTime() - new Date(email.sent_at).getTime()) / 86400000
-          );
-          responseTimeByTier[tier].push(days);
-        }
+      const messagesByMatch: Record<string, { sent: number; received: number }> = {};
+      messages.forEach(m => {
+        const bucket = (messagesByMatch[m.match_id] ??= { sent: 0, received: 0 });
+        if (m.sender_type === 'athlete') bucket.sent++; else bucket.received++;
       });
-
-      const avgResponseTime: Record<string, number> = {};
-      Object.entries(responseTimeByTier).forEach(([tier, times]) => {
-        avgResponseTime[tier] = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-      });
-
-      const coachMomentum = td
-        .map((entry: any) => {
-          const prog = Array.isArray(entry.coach?.programs) ? entry.coach.programs[0] : entry.coach?.programs;
-          const coachEmails = od.filter((e: any) => e.program_id === prog?.id);
-          const opened = coachEmails.filter((e: any) => e.opened_at).length;
+      const coachMomentum: CoachMomentum[] = mr
+        .map((m: any) => {
+          const coach = Array.isArray(m.coach) ? m.coach[0] : m.coach;
+          const counts = messagesByMatch[m.id] || { sent: 0, received: 0 };
           return {
-            name: entry.coach?.name ?? 'Unknown',
-            status: entry.status ?? '',
-            emailsSent: coachEmails.length,
-            emailsOpened: opened,
+            name: coach?.full_name || 'Coach',
+            school: coach?.school_name || '',
+            division: DIVISION_LABELS[coach?.division as Division] || coach?.division || '',
+            messagesSent: counts.sent,
+            messagesReceived: counts.received,
           };
         })
-        .filter((c: any) => c.emailsSent > 0)
-        .sort((a: any, b: any) => (b.emailsOpened / b.emailsSent) - (a.emailsOpened / a.emailsSent))
+        .filter((c: CoachMomentum) => c.messagesReceived > 0)
+        .sort((a: CoachMomentum, b: CoachMomentum) => b.messagesReceived - a.messagesReceived)
         .slice(0, 5);
 
-      setRecruiting({ tierStats, templateStats, avgResponseTime, coachMomentum });
+      setRecruiting({ divStats, avgResponseTime, coachMomentum });
     }
 
     setLoading(false);
@@ -309,16 +323,7 @@ export default function AnalyticsScreen() {
     );
   }
 
-  const openRate = outreach && outreach.sent > 0 ? Math.round((outreach.opened / outreach.sent) * 100) : 0;
-  const bounceRate = outreach && outreach.sent > 0 ? Math.round((outreach.bounced / outreach.sent) * 100) : 0;
-
-  const statusColors: Record<string, string> = {
-    not_contacted: '#5a5d63',
-    contacted: '#0ea5e9',
-    interested: '#a78bfa',
-    serious: '#f1a10d',
-    offer: '#10b981',
-  };
+  const divisionsWithActivity = recruiting ? DIVISION_ORDER.filter(d => recruiting.divStats[d].liked > 0) : [];
 
   return (
     <ScrollView
@@ -330,7 +335,7 @@ export default function AnalyticsScreen() {
       {/* ── Header ── */}
       <View>
         <Text style={s.title}>Analytics</Text>
-        <Text style={s.subtitle}>Track your profile views and outreach performance.</Text>
+        <Text style={s.subtitle}>Track your profile views and match activity.</Text>
       </View>
 
       {/* ── Profile View Stats ── */}
@@ -366,15 +371,15 @@ export default function AnalyticsScreen() {
         )}
       </View>
 
-      {/* ── Outreach Statistics ── */}
+      {/* ── Match Activity ── */}
       <View style={s.card}>
-        <Text style={s.cardTitle}>Outreach Statistics</Text>
+        <Text style={s.cardTitle}>Match Activity</Text>
         <View style={s.outreachGrid}>
           {([
-            { label: 'Total Emails', value: outreach?.total ?? 0,  color: C.text    },
-            { label: 'Sent',         value: outreach?.sent ?? 0,   color: C.primary },
-            { label: 'Opened',       value: outreach?.opened ?? 0, color: '#f59e0b' },
-            { label: 'Bounced',      value: outreach?.bounced ?? 0, color: '#ef4444' },
+            { label: 'Reviewed',   value: matchActivity?.reviewed ?? 0,  color: C.text    },
+            { label: 'Liked',      value: matchActivity?.liked ?? 0,     color: C.primary },
+            { label: 'Matched',    value: matchActivity?.matched ?? 0,   color: '#10b981' },
+            { label: 'Msgs Sent',  value: matchActivity?.messagesSent ?? 0, color: '#f59e0b' },
           ] as const).map((stat, i) => (
             <View key={i} style={s.outreachCell}>
               <Text style={[s.outreachValue, { color: stat.color }]}>{stat.value}</Text>
@@ -382,136 +387,99 @@ export default function AnalyticsScreen() {
             </View>
           ))}
         </View>
-        {outreach && outreach.sent > 0 && (
-          <View style={s.rateRows}>
-            <BarRow label="Open Rate" value={`${openRate}%`} pct={openRate} color="#f59e0b" s={s} />
-            {outreach.bounced > 0 && (
-              <BarRow
-                label="Bounce Rate"
-                value={`${bounceRate}%`}
-                pct={bounceRate}
-                color="#ef4444"
-                sub="⚠️ Bounced emails may have incorrect addresses."
-                s={s}
-              />
-            )}
-          </View>
+        {!!matchActivity?.matched && (
+          <Text style={s.replyLine}>
+            {matchActivity.coachesWhoReplied} of {matchActivity.matched} matched coach{matchActivity.matched !== 1 ? 'es' : ''} replied
+          </Text>
         )}
       </View>
 
       {/* ── Recruiting Intelligence ── */}
-      <>
-        <View style={{ gap: 4 }}>
-          <Text style={s.intelligenceTitle}>🎓 Recruiting Intelligence</Text>
-            <Text style={s.intelligenceSub}>
-              Deep insights into your recruiting strategy — conversion by tier, template performance, and engagement trends.
-            </Text>
-          </View>
+      <View style={{ gap: 4 }}>
+        <Text style={s.intelligenceTitle}>Recruiting Intelligence</Text>
+        <Text style={s.intelligenceSub}>
+          Real conversion by division, coach reply time, and who's actually engaging back.
+        </Text>
+      </View>
 
-          {recruiting ? (
-            <>
-              {/* Conversion Funnel by Tier */}
-              <View style={s.card}>
-                <Text style={s.cardTitle}>Conversion Funnel by Tier</Text>
-                {Object.entries(recruiting.tierStats).map(([tier, stats]) => {
-                  if (stats.total === 0) return null;
-                  const contactedPct  = Math.round((stats.contacted  / stats.total) * 100);
-                  const interestedPct = Math.round((stats.interested / stats.total) * 100);
-                  const offerPct      = Math.round((stats.offer      / stats.total) * 100);
+      {recruiting ? (
+        <>
+          {/* Conversion Funnel by Division */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Conversion Funnel by Division</Text>
+            {divisionsWithActivity.length === 0 ? (
+              <Text style={s.dimText}>Like a few programs to start seeing your funnel here.</Text>
+            ) : (
+              <View style={s.tierGrid}>
+                {divisionsWithActivity.map(division => {
+                  const stats = recruiting.divStats[division];
+                  const matchedPct = stats.liked > 0 ? Math.round((stats.matched / stats.liked) * 100) : 0;
+                  const messagedPct = stats.matched > 0 ? Math.round((stats.messaged / stats.matched) * 100) : 0;
                   return (
-                    <View key={tier} style={s.tierCard}>
-                      <Text style={s.tierCardTitle}>{tier}</Text>
-                      {([
-                        { label: 'Contacted',  pct: contactedPct,  color: '#0ea5e9' },
-                        { label: 'Interested', pct: interestedPct, color: '#a78bfa' },
-                        { label: 'Offers',     pct: offerPct,      color: '#10b981' },
-                      ] as const).map(bar => (
-                        <View key={bar.label} style={s.tierBarRow}>
-                          <View style={s.tierBarHeader}>
-                            <Text style={s.tierBarLabel}>{bar.label}</Text>
-                            <Text style={[s.tierBarPct, { color: C.text }]}>{bar.pct}%</Text>
-                          </View>
-                          <View style={s.tierBarTrack}>
-                            <View style={[s.tierBarFill, { width: `${bar.pct}%` as any, backgroundColor: bar.color }]} />
-                          </View>
+                    <View key={division} style={s.tierCard}>
+                      <Text style={s.tierCardTitle}>{DIVISION_LABELS[division]}</Text>
+                      <View style={s.tierBarRow}>
+                        <View style={s.tierBarHeader}>
+                          <Text style={s.tierBarLabel}>Matched</Text>
+                          <Text style={s.tierBarPct}>{matchedPct}%</Text>
                         </View>
-                      ))}
-                      <Text style={s.tierCount}>{stats.total} coach{stats.total !== 1 ? 'es' : ''}</Text>
+                        <View style={s.tierBarTrack}><View style={[s.tierBarFill, { width: `${matchedPct}%` as any, backgroundColor: '#10b981' }]} /></View>
+                      </View>
+                      <View style={s.tierBarRow}>
+                        <View style={s.tierBarHeader}>
+                          <Text style={s.tierBarLabel}>Messaged</Text>
+                          <Text style={s.tierBarPct}>{messagedPct}%</Text>
+                        </View>
+                        <View style={s.tierBarTrack}><View style={[s.tierBarFill, { width: `${messagedPct}%` as any, backgroundColor: '#a78bfa' }]} /></View>
+                      </View>
+                      <Text style={s.tierCount}>{stats.liked} liked</Text>
                     </View>
                   );
                 })}
               </View>
+            )}
+          </View>
 
-              {/* Template Performance */}
-              <View style={s.card}>
-                <Text style={s.cardTitle}>Email Template Performance</Text>
-                {Object.entries(recruiting.templateStats).map(([tmpl, stats]) => {
-                  const rate = stats.sent > 0 ? Math.round((stats.opened / stats.sent) * 100) : 0;
-                  const label = tmpl === 'unknown' ? 'No Template' : tmpl.replace(/_/g, ' ').toUpperCase();
-                  return (
-                    <BarRow
-                      key={tmpl}
-                      label={label}
-                      value={`${rate}% open rate`}
-                      pct={rate}
-                      color={C.primary}
-                      sub={`${stats.sent} sent, ${stats.opened} opened`}
-                      s={s}
-                    />
-                  );
-                })}
-              </View>
-
-              {/* Average Response Time by Tier */}
-              {Object.keys(recruiting.avgResponseTime).length > 0 && (
-                <View style={s.card}>
-                  <Text style={s.cardTitle}>Average Response Time by Tier</Text>
-                  <View style={s.responseGrid}>
-                    {Object.entries(recruiting.avgResponseTime).map(([tier, days]) => (
-                      <View key={tier} style={s.responseCell}>
-                        <Text style={s.responseTier}>{tier}</Text>
-                        <Text style={[s.responseDays, { color: C.primary }]}>{days}</Text>
-                        <Text style={s.responseSub}>days avg</Text>
-                      </View>
-                    ))}
+          {/* Average Response Time by Division */}
+          {Object.keys(recruiting.avgResponseTime).length > 0 && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Average Coach Reply Time by Division</Text>
+              <View style={s.responseGrid}>
+                {(Object.entries(recruiting.avgResponseTime) as [Division, number][]).map(([division, days]) => (
+                  <View key={division} style={s.responseCell}>
+                    <Text style={s.responseTier}>{DIVISION_LABELS[division]}</Text>
+                    <Text style={[s.responseDays, { color: C.primary }]}>{days}</Text>
+                    <Text style={s.responseSub}>days avg</Text>
                   </View>
-                </View>
-              )}
+                ))}
+              </View>
+            </View>
+          )}
 
-              {/* Most Engaged Coaches */}
-              {recruiting.coachMomentum.length > 0 && (
-                <View style={s.card}>
-                  <Text style={s.cardTitle}>Most Engaged Coaches</Text>
-                  {recruiting.coachMomentum.map((coach, i) => {
-                    const rate = coach.emailsSent > 0 ? Math.round((coach.emailsOpened / coach.emailsSent) * 100) : 0;
-                    const statusColor = statusColors[coach.status] ?? '#5a5d63';
-                    return (
-                      <View key={i} style={s.coachRow}>
-                        <Text style={s.coachRank}>#{i + 1}</Text>
-                        <View style={s.coachInfo}>
-                          <Text style={s.coachName}>{coach.name}</Text>
-                          <Text style={s.coachSub}>{coach.emailsOpened} of {coach.emailsSent} emails opened</Text>
-                        </View>
-                        <View style={s.coachRight}>
-                          <Text style={[s.coachRate, { color: C.primary }]}>{rate}%</Text>
-                          <View style={[s.coachBadge, { backgroundColor: statusColor + '22' }]}>
-                            <Text style={[s.coachBadgeText, { color: statusColor }]}>
-                              {coach.status.replace('_', ' ')}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
+          {/* Most Engaged Coaches */}
+          {recruiting.coachMomentum.length > 0 && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>Most Engaged Coaches</Text>
+              {recruiting.coachMomentum.map((coach, i) => (
+                <View key={i} style={s.coachRow}>
+                  <Text style={s.coachRank}>#{i + 1}</Text>
+                  <View style={s.coachInfo}>
+                    <Text style={s.coachName}>{coach.name}{coach.school ? ` · ${coach.school}` : ''}</Text>
+                    <Text style={s.coachSub}>{coach.messagesReceived} of {coach.messagesSent + coach.messagesReceived} messages from them</Text>
+                  </View>
+                  {coach.division ? (
+                    <View style={s.coachBadge}><Text style={s.coachBadgeText}>{coach.division}</Text></View>
+                  ) : null}
                 </View>
-              )}
-            </>
-          ) : (
-            <View style={s.center}>
-              <ActivityIndicator color={C.primary} />
+              ))}
             </View>
           )}
         </>
+      ) : (
+        <View style={s.center}>
+          <ActivityIndicator color={C.primary} />
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -526,6 +494,8 @@ function createStyles(C: ThemeColors) {
 
     title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 3 },
     subtitle: { fontSize: 13, color: C.textMuted },
+
+    dimText: { fontSize: 12, color: C.textDim },
 
     // 2×2 stat grid
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -555,7 +525,7 @@ function createStyles(C: ThemeColors) {
     chartLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
     chartLabel: { fontSize: 10, color: C.textDim },
 
-    // Outreach 4-cell grid
+    // Match activity 4-cell grid
     outreachGrid: { flexDirection: 'row', gap: 8 },
     outreachCell: {
       flex: 1,
@@ -575,9 +545,9 @@ function createStyles(C: ThemeColors) {
       letterSpacing: 0.3,
       marginTop: 2,
     },
+    replyLine: { fontSize: 12, color: C.textMuted, textAlign: 'center' },
 
-    // Rate bars
-    rateRows: { gap: 12 },
+    // Rate bars (kept for potential reuse)
     barRowWrap: { gap: 5 },
     barRowHeader: { flexDirection: 'row', justifyContent: 'space-between' },
     barRowLabel: { fontSize: 12, color: C.textMuted },
@@ -590,8 +560,11 @@ function createStyles(C: ThemeColors) {
     intelligenceTitle: { fontSize: 18, fontWeight: '800', color: C.text },
     intelligenceSub: { fontSize: 12, color: C.textMuted, lineHeight: 18 },
 
-    // Tier funnel
+    // Division funnel
+    tierGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     tierCard: {
+      flexBasis: '47%',
+      flexGrow: 1,
       backgroundColor: C.surfaceAlt,
       borderRadius: 10,
       padding: 12,
@@ -601,7 +574,7 @@ function createStyles(C: ThemeColors) {
     tierBarRow: { gap: 3 },
     tierBarHeader: { flexDirection: 'row', justifyContent: 'space-between' },
     tierBarLabel: { fontSize: 11, color: C.textMuted },
-    tierBarPct: { fontSize: 11, fontWeight: '700' },
+    tierBarPct: { fontSize: 11, fontWeight: '700', color: C.text },
     tierBarTrack: { height: 4, borderRadius: 2, backgroundColor: C.surface, overflow: 'hidden' },
     tierBarFill: { height: '100%', borderRadius: 2 },
     tierCount: { fontSize: 10, color: C.textDim, fontWeight: '600' },
@@ -635,20 +608,7 @@ function createStyles(C: ThemeColors) {
     coachInfo: { flex: 1, gap: 2 },
     coachName: { fontSize: 12, fontWeight: '700', color: C.text },
     coachSub: { fontSize: 10, color: C.textDim },
-    coachRight: { alignItems: 'flex-end', gap: 4 },
-    coachRate: { fontSize: 13, fontWeight: '900' },
-    coachBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-    coachBadgeText: { fontSize: 9, fontWeight: '700', textTransform: 'capitalize' },
-
-    // Elite gate
-    eliteGate: {
-      borderRadius: 14,
-      padding: 32,
-      alignItems: 'center',
-      gap: 10,
-    },
-    eliteGateIcon: { fontSize: 32 },
-    eliteGateTitle: { fontSize: 18, fontWeight: '800', color: C.text, textAlign: 'center' },
-    eliteGateSub: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19 },
+    coachBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: 'rgba(131,58,180,0.15)' },
+    coachBadgeText: { fontSize: 9, fontWeight: '700', color: C.primary },
   });
 }
