@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
+import { useAuth } from '../../../hooks/useAuth';
 import { GRADIENT, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
@@ -43,6 +44,7 @@ export default function MatchThreadScreen() {
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const router = useRouter();
   const { athlete } = useAthleteData();
+  const { session } = useAuth();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
 
@@ -54,9 +56,12 @@ export default function MatchThreadScreen() {
   const listRef = useRef<FlatList>(null);
 
   const loadMessages = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/api/match/message?match_id=${matchId}`);
+    if (!session?.access_token) return;
+    const res = await fetch(`${API_BASE}/api/match/message?match_id=${matchId}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
     if (res.ok) setMessages(await res.json());
-  }, [matchId]);
+  }, [matchId, session?.access_token]);
 
   useEffect(() => {
     if (!athlete?.id || !matchId) return;
@@ -94,7 +99,10 @@ export default function MatchThreadScreen() {
     try {
       const res = await fetch(`${API_BASE}/api/match/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           match_id: matchId,
           sender_id: athlete.id,
