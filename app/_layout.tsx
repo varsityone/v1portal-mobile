@@ -17,6 +17,22 @@ import * as Notifications from 'expo-notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFonts } from 'expo-font';
+import {
+  BigShouldersDisplay_700Bold,
+  BigShouldersDisplay_800ExtraBold,
+  BigShouldersDisplay_900Black,
+} from '@expo-google-fonts/big-shoulders-display';
+import {
+  Archivo_500Medium,
+  Archivo_600SemiBold,
+  Archivo_700Bold,
+  Archivo_800ExtraBold,
+} from '@expo-google-fonts/archivo';
+import {
+  JetBrainsMono_600SemiBold,
+  JetBrainsMono_700Bold,
+} from '@expo-google-fonts/jetbrains-mono';
 import { supabase } from '../lib/supabase';
 import { handleNotificationResponse, getRouteFromNotification, NotificationScreen } from '../lib/notifications';
 import { Colors } from '../constants/Colors';
@@ -206,6 +222,18 @@ export default function RootLayout() {
   const [banner, setBanner] = useState<BannerData | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [fontsLoaded] = useFonts({
+    BigShouldersDisplay_700Bold,
+    BigShouldersDisplay_800ExtraBold,
+    BigShouldersDisplay_900Black,
+    Archivo_500Medium,
+    Archivo_600SemiBold,
+    Archivo_700Bold,
+    Archivo_800ExtraBold,
+    JetBrainsMono_600SemiBold,
+    JetBrainsMono_700Bold,
+  });
+
   const showBanner = useCallback((title: string, body: string) => {
     setBanner({ title, body });
     if (dismissTimer.current) clearTimeout(dismissTimer.current);
@@ -330,7 +358,7 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!appReady) return <LoadingScreen />;
+  if (!appReady || !fontsLoaded) return <LoadingScreen />;
 
   return (
     <ThemeProvider>

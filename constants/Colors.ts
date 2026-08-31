@@ -61,8 +61,17 @@ export const LIGHT_THEME: ThemeColors = {
 // Backward-compat alias — dark values; use useColors() inside components for theming
 export const Colors = DARK_THEME;
 
-// Instagram-style gradient — used on score display, breakdown bars, CTAs
-export const GRADIENT = ['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45'] as const;
+// V1Portal brand gradient (6-stop purple -> pink -> red -> orange -> gold) —
+// matches web's BRAND_GRADIENT_STOPS. Used on CTAs, role icons, breakdown bars.
+export const GRADIENT = ['#82008F', '#C0007A', '#EA0C5F', '#FF5341', '#FF8820', '#F6BA00'] as const;
+
+// V1 Score's own red -> gold identity — distinct from the general brand sweep
+// above. Matches web's V1 Score ring/card gradient.
+export const SCORE_GRADIENT = ['#EA0C5F', '#FF5341', '#FF8820', '#F6BA00'] as const;
+
+// Fixed brand accents (not theme-dependent) — matches web's --pinkred / --green tokens.
+export const PINK_RED = '#EA0C5F';
+export const BRAND_GREEN = '#71ff7e';
 
 // Tier progression bars (matches web ScoreAnimator)
 export const TIER_BARS = [

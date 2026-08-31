@@ -1,3 +1,18 @@
+// Matches web's type system: Big Shoulders Display (headlines), Archivo (body),
+// JetBrains Mono (labels/data). Registered via useFonts() in app/_layout.tsx —
+// these string values are the exact keys passed there.
+export const FontFamily = {
+  headline:      'BigShouldersDisplay_900Black',
+  headlineBold:  'BigShouldersDisplay_800ExtraBold',
+  headlineSemi:  'BigShouldersDisplay_700Bold',
+  body:          'Archivo_500Medium',
+  bodySemi:      'Archivo_600SemiBold',
+  bodyBold:      'Archivo_700Bold',
+  bodyExtraBold: 'Archivo_800ExtraBold',
+  mono:          'JetBrainsMono_600SemiBold',
+  monoBold:      'JetBrainsMono_700Bold',
+} as const;
+
 export const Fonts = {
   regular: 'System',
   medium: 'System',
