@@ -16,7 +16,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
-import { PHASES, Phase } from '../../../constants/Phases';
+import { useGameplanPhases } from '../../../hooks/useGameplanPhases';
+import { useMatchCount } from '../../../hooks/useMatchCount';
+import { PHASES, TIMELINE_META, Phase } from '../../../constants/Phases';
 import { Colors, GRADIENT, TIER_BARS, scoreNumColor, ThemeColors } from '../../../constants/Colors';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -77,12 +79,10 @@ function taskGroup(task: RecruitingTask): 'Today' | 'This Week' | 'Upcoming' {
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
+function PhaseHeader({ phase }: { phase: Phase }) {
   const C = useColors();
   const sh = useMemo(() => StyleSheet.create({
     root: { marginBottom: 20 },
-    back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 20, alignSelf: 'flex-start', paddingVertical: 4 },
-    backText: { fontSize: 15, color: C.textMuted },
     badge: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 10 },
     badgeText: { fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.4 },
     title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 8 },
@@ -90,10 +90,6 @@ function PhaseHeader({ phase, onBack }: { phase: Phase; onBack: () => void }) {
   }), [C]);
   return (
     <View style={sh.root}>
-      <Pressable style={sh.back} onPress={onBack}>
-        <Ionicons name="arrow-back" size={20} color={C.icon} />
-        <Text style={sh.backText}>The Gameplan</Text>
-      </Pressable>
       <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={sh.badge}>
         <Text style={sh.badgeText}>Phase {phase.number}</Text>
       </LinearGradient>
@@ -164,8 +160,8 @@ function CenteredLoader() {
 
 // ─── Phase 1: Know Your Value ─────────────────────────────────────────────────
 
-function Phase1({ data, phase, onBack }: {
-  data: ReturnType<typeof useAthleteData>; phase: Phase; onBack: () => void;
+function Phase1({ data, phase, onBack, gp }: {
+  data: ReturnType<typeof useAthleteData>; phase: Phase; onBack: () => void; gp: ReturnType<typeof useGameplanPhases>;
 }) {
   const router = useRouter();
   const C = useColors();
@@ -206,7 +202,7 @@ function Phase1({ data, phase, onBack }: {
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
+      <PhaseHeader phase={phase} />
 
       {score !== null ? (
           <LinearGradient
@@ -467,12 +463,13 @@ const P2_TRACKED: (keyof P2Fields)[] = [
   'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
 ];
 
-function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
+function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
   athlete: Record<string, unknown> | null;
   athleteId: string | undefined;
   phase: Phase;
   onBack: () => void;
   refresh: () => void;
+  gp: ReturnType<typeof useGameplanPhases>;
 }) {
   const router = useRouter();
   const C = useColors();
@@ -542,7 +539,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <PhaseHeader phase={phase} onBack={onBack} />
+        <PhaseHeader phase={phase} />
 
         <Card>
           <SLabel>PROFILE COMPLETION</SLabel>
@@ -617,8 +614,8 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh }: {
 
 // ─── Phase 3: Strategic Targeting ────────────────────────────────────────────
 
-function Phase3({ athleteId, phase, onBack }: {
-  athleteId: string | undefined; phase: Phase; onBack: () => void;
+function Phase3({ athleteId, phase, onBack, gp }: {
+  athleteId: string | undefined; phase: Phase; onBack: () => void; gp: ReturnType<typeof useGameplanPhases>;
 }) {
   const router = useRouter();
   const C = useColors();
@@ -641,7 +638,7 @@ function Phase3({ athleteId, phase, onBack }: {
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
+      <PhaseHeader phase={phase} />
 
       {loading ? (
         <CenteredLoader />
@@ -677,7 +674,7 @@ function Phase3({ athleteId, phase, onBack }: {
   );
 }
 
-// ─── Phase 4: Execute the Timeline ───────────────────────────────────────────
+// ─── Phase 4: Recruiting Timeline (standalone, outside the stepper) ──────────
 
 const GROUP_ORDER = ['Today', 'This Week', 'Upcoming'] as const;
 
@@ -719,7 +716,8 @@ function Phase4({ athleteId, phase, onBack }: {
 
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
-      <PhaseHeader phase={phase} onBack={onBack} />
+      <PhaseHeader phase={phase} />
+      {/* No stepper here — the recruiting timeline is a standalone post-match utility, not part of the 3-step funnel. */}
       {loading ? <CenteredLoader /> : tasks.length === 0 ? (
         <EmptyState icon="calendar-outline" title="No tasks yet" body="Your recruiting tasks and deadlines will appear here once your timeline is set up." />
       ) : (
@@ -777,9 +775,13 @@ export default function PhaseDetailScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const phaseNumber = Number(phaseParam);
-  const phase = PHASES.find(p => p.number === phaseNumber);
+  const phase = PHASES.find(p => p.number === phaseNumber) ?? (phaseNumber === 4 ? TIMELINE_META : undefined);
 
   const athleteData = useAthleteData();
+  const athleteId = athleteData.athlete?.id;
+  const matchCount = useMatchCount(athleteId);
+
+  const gp = useGameplanPhases(athleteData.athlete, athleteData.assessment, matchCount);
   const onBack = () => router.back();
 
   if (athleteData.loading) return <CenteredLoader />;
@@ -793,10 +795,10 @@ export default function PhaseDetailScreen() {
   }
 
   switch (phaseNumber) {
-    case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} />;
-    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} refresh={athleteData.refresh} />;
-    case 3: return <Phase3 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
-    case 4: return <Phase4 athleteId={athleteData.athlete?.id} phase={phase} onBack={onBack} />;
+    case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} gp={gp} />;
+    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteId} phase={phase} onBack={onBack} refresh={athleteData.refresh} gp={gp} />;
+    case 3: return <Phase3 athleteId={athleteId} phase={phase} onBack={onBack} gp={gp} />;
+    case 4: return <Phase4 athleteId={athleteId} phase={phase} onBack={onBack} />;
     default:
       return (
         <View style={s.center}>

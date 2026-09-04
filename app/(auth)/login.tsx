@@ -91,11 +91,10 @@ export default function LoginScreen() {
           <Text style={styles.title}>Welcome Back.</Text>
           <Text style={styles.subtitle}>Sign in to your V1Portal® account</Text>
           <Text style={styles.subscriptionNote}>
-            Requires an active V1Portal account. Visit{' '}
+            New to V1Portal? Create a free account at{' '}
             <Text style={styles.subscriptionLink} onPress={() => Linking.openURL('https://v1portal.com')}>
               v1portal.com
             </Text>
-            {' '}to get started.
           </Text>
         </View>
 
@@ -169,9 +168,9 @@ export default function LoginScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={styles.footerText}>New to V1Portal? </Text>
           <Pressable onPress={() => Linking.openURL('https://v1portal.com')} hitSlop={8}>
-            <Text style={styles.footerLink}>Visit v1portal.com</Text>
+            <Text style={styles.footerLink}>Sign up at v1portal.com</Text>
           </Pressable>
         </View>
       </ScrollView>

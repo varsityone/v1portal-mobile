@@ -40,14 +40,17 @@ export const PHASES: Phase[] = [
       { label: 'Message your matches' },
     ],
   },
-  {
-    number: 4,
-    title: 'Execute the Timeline',
-    description: 'Stay on schedule through signing day. Review key deadlines, schedule campus visits, and execute your recruiting calendar.',
-    items: [
-      { label: 'Review key recruiting deadlines' },
-      { label: 'Schedule campus visits' },
-      { label: 'Execute your recruiting calendar' },
-    ],
-  },
 ];
+
+// Not part of the linear stepper — recruiting happens outside V1Portal's hands once
+// an athlete is matched, so this is a standalone utility rather than a locked/completed step.
+export const TIMELINE_META: Phase = {
+  number: 4,
+  title: 'Recruiting Timeline',
+  description: 'Stay on schedule through signing day. Review key deadlines, schedule campus visits, and execute your recruiting calendar.',
+  items: [
+    { label: 'Review key recruiting deadlines' },
+    { label: 'Schedule campus visits' },
+    { label: 'Execute your recruiting calendar' },
+  ],
+};

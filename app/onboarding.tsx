@@ -49,13 +49,13 @@ function ScreenDashboard() {
       <View style={sc.section}>
         <View style={sc.progressHeader}>
           <Text style={sc.sectionLabel}>Overall Progress</Text>
-          <Text style={sc.sectionSub}>1/6 phases</Text>
+          <Text style={sc.sectionSub}>1/3 phases</Text>
         </View>
         <View style={sc.progressBar}>
-          <LinearGradient colors={['#833AB4','#E1306C']} style={{width:'17%',height:'100%',borderRadius:3}} />
+          <LinearGradient colors={['#833AB4','#E1306C']} style={{width:'33%',height:'100%',borderRadius:3}} />
         </View>
         <View style={sc.phaseRow}>
-          {[1,2,3,4,5,6].map(n=>(
+          {[1,2,3].map(n=>(
             <View key={n} style={[sc.phaseDot, n===1 && sc.phaseDotDone, n===2 && sc.phaseDotActive]}>
               <Text style={sc.phaseDotTxt}>{n}</Text>
             </View>
@@ -66,10 +66,10 @@ function ScreenDashboard() {
       <View style={sc.section}>
         <View style={sc.progressHeader}>
           <Text style={sc.sectionLabel}>Your Phases</Text>
-          <Text style={sc.sectionSub}>Phase 1 of 6</Text>
+          <Text style={sc.sectionSub}>Phase 1 of 3</Text>
         </View>
         <View style={sc.phaseRow}>
-          {[1,2,3,4,5,6].map(n=>(
+          {[1,2,3].map(n=>(
             <View key={n} style={[sc.phaseDot, n===1 && sc.phaseDotDone]}>
               <Text style={sc.phaseDotTxt}>{n}</Text>
             </View>
@@ -188,13 +188,21 @@ function ScreenPrograms() {
   );
 }
 
-function ScreenOutreach() {
+function ScreenMatch() {
   return (
     <View style={sc.root}>
       <View style={sc.nav}>
         <Ionicons name="chevron-back" size={14} color="rgba(255,255,255,0.7)" />
-        <Text style={sc.navTitle}>New Message</Text>
+        <Text style={sc.navTitle}>Coach Davis</Text>
         <View style={{width:14}} />
+      </View>
+      {/* Match banner */}
+      <View style={sc.matchBanner}>
+        <Ionicons name="heart" size={13} color="#E1306C" />
+        <Text style={{fontSize:8,fontWeight:'800',color:'#fff'}}>It's a Match!</Text>
+        <Text style={{fontSize:6.5,color:'rgba(255,255,255,0.45)',textAlign:'center'}}>
+          Coach Davis liked you back — messaging is now open.
+        </Text>
       </View>
       {/* Coach card */}
       <View style={sc.coachCard}>
@@ -207,24 +215,15 @@ function ScreenOutreach() {
           <Text style={{fontSize:7,color:'rgba(255,255,255,0.45)'}}>Bethel University</Text>
         </View>
       </View>
-      {/* Subject */}
-      <View style={sc.msgField}>
-        <Text style={sc.msgFieldLabel}>Subject <Text style={{color:'rgba(255,255,255,0.3)'}}>48/60</Text></Text>
-        <Text style={{fontSize:8,color:'rgba(255,255,255,0.7)'}}>2026 QB Prospect – Interested in Bethel University</Text>
+      {/* Chat bubbles */}
+      <View style={{paddingHorizontal:10, gap:6, marginTop:4}}>
+        <View style={sc.bubbleIn}>
+          <Text style={{fontSize:7.5,color:'rgba(255,255,255,0.8)'}}>Kobee — liked your film. What's your 40 time?</Text>
+        </View>
+        <View style={sc.bubbleOut}>
+          <Text style={{fontSize:7.5,color:'#fff'}}>4.5, coach. Excited to talk more!</Text>
+        </View>
       </View>
-      {/* Message body */}
-      <View style={[sc.msgField,{flex:1}]}>
-        <Text style={sc.msgFieldLabel}>Message</Text>
-        <Text style={{fontSize:7.5,color:'rgba(255,255,255,0.65)',lineHeight:11}}>
-          Coach Davis,{'\n\n'}
-          My name is Kobee Bolton, a 2026 Quarterback from Houston, TX. I'm very interested in Bethel University and the opportunity to compete and contribute to your program...{'\n\n'}
-          Thank you for your time and consideration.
-        </Text>
-      </View>
-      {/* Send button */}
-      <LinearGradient colors={['#833AB4','#E1306C']} style={sc.sendBtn}>
-        <Text style={{fontSize:10,fontWeight:'800',color:'#fff'}}>Send Message</Text>
-      </LinearGradient>
     </View>
   );
 }
@@ -235,7 +234,7 @@ function ScreenGameplan() {
       <View style={[sc.nav,{flexDirection:'column',alignItems:'flex-start',paddingBottom:8}]}>
         <Text style={{fontSize:8,fontWeight:'700',color:'rgba(255,255,255,0.4)',letterSpacing:1,textTransform:'uppercase'}}>THE GAMEPLAN</Text>
         <Text style={{fontSize:13,fontWeight:'900',color:'#fff',marginTop:2}}>Good evening, Kobee.</Text>
-        <Text style={{fontSize:8,color:'rgba(255,255,255,0.5)'}}>You're on Phase 2 of 6. Keep the momentum going.</Text>
+        <Text style={{fontSize:8,color:'rgba(255,255,255,0.5)'}}>You're on Phase 2 of 3. Keep the momentum going.</Text>
       </View>
       {/* Score card */}
       <LinearGradient colors={['#1a0a2e','#12081a']} style={[sc.scoreCard,{marginHorizontal:8,marginBottom:6}]}>
@@ -254,7 +253,7 @@ function ScreenGameplan() {
       {[
         {n:1,label:'Know Your Value',status:'COMPLETED',c:'#10b981'},
         {n:2,label:'Build Your Profile',status:'IN PROGRESS',c:'#3ab7ed'},
-        {n:3,label:'Strategic Program Targeting',status:'NEXT',c:'rgba(255,255,255,0.3)'},
+        {n:3,label:'Find Your Matches',status:'NEXT',c:'rgba(255,255,255,0.3)'},
       ].map((p,i)=>(
         <View key={i} style={sc.phaseItem}>
           <View style={[sc.phaseNum, {backgroundColor: p.c+'22', borderColor: p.c}]}>
@@ -329,9 +328,9 @@ const sc = StyleSheet.create({
   programLogo: { width:22, height:22, borderRadius:5, backgroundColor:'rgba(131,58,180,0.15)', alignItems:'center', justifyContent:'center' },
   coachCard: { flexDirection:'row', alignItems:'center', padding:10, borderBottomWidth:1, borderBottomColor:'rgba(255,255,255,0.06)' },
   coachAvatar: { width:30, height:30, borderRadius:7, alignItems:'center', justifyContent:'center' },
-  msgField: { paddingHorizontal:10, paddingVertical:8, borderBottomWidth:1, borderBottomColor:'rgba(255,255,255,0.06)' },
-  msgFieldLabel: { fontSize:7, fontWeight:'700', color:'rgba(255,255,255,0.4)', marginBottom:3 },
-  sendBtn: { margin:10, borderRadius:25, paddingVertical:10, alignItems:'center' },
+  matchBanner: { alignItems:'center', gap:3, paddingVertical:10, paddingHorizontal:14, backgroundColor:'rgba(225,48,108,0.08)', borderBottomWidth:1, borderBottomColor:'rgba(255,255,255,0.06)' },
+  bubbleIn: { alignSelf:'flex-start', maxWidth:'80%', backgroundColor:'rgba(255,255,255,0.07)', borderRadius:8, borderBottomLeftRadius:2, padding:7 },
+  bubbleOut: { alignSelf:'flex-end', maxWidth:'80%', backgroundColor:'#833AB4', borderRadius:8, borderBottomRightRadius:2, padding:7 },
   phaseItem: { flexDirection:'row', alignItems:'center', paddingHorizontal:10, paddingVertical:7, borderBottomWidth:1, borderBottomColor:'rgba(255,255,255,0.04)' },
   phaseNum: { width:18, height:18, borderRadius:9, alignItems:'center', justifyContent:'center', borderWidth:1 },
 });
@@ -442,11 +441,11 @@ const SLIDES = [
   {
     id: '4',
     num: '04',
-    Screen: ScreenOutreach,
-    icon: 'paper-plane-outline' as const,
-    title: 'Reach Coaches\nWith Proven\nTemplates',
-    body: 'Send personalized outreach without starting from scratch.',
-    caption: 'Start conversations\nthat get responses.',
+    Screen: ScreenMatch,
+    icon: 'chatbubbles-outline' as const,
+    title: 'Match With Coaches\nWho Are Actually\nInterested',
+    body: 'No cold emails, no guessing who to contact. Messaging only opens once a coach matches back with you.',
+    caption: 'Real interest,\nnot guesswork.',
   },
   {
     id: '5',
@@ -454,7 +453,7 @@ const SLIDES = [
     Screen: ScreenGameplan,
     icon: 'map-outline' as const,
     title: 'Your Recruiting\nRoadmap',
-    body: 'Complete each phase and move closer to your next offer.',
+    body: 'Complete each phase and get matched with programs that fit your level.',
     caption: 'One platform. One\npath forward.',
   },
   {

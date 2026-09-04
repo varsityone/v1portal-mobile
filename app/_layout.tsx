@@ -34,6 +34,7 @@ import {
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
 import { supabase } from '../lib/supabase';
+import { configurePurchases } from '../lib/purchases';
 import { handleNotificationResponse, getRouteFromNotification, NotificationScreen } from '../lib/notifications';
 import { Colors } from '../constants/Colors';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -251,6 +252,7 @@ export default function RootLayout() {
       const start = Date.now();
       const { data: { session } } = await supabase.auth.getSession();
       const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
+      if (session?.user?.id) configurePurchases(session.user.id);
 
       // Always show loader at least 2s so the animation is visible
       const elapsed = Date.now() - start;
@@ -311,6 +313,7 @@ export default function RootLayout() {
       if (event === 'SIGNED_IN') {
         setAppReady(false);
         const { data: { session: s } } = await supabase.auth.getSession();
+        if (s?.user?.id) configurePurchases(s.user.id);
         const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
         await new Promise(r => setTimeout(r, 1500));
         if (!seen) {

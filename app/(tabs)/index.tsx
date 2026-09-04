@@ -15,10 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useAthleteData } from '../../hooks/useAthleteData';
+import { useGameplanPhases } from '../../hooks/useGameplanPhases';
 import { supabase } from '../../lib/supabase';
 import { Colors, GRADIENT, ThemeColors } from '../../constants/Colors';
 import { useColors, useTheme } from '../../context/ThemeContext';
-import { PHASES } from '../../constants/Phases';
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
 
@@ -148,28 +148,7 @@ export default function DashboardScreen() {
     return responses.school_classification || null;
   })();
 
-  const phaseComplete = [
-    athlete?.v1_score != null,
-    !!(
-      athlete?.full_name && athlete?.phone && athlete?.bio &&
-      athlete?.position && athlete?.graduation_year && athlete?.height &&
-      athlete?.weight && athlete?.high_school && athlete?.city &&
-      athlete?.gpa && athlete?.ncaa_id &&
-      (athlete?.sat_score || athlete?.act_score || athlete?.test_scores_not_taken) &&
-      athlete?.hudl_link &&
-      athlete?.guardian_name && athlete?.guardian_relationship &&
-      athlete?.guardian_phone && athlete?.guardian_email
-    ),
-    matchCount >= 1,
-    false,
-  ];
-
-  const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
-
-  const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
-  const curPhaseIdx = phaseEffectiveDone.findIndex(c => !c);
-  const activePhaseIdx = curPhaseIdx === -1 ? PHASES.length - 1 : curPhaseIdx;
-  const completedCount = phaseEffectiveDone.filter(Boolean).length;
+  const { phases: PHASES, phaseComplete, phaseLocked, activePhaseIdx, completedCount } = useGameplanPhases(athlete, assessment, matchCount);
   const progressPct = (completedCount / PHASES.length) * 100;
 
   const statusMsg = completedCount === 0
@@ -311,7 +290,7 @@ export default function DashboardScreen() {
       <View>
         {PHASES.map((phase, i) => {
           const locked = phaseLocked[i];
-          const done = phaseEffectiveDone[i];
+          const done = phaseComplete[i] && !locked;
           const active = i === activePhaseIdx && !locked;
           const isLast = i === PHASES.length - 1;
 
@@ -324,7 +303,6 @@ export default function DashboardScreen() {
             if (i === 0) sub = 'Takes ~12 minutes';
             else if (i === 1) sub = 'Profile complete';
             else if (i === 2) sub = 'Matched with a program';
-            else sub = 'Phase complete';
           } else if (active) {
             if (i === 0) sub = 'Takes ~12 minutes';
             else if (i === 1) {
@@ -341,15 +319,17 @@ export default function DashboardScreen() {
               const left = fields.filter(f => !f).length;
               sub = left > 0 ? `${left} of 17 fields left` : 'Ready to complete';
             } else if (i === 2) sub = matchCount > 0 ? `${matchCount} match${matchCount !== 1 ? 'es' : ''} so far` : 'Start swiping';
-            else sub = 'Final phase';
           } else if (locked && i > 0) {
-            sub = `Complete Phase ${i} first`;
-          } else if (!locked && !done) {
             sub = `Complete Phase ${i} first`;
           }
 
           return (
-            <View key={i} style={[styles.phaseTimelineItem, { alignItems: 'flex-start' }]}>
+            <Pressable
+              key={i}
+              disabled={locked}
+              onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
+              style={({ pressed }) => [styles.phaseTimelineItem, { alignItems: 'flex-start' }, pressed && !locked && { opacity: 0.7 }]}
+            >
               {/* Left: node + connector (connector omitted on last phase) */}
               <View style={[styles.phaseTimelineLeft, { alignSelf: 'stretch' }]}>
                 {done ? (
@@ -388,29 +368,9 @@ export default function DashboardScreen() {
                 </View>
 
                 <Text style={styles.phaseDesc}>{phase.description}</Text>
-
-                {!locked && (
-                  <View style={styles.phaseBody}>
-                    {phase.items.map((item, j) => {
-                      const checked = done || (active && j === 0 && i === 0 && !!assessment);
-                      return (
-                        <Pressable
-                          key={j}
-                          style={({ pressed }) => [styles.checkItem, pressed && { backgroundColor: C.surfaceAlt }]}
-                          onPress={() => router.push(`/(tabs)/gameplan/${phase.number}` as any)}
-                        >
-                          <View style={[styles.checkBox, checked && styles.checkBoxDone]}>
-                            {checked && <Ionicons name="checkmark" size={10} color={C.background} />}
-                          </View>
-                          <Text style={[styles.checkLabel, checked && { opacity: 0.6 }]}>{item.label}</Text>
-                          <Ionicons name="arrow-forward" size={12} color={C.icon} />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
               </View>
-            </View>
+              {!locked && <Ionicons name="chevron-forward" size={16} color={C.icon} style={{ marginTop: 14 }} />}
+            </Pressable>
           );
         })}
       </View>
@@ -500,6 +460,16 @@ export default function DashboardScreen() {
         >
           <Text style={styles.matchViewAllText}>{matchCount > 0 ? 'View My Matches' : 'Start Swiping'}</Text>
         </Pressable>
+
+        {matchCount > 0 && (
+          <Pressable
+            style={({ pressed }) => [styles.timelineLink, pressed && { opacity: 0.6 }]}
+            onPress={() => router.push('/(tabs)/gameplan/4' as any)}
+          >
+            <Text style={styles.timelineLinkText}>View Recruiting Timeline</Text>
+            <Ionicons name="arrow-forward" size={12} color={C.textMuted} />
+          </Pressable>
+        )}
       </View>
     </ScrollView>
   );
@@ -581,15 +551,6 @@ function createStyles(C: ThemeColors) {
     phaseBadgeText: { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.6, textTransform: 'uppercase' },
     phaseDesc: { fontSize: 12, color: C.textMuted, lineHeight: 18, marginTop: 6, marginBottom: 4 },
 
-    // Expanded body
-    phaseBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4 },
-    checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 },
-    checkBox: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: C.border2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    checkBoxDone: { backgroundColor: C.text, borderColor: C.text },
-    checkLabel: { flex: 1, fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 18 },
-    upcomingMsg: { marginTop: 10, padding: 12, backgroundColor: C.surfaceAlt, borderRadius: 8, alignItems: 'center' },
-    upcomingMsgText: { fontSize: 12, color: C.textDim, textAlign: 'center' },
-
     // Stats row
     statsRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
     statCard: { flex: 1, backgroundColor: C.surface, borderRadius: 12, padding: 14, alignItems: 'center', gap: 4 },
@@ -630,5 +591,7 @@ function createStyles(C: ThemeColors) {
     matchPct: { fontSize: 15, fontWeight: '900', color: C.text, flexShrink: 0 },
     matchViewAllBtn: { marginTop: 14, backgroundColor: C.surfaceAlt, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: C.border },
     matchViewAllText: { fontSize: 13, fontWeight: '700', color: C.textMuted },
+    timelineLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10, paddingVertical: 6 },
+    timelineLinkText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
   });
 }

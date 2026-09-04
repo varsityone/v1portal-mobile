@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
@@ -53,6 +54,7 @@ function isProfileComplete(athlete: any): boolean {
 
 export default function MatchScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { athlete, loading: athleteLoading } = useAthleteData();
   const { session } = useAuth();
   const C = useColors();
@@ -115,6 +117,18 @@ export default function MatchScreen() {
   const totalCards = deck.length;
   const isAlreadyMatched = current ? existingMatches.has(current.id) : false;
   const existingMatchId = current ? existingMatches.get(current.id) : undefined;
+
+  // The swipe deck (and its "you're caught up" empty state) fills the whole
+  // screen, matching web — everything else (lock states, the level picker,
+  // celebration/reality-check) keeps the normal drawer header.
+  const showingPicker = isPremium && !selectedDivision;
+  const isFullScreenDeck = !athleteLoading && !loading && !!athlete?.assessment_completed
+    && isProfileComplete(athlete) && !matchNotif && !pendingReach && !showingPicker;
+
+  useEffect(() => {
+    navigation.getParent()?.setOptions({ headerShown: !isFullScreenDeck });
+    return () => { navigation.getParent()?.setOptions({ headerShown: true }); };
+  }, [isFullScreenDeck, navigation]);
 
   const recordSwipe = async (direction: 'like' | 'pass', coachId: string) => {
     setSwiping(true);
@@ -255,10 +269,10 @@ export default function MatchScreen() {
     );
   }
 
-  // ── Empty state ──
+  // ── Empty state — fills the screen, same as the deck (header hidden) ──
   if (currentIndex >= totalCards) {
     return (
-      <View style={s.center}>
+      <SafeAreaView style={s.center}>
         <View style={s.emptyIconWrap}>
           <Ionicons name="heart-outline" size={28} color={C.textMuted} />
         </View>
@@ -284,13 +298,13 @@ export default function MatchScreen() {
             </Pressable>
           </>
         )}
-      </View>
+      </SafeAreaView>
     );
   }
 
-  // ── Card deck ──
+  // ── Card deck — fills the whole device screen (header hidden above) ──
   return (
-    <View style={s.deckRoot}>
+    <SafeAreaView style={s.deckRoot}>
       {isPremium && (
         <Pressable style={s.backRow} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}>
           <Ionicons name="chevron-back" size={16} color={C.textMuted} />
@@ -342,7 +356,7 @@ export default function MatchScreen() {
           )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -436,10 +450,13 @@ function createStyles(C: ThemeColors) {
     matchCelebrationBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#0a0a0a' },
     matchCelebrationDismiss: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
 
-    deckRoot: { flex: 1, backgroundColor: C.background, padding: 16 },
-    backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
+    // No padding/rounding here — the deck fills the whole device screen
+    // (the drawer header is hidden while it's showing) instead of floating
+    // as an inset card the way it used to.
+    deckRoot: { flex: 1, backgroundColor: C.background },
+    backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingBottom: 10 },
     backText: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textMuted, letterSpacing: 0.5 },
-    card: { flex: 1, borderRadius: 24, overflow: 'hidden', backgroundColor: '#111' },
+    card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
     cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
     cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },

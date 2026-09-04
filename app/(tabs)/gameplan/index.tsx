@@ -11,14 +11,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAthleteData } from '../../../hooks/useAthleteData';
+import { useGameplanPhases, PhaseStatus } from '../../../hooks/useGameplanPhases';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
-import { PHASES, Phase } from '../../../constants/Phases';
+import { Phase } from '../../../constants/Phases';
 import { UpgradeSheet } from '../../../components/UpgradeSheet';
 import { ThemeColors } from '../../../constants/Colors';
 import { useColors } from '../../../context/ThemeContext';
-
-type PhaseStatus = 'done' | 'active' | 'upcoming';
 
 interface PhaseCardProps {
   phase: Phase;
@@ -161,31 +160,7 @@ export default function GameplanScreen() {
     setMatchCount(count ?? 0);
   }, [athlete?.id]);
 
-  const phaseComplete = [
-    !!assessment?.v1_score,
-    !!(
-      athlete?.full_name && athlete?.phone && athlete?.bio &&
-      athlete?.position && athlete?.graduation_year && athlete?.height &&
-      athlete?.weight && athlete?.high_school && athlete?.city &&
-      athlete?.gpa && athlete?.ncaa_id &&
-      (athlete?.sat_score || athlete?.act_score || athlete?.test_scores_not_taken) &&
-      athlete?.hudl_link &&
-      athlete?.guardian_name && athlete?.guardian_relationship &&
-      athlete?.guardian_phone && athlete?.guardian_email
-    ),
-    matchCount >= 1,
-    false,
-  ];
-
-  const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
-
-  const getStatus = (i: number): PhaseStatus => {
-    if (phaseComplete[i]) return 'done';
-    if (!phaseLocked[i]) return 'active';
-    return 'upcoming';
-  };
-
-  const completedCount = phaseComplete.filter(Boolean).length;
+  const { phases: PHASES, phaseComplete, phaseLocked, completedCount, getStatus } = useGameplanPhases(athlete, assessment, matchCount);
 
   const handlePhasePress = (phase: Phase, i: number) => {
     if (phaseLocked[i]) {
@@ -212,7 +187,7 @@ export default function GameplanScreen() {
         <View style={s.header}>
           <Text style={s.title}>The Gameplan</Text>
           <Text style={s.subtitle}>
-            {PHASES.length} phases. One roadmap to a scholarship offer.
+            {PHASES.length} phases. One roadmap to getting matched.
           </Text>
         </View>
 

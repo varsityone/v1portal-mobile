@@ -106,9 +106,8 @@ export type ColorKey = keyof typeof Colors;
 // ─── Tier color system ────────────────────────────────────────────────────────
 
 export const TIER_COLORS = {
-  'Coach+':        'rgb(199, 0, 156)',
-  'Commit+':       'rgb(255, 148, 0)',
-  'Commit+ Trial': 'rgb(255, 148, 0)',
+  'Match+':        'rgb(255, 148, 0)',
+  'Match+ Trial':  'rgb(255, 148, 0)',
   'Scout':         '#9900ff',
   'Free':          '#101010',
 } as const;
@@ -120,8 +119,8 @@ export function getTierFromAthlete(
   tier: string | null | undefined,
   hasAthlete: boolean,
 ): TierName {
-  if (status === 'active') return tier === 'elite' ? 'Coach+' : 'Commit+';
-  if (status === 'trial') return 'Commit+ Trial';
+  if (status === 'active') return 'Match+';
+  if (status === 'trial') return 'Match+ Trial';
   if (hasAthlete) return 'Scout';
   return 'Free';
 }

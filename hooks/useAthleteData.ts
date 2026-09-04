@@ -69,7 +69,7 @@ export interface AthleteData {
   isPremium: boolean;
   isTrial27: boolean;
   loading: boolean;
-  refresh: () => void;
+  refresh: () => Promise<Athlete | null>;
 }
 
 export function useAthleteData(): AthleteData {
@@ -79,8 +79,8 @@ export function useAthleteData(): AthleteData {
   const [percentile, setPercentile] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    if (!session?.user) return;
+  const fetchData = useCallback(async (): Promise<Athlete | null> => {
+    if (!session?.user) return null;
     setLoading(true);
 
     const userId = session.user.id;
@@ -115,6 +115,7 @@ export function useAthleteData(): AthleteData {
     }
 
     setLoading(false);
+    return ath ?? null;
   }, [session?.user?.id]);
 
   useEffect(() => {

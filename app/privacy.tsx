@@ -41,7 +41,7 @@ export default function PrivacyScreen() {
         <Text style={styles.sectionTitle}>Data We Collect</Text>
         <Text style={styles.body}>
           • Athletic and academic profile information you provide{'\n'}
-          • Recruiting activity (outreach history, program matches){'\n'}
+          • Recruiting activity (program matches, in-app messages){'\n'}
           • Device identifiers for push notifications{'\n'}
           • Usage analytics to improve the product
         </Text>
@@ -50,9 +50,9 @@ export default function PrivacyScreen() {
 
         <Text style={styles.sectionTitle}>How We Use It</Text>
         <Text style={styles.body}>
-          Your data powers your V1 Score, program matching, and outreach tools. We send
-          push notifications only for recruiting-relevant alerts — task reminders and
-          coach reply notifications.
+          Your data powers your V1 Score, program matching, and in-app messaging with
+          coaches. We send push notifications only for recruiting-relevant alerts — task
+          reminders, new match notifications, and coach message notifications.
         </Text>
 
         <View style={styles.divider} />
