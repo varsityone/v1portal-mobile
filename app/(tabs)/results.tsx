@@ -105,7 +105,7 @@ export default function ResultsScreen() {
         </View>
         <ScoreAnimator finalScore={currentScore} recruitingLevel={band?.description} />
         <EmptyState
-          icon="lock"
+          icon="star"
           title="Unlock Full Results"
           body="Upgrade to Match+ to see detailed score breakdown, percentile ranking, recruiting gap analysis, and more."
           actionLabel="View Plans"

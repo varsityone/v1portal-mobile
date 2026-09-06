@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
+import { useCoachSaved } from '../../hooks/useCoachSaved';
 import { starsForScore } from '../../lib/recruitingLevels';
 import { ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
@@ -16,11 +17,13 @@ interface SavedProspect {
   id: string;
   athlete_id: string;
   notes: string | null;
+  saved_at: string;
   athlete: {
     id: string;
     full_name: string | null;
     profile_photo_url: string | null;
     position: string | null;
+    state: string | null;
     graduation_year: number | null;
     v1_score: number | null;
   } | null;
@@ -86,7 +89,7 @@ export default function SavedProspectsScreen() {
         />
       ) : (
         <View style={{ gap: 10, marginTop: 16 }}>
-          {saved.map(row => {
+          {saved.map((row: SavedProspect) => {
             const athlete = row.athlete;
             if (!athlete) return null;
             const stars = starsForScore(athlete.v1_score);

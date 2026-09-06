@@ -36,11 +36,12 @@ export default function MessageThreadScreen() {
     async function load() {
       setLoading(true);
       try {
+        const coachId = coach.id!;
         const { data: conv } = await supabase
           .from('coach_athlete_conversations')
           .select('id, coach_id, athlete_id')
           .eq('id', conversationId as string)
-          .eq('coach_id', coach.id)
+          .eq('coach_id', coachId)
           .single();
 
         if (!conv) { router.back(); return; }

@@ -49,7 +49,7 @@ export function BottomSheetModal({ visible, onClose, children }: BottomSheetModa
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.65)' },
+    backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.65)' },
     sheet: {
       position: 'absolute',
       bottom: 0,

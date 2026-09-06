@@ -31,17 +31,18 @@ export default function NotificationsSettingsScreen() {
 
     async function load() {
       setLoading(true);
+      const coachId = coach.id!;
       try {
         let { data } = await supabase
           .from('coach_notification_settings')
           .select('*')
-          .eq('coach_id', coach.id)
+          .eq('coach_id', coachId)
           .maybeSingle();
 
         if (!data) {
           const { data: created } = await supabase
             .from('coach_notification_settings')
-            .insert({ coach_id: coach.id })
+            .insert({ coach_id: coachId })
             .select('*')
             .single();
           data = created;

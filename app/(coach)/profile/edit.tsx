@@ -217,7 +217,27 @@ export default function CoachProfileEditScreen() {
   );
 }
 
-function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboardType, C }: any) {
+interface FieldInputProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: string;
+  C: any;
+}
+
+interface FieldSelectProps {
+  label: string;
+  value: string;
+  options: string[];
+  onSelect: (value: string) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  C: any;
+}
+
+function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboardType, C }: FieldInputProps) {
   const s = useMemo(() => createStyles(C), [C]);
   return (
     <View style={s.fieldBox}>
@@ -235,7 +255,7 @@ function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboa
   );
 }
 
-function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: any) {
+function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: FieldSelectProps) {
   const s = useMemo(() => createStyles(C), [C]);
   return (
     <View style={s.fieldBox}>
