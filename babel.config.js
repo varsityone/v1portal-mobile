@@ -3,7 +3,7 @@ module.exports = function (api) {
   api.cache.using(() => platform ?? 'unknown');
 
   return {
-    presets: [require('expo/node_modules/babel-preset-expo')],
+    presets: [require('babel-preset-expo')],
     plugins: platform === 'web' ? [] : ['react-native-reanimated/plugin'],
   };
 };
