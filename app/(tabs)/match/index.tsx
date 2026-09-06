@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
@@ -55,7 +56,7 @@ function isProfileComplete(athlete: any): boolean {
 export default function MatchScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { athlete, loading: athleteLoading } = useAthleteData();
+  const { athlete, loading: athleteLoading, refresh: refreshAthlete } = useAthleteData();
   const { session } = useAuth();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
@@ -129,6 +130,15 @@ export default function MatchScreen() {
     navigation.getParent()?.setOptions({ headerShown: !isFullScreenDeck });
     return () => { navigation.getParent()?.setOptions({ headerShown: true }); };
   }, [isFullScreenDeck, navigation]);
+
+  // Drawer screens stay mounted in the background, so returning to this tab
+  // (e.g. right after buying Match+ on the upgrade screen) wouldn't otherwise
+  // pick up a subscription change until the app was fully restarted.
+  useFocusEffect(
+    useCallback(() => {
+      refreshAthlete();
+    }, [refreshAthlete])
+  );
 
   const recordSwipe = async (direction: 'like' | 'pass', coachId: string) => {
     setSwiping(true);
