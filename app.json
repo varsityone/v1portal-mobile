@@ -6,12 +6,12 @@
     "version": "3.4.5",
     "scheme": "v1portal",
     "orientation": "portrait",
-    "icon": "./app/public/v1portal-app-icon-black.png",
+    "icon": "./app/public/v1portal-app-icon-black-solid.png",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.varsityone.v1portal",
-      "buildNumber": "34",
+      "buildNumber": "35",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "V1Portal sends recruiting task reminders and coach reply alerts.",
