@@ -3,7 +3,7 @@
     "name": "V1Portal",
     "slug": "v1portal",
     "description": "V1Portal is recruiting intelligence for high school football athletes. Know which schools should recruit you, see your top programs ranked by realistic fit, and get a step-by-step roadmap. Free to start.",
-    "version": "3.4.4",
+    "version": "3.4.5",
     "scheme": "v1portal",
     "orientation": "portrait",
     "icon": "./app/public/v1portal-app-icon-black.png",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.varsityone.v1portal",
-      "buildNumber": "29",
+      "buildNumber": "30",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "V1Portal sends recruiting task reminders and coach reply alerts.",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.varsityone.v1portal",
-      "versionCode": 4,
+      "versionCode": 5,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
