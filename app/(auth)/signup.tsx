@@ -28,6 +28,7 @@ type RoleId = AccountRole;
 const ROLES: Array<{ id: RoleId; label: string; sub: string }> = [
   { id: 'athlete',       label: "I'm the Athlete",      sub: "Building my own recruiting profile" },
   { id: 'parent',        label: "I'm a Parent",          sub: "Helping my son or daughter get recruited" },
+  { id: 'coach',         label: "I'm a Coach",           sub: "Recruiting for my program" },
   { id: 'flag_football', label: "Flag Football – Girls", sub: "Join the waitlist for our girls program" },
 ];
 
@@ -101,19 +102,34 @@ export default function SignupScreen() {
       },
     });
 
-    setLoading(false);
-
     if (authError) {
+      setLoading(false);
       setError(authError.message);
     } else if (authData.user) {
       const isFlagFootball = selectedRole === 'flag_football';
-      supabase.from('athletes').upsert([{
+      const athleteRow = {
         user_id: authData.user.id,
         email: authData.user.email ?? email.trim().toLowerCase(),
         full_name: fullName,
         account_role: isFlagFootball ? 'flag_football' : (selectedRole ?? 'athlete'),
         ...(isFlagFootball && { flag_football_waitlist: true }),
-      }], { onConflict: 'user_id' }).then(() => {});
+      };
+
+      let { error: athleteError } = await supabase.from('athletes').upsert([athleteRow], { onConflict: 'user_id' });
+      if (athleteError) {
+        // Transient errors (e.g. the trigger-created row from auth.signUp
+        // not having committed yet) are worth one retry before giving up —
+        // without this row the whole app has nothing to read for this user.
+        await new Promise(r => setTimeout(r, 1000));
+        ({ error: athleteError } = await supabase.from('athletes').upsert([athleteRow], { onConflict: 'user_id' }));
+      }
+
+      setLoading(false);
+
+      if (athleteError) {
+        setError("Your account was created, but we couldn't finish setting up your profile. Please try logging in — if this keeps happening, contact support@v1portal.com.");
+        return;
+      }
 
       fetch('https://v1portal.com/api/email/transactional', {
         method: 'POST',
@@ -127,6 +143,9 @@ export default function SignupScreen() {
           data: { firstName: firstName.trim() },
         }),
       }).catch(() => {});
+    } else {
+      setLoading(false);
+      setError('Something went wrong creating your account. Please try again.');
     }
   };
 
