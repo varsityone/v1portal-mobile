@@ -12,10 +12,9 @@ import { useTheme } from '../context/ThemeContext';
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',         href: '/(tabs)',              icon: 'grid'         as const, iconOff: 'grid-outline'          as const },
   { label: 'My V1 Score',       href: '/(tabs)/results',     icon: 'analytics'    as const, iconOff: 'analytics-outline'     as const },
-  { label: 'Build Profile',     href: '/(tabs)/profile',     icon: 'person'       as const, iconOff: 'person-outline'        as const },
   { label: 'Program Matches',   href: '/(tabs)/match',       icon: 'heart'        as const, iconOff: 'heart-outline'         as const },
+  { label: 'Build Profile',     href: '/(tabs)/profile',     icon: 'person'       as const, iconOff: 'person-outline'        as const },
   { label: 'Calendar',          href: '/(tabs)/calendar',    icon: 'calendar'     as const, iconOff: 'calendar-outline'      as const },
   { label: 'Analytics',         href: '/(tabs)/analytics',   icon: 'bar-chart'    as const, iconOff: 'bar-chart-outline'     as const },
 ];

@@ -98,16 +98,21 @@ export default function DrawerLayout() {
           },
         }}
       >
-        <Drawer.Screen name="index"            options={{ title: 'Dashboard' }} />
-        <Drawer.Screen name="results"          options={{ title: 'My V1 Score', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="gameplan"         options={{ title: 'My V1 Score', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="match"            options={{ title: 'Program Matches', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="results"          options={{ title: 'My V1 Score' }} />
+        <Drawer.Screen name="match"            options={{ title: 'Program Matches' }} />
+        <Drawer.Screen name="tracker"          options={{ title: 'Tracker', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="targeting"        options={{ title: 'Targeting', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="outreach"         options={{ title: 'Outreach', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="messages"         options={{ title: 'Messages', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="calendar"         options={{ title: 'Calendar', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="analytics"        options={{ title: 'Analytics', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="help"             options={{ title: 'Help', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="profile"          options={{ title: 'Build Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="edit-profile"     options={{ title: 'Edit Profile', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="settings"         options={{ title: 'Profile Settings', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="settings"         options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="upgrade"          options={{ title: 'Upgrade', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="index"            options={{ title: 'Dashboard', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="gameplan"         options={{ title: 'Gameplan', drawerItemStyle: { display: 'none' } }} />
       </Drawer>
     </GestureHandlerRootView>
   );
