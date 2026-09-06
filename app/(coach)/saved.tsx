@@ -1,16 +1,30 @@
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { useCoachSaved } from '../../hooks/useCoachSaved';
+import { starsForScore } from '../../lib/recruitingLevels';
 import { ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { starsForScore } from '../../lib/recruitingLevels';
 import { Avatar } from '../../components/ui/Avatar';
-import { Badge } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
+
+interface SavedProspect {
+  id: string;
+  athlete_id: string;
+  notes: string | null;
+  athlete: {
+    id: string;
+    full_name: string | null;
+    profile_photo_url: string | null;
+    position: string | null;
+    graduation_year: number | null;
+    v1_score: number | null;
+  } | null;
+}
 
 export default function SavedProspectsScreen() {
   const router = useRouter();
