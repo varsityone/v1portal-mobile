@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { resolveHomeRoute } from '../lib/resolveHomeRoute';
 import { Colors } from '../constants/Colors';
 
 export default function Index() {
@@ -11,7 +12,7 @@ export default function Index() {
   useEffect(() => {
     if (loading) return;
     if (session) {
-      router.replace('/(tabs)');
+      resolveHomeRoute(session.user.id).then(route => router.replace(route as any));
     } else {
       router.replace('/(auth)/login');
     }

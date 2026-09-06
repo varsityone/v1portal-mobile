@@ -35,6 +35,7 @@ import {
 } from '@expo-google-fonts/jetbrains-mono';
 import { supabase } from '../lib/supabase';
 import { configurePurchases } from '../lib/purchases';
+import { resolveHomeRoute } from '../lib/resolveHomeRoute';
 import { handleNotificationResponse, getRouteFromNotification, NotificationScreen } from '../lib/notifications';
 import { Colors } from '../constants/Colors';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -263,7 +264,7 @@ export default function RootLayout() {
       } else if (!seen) {
         router.replace('/onboarding');
       } else {
-        router.replace('/(tabs)');
+        router.replace(await resolveHomeRoute(session.user.id) as any);
       }
       setAppReady(true);
     }
@@ -279,21 +280,23 @@ export default function RootLayout() {
 
       const code = params.code as string | undefined;
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) router.replace('/(tabs)');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error && data.user?.id) router.replace(await resolveHomeRoute(data.user.id) as any);
         return;
       }
 
       const token_hash = params.token_hash as string | undefined;
       const type = params.type as string | undefined;
       if (token_hash && type) {
-        const { error } = await supabase.auth.verifyOtp({
+        const { data, error } = await supabase.auth.verifyOtp({
           token_hash,
           type: type as 'recovery' | 'magiclink' | 'email',
         });
         if (!error) {
           if (type === 'recovery') {
             router.push('/(auth)/reset-password');
+          } else if (data.user?.id) {
+            router.replace(await resolveHomeRoute(data.user.id) as any);
           } else {
             router.replace('/(tabs)');
           }
@@ -319,7 +322,8 @@ export default function RootLayout() {
         if (!seen) {
           router.replace('/onboarding');
         } else {
-          router.replace('/(tabs)');
+          const dest = s?.user?.id ? await resolveHomeRoute(s.user.id) : '/(tabs)';
+          router.replace(dest as any);
         }
         setAppReady(true);
       }

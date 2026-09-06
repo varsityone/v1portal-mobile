@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type AccountRole = 'athlete' | 'parent' | 'flag_football';
+export type AccountRole = 'athlete' | 'parent' | 'flag_football' | 'coach';
 
 const KEY = 'v1_pending_role';
 

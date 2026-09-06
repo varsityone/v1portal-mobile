@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -91,9 +90,9 @@ export default function LoginScreen() {
           <Text style={styles.title}>Welcome Back.</Text>
           <Text style={styles.subtitle}>Sign in to your V1Portal® account</Text>
           <Text style={styles.subscriptionNote}>
-            New to V1Portal? Create a free account at{' '}
-            <Text style={styles.subscriptionLink} onPress={() => Linking.openURL('https://v1portal.com')}>
-              v1portal.com
+            New to V1Portal?{' '}
+            <Text style={styles.subscriptionLink} onPress={() => router.push('/(auth)/signup')}>
+              Create a free account
             </Text>
           </Text>
         </View>
@@ -169,8 +168,8 @@ export default function LoginScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>New to V1Portal? </Text>
-          <Pressable onPress={() => Linking.openURL('https://v1portal.com')} hitSlop={8}>
-            <Text style={styles.footerLink}>Sign up at v1portal.com</Text>
+          <Pressable onPress={() => router.push('/(auth)/signup')} hitSlop={8}>
+            <Text style={styles.footerLink}>Sign up</Text>
           </Pressable>
         </View>
       </ScrollView>
