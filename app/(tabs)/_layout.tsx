@@ -99,6 +99,7 @@ export default function DrawerLayout() {
         }}
       >
         <Drawer.Screen name="index"            options={{ title: 'Dashboard' }} />
+        <Drawer.Screen name="results"          options={{ title: 'My V1 Score', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="gameplan"         options={{ title: 'My V1 Score', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="match"            options={{ title: 'Program Matches', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="calendar"         options={{ title: 'Calendar', drawerItemStyle: { display: 'none' } }} />

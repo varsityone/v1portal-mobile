@@ -8,13 +8,53 @@ import { useAuth } from '../hooks/useAuth';
 import { useCoachData } from '../hooks/useCoachData';
 import { useTheme } from '../context/ThemeContext';
 
-// ─── Nav structure — mirrors web's CoachShell 4-item nav exactly ─────────────
+// ─── Nav structure — Phase 2+ screens grouped by intent ─────────────
 
-const NAV_ITEMS = [
-  { label: 'Dashboard',      href: '/(coach)',            icon: 'grid'      as const, iconOff: 'grid-outline'      as const },
-  { label: 'Find Athletes',  href: '/(coach)/match',      icon: 'heart'     as const, iconOff: 'heart-outline'     as const },
-  { label: 'My Matches',     href: '/(coach)/matches',    icon: 'people'    as const, iconOff: 'people-outline'    as const },
-  { label: 'Compliance',     href: '/(coach)/compliance', icon: 'shield'    as const, iconOff: 'shield-outline'    as const },
+const NAV_GROUPS = [
+  {
+    label: 'Overview',
+    items: [
+      { label: 'Dashboard', href: '/(coach)', icon: 'grid' as const, iconOff: 'grid-outline' as const },
+    ],
+  },
+  {
+    label: 'Find Talent',
+    items: [
+      { label: 'Recruit Search', href: '/(coach)/search', icon: 'search' as const, iconOff: 'search-outline' as const },
+      { label: 'Saved Prospects', href: '/(coach)/saved', icon: 'bookmark' as const, iconOff: 'bookmark-outline' as const },
+      { label: 'My Matches', href: '/(coach)/matches', icon: 'heart' as const, iconOff: 'heart-outline' as const },
+    ],
+  },
+  {
+    label: 'Pipeline',
+    items: [
+      { label: 'Recruiting', href: '/(coach)/recruiting', icon: 'map' as const, iconOff: 'map-outline' as const },
+      { label: 'Pipeline', href: '/(coach)/pipeline', icon: 'git-branch' as const, iconOff: 'git-branch' as const },
+    ],
+  },
+  {
+    label: 'Outreach',
+    items: [
+      { label: 'Messages', href: '/(coach)/messages', icon: 'chatbubble' as const, iconOff: 'chatbubble-outline' as const },
+      { label: 'Templates', href: '/(coach)/templates', icon: 'document' as const, iconOff: 'document-outline' as const },
+      { label: 'Bulk Message', href: '/(coach)/bulk-message', icon: 'send' as const, iconOff: 'send-outline' as const },
+      { label: 'Calendar', href: '/(coach)/calendar', icon: 'calendar' as const, iconOff: 'calendar-outline' as const },
+      { label: 'Compliance', href: '/(coach)/compliance', icon: 'shield' as const, iconOff: 'shield-outline' as const },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { label: 'Analytics', href: '/(coach)/analytics', icon: 'bar-chart' as const, iconOff: 'bar-chart-outline' as const },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Profile', href: '/(coach)/profile', icon: 'person' as const, iconOff: 'person-outline' as const },
+      { label: 'Settings', href: '/(coach)/settings', icon: 'settings' as const, iconOff: 'settings-outline' as const },
+    ],
+  },
 ];
 
 // ─── Social icons — same SVG paths as AppDrawer ───────────────────────────────
@@ -158,32 +198,36 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
       {/* Scrollable nav */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
 
-        <Text style={[d.groupLabel, { color: C.textDim }]}>NAVIGATION</Text>
-        <View style={d.navList}>
-          {NAV_ITEMS.map(item => {
-            const active = isActive(item.href);
-            return (
-              <Pressable
-                key={item.href}
-                style={({ pressed }) => [
-                  d.navItem,
-                  pressed && { backgroundColor: 'rgba(255,255,255,0.05)' },
-                ]}
-                onPress={() => navigate(item.href)}
-              >
-                <Ionicons
-                  name={active ? item.icon : item.iconOff}
-                  size={17}
-                  color={scheme === 'dark' ? '#ffffff' : '#252525'}
-                />
-                <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
-                  {item.label}
-                </Text>
-                {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
-              </Pressable>
-            );
-          })}
-        </View>
+        {NAV_GROUPS.map((group, gi) => (
+          <View key={gi}>
+            <Text style={[d.groupLabel, { color: C.textDim }]}>{group.label}</Text>
+            <View style={d.navList}>
+              {group.items.map(item => {
+                const active = isActive(item.href);
+                return (
+                  <Pressable
+                    key={item.href}
+                    style={({ pressed }) => [
+                      d.navItem,
+                      pressed && { backgroundColor: 'rgba(255,255,255,0.05)' },
+                    ]}
+                    onPress={() => navigate(item.href)}
+                  >
+                    <Ionicons
+                      name={active ? item.icon : item.iconOff}
+                      size={17}
+                      color={scheme === 'dark' ? '#ffffff' : '#252525'}
+                    />
+                    <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
+                      {item.label}
+                    </Text>
+                    {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
 
         {/* Divider */}
         <View style={[d.divider, { backgroundColor: C.border }]} />

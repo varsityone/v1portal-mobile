@@ -77,10 +77,22 @@ export default function CoachDrawerLayout() {
           },
         }}
       >
-        <Drawer.Screen name="index"      options={{ title: 'Dashboard' }} />
-        <Drawer.Screen name="match"      options={{ title: 'Find Athletes', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="matches"    options={{ title: 'My Matches', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="compliance" options={{ title: 'Compliance', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="index"                    options={{ title: 'Dashboard' }} />
+        <Drawer.Screen name="match"                    options={{ title: 'Find Athletes', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="matches"                  options={{ title: 'My Matches', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="search"                   options={{ title: 'Recruit Search', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="saved"                    options={{ title: 'Saved Prospects', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="recruiting"               options={{ title: 'Recruiting', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="pipeline"                 options={{ title: 'Pipeline', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="messages"                 options={{ title: 'Messages', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="templates"                options={{ title: 'Templates', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="bulk-message"             options={{ title: 'Bulk Message', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="calendar"                 options={{ title: 'Calendar', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="analytics"                options={{ title: 'Analytics', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="profile"                  options={{ title: 'Profile', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="settings"                 options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="notifications-settings"   options={{ title: 'Notifications', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="compliance"               options={{ title: 'Compliance', drawerItemStyle: { display: 'none' } }} />
       </Drawer>
     </GestureHandlerRootView>
   );
