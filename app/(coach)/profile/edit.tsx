@@ -1,70 +1,103 @@
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
+import { floorFromLevels, RECRUITING_LEVEL_BANDS } from '../../../lib/recruitingLevels';
 import { ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
-import { floorFromLevels, POSITIONS, RECRUITING_LEVEL_BANDS } from '../../../lib/recruitingLevels';
-import { FilterChips } from '../../../components/ui/FilterChips';
 import { Card } from '../../../components/ui/Card';
 
-const TITLES = ['Head Coach', 'Assistant Coach', 'Defensive Coordinator', 'Offensive Coordinator', 'Quarterbacks Coach', 'Running Backs Coach', 'Wide Receivers Coach', 'Tight Ends Coach', 'Offensive Line Coach', 'Defensive Line Coach', 'Linebackers Coach', 'Defensive Backs Coach', 'Special Teams Coordinator', 'Strength & Conditioning Coach', 'Graduate Assistant', 'Analyst'];
-const DIVISIONS = ['D1_FBS', 'D1_FCS', 'D2', 'D3', 'NAIA', 'NJCAA'];
+const TITLES = [
+  'Head Coach', 'Offensive Coordinator', 'Defensive Coordinator', 'Special Teams Coordinator',
+  'Recruiting Coordinator', 'Offensive Line Coach', 'Defensive Line Coach', 'Quarterback Coach',
+  'Wide Receivers Coach', 'Running Backs Coach', 'Tight Ends Coach', 'Linebackers Coach',
+  'Defensive Backs Coach', 'Safeties Coach', 'Position Coach', 'Assistant Coach', 'Graduate Assistant',
+];
+
+const DIVISIONS = [
+  { value: 'D1_FBS', label: 'NCAA D1 FBS' },
+  { value: 'D1_FCS', label: 'NCAA D1 FCS' },
+  { value: 'D2', label: 'NCAA D2' },
+  { value: 'D3', label: 'NCAA D3' },
+  { value: 'NAIA', label: 'NAIA' },
+  { value: 'NJCAA', label: 'NJCAA' },
+];
+
 const NJCAA_REGIONS = ['Region I', 'Region II', 'Region III', 'Region IV', 'Region V', 'Region VI', 'Region VII', 'Region VIII', 'Region IX', 'Region X', 'Region XI', 'Region XII'];
 
 export default function CoachProfileEditScreen() {
-  const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { coach, refresh } = useCoachData();
+  const router = useRouter();
+  const { coach, loading } = useCoachData();
 
-  const [fullName, setFullName] = useState(coach?.full_name ?? '');
-  const [title, setTitle] = useState(coach?.title ?? '');
-  const [schoolName, setSchoolName] = useState(coach?.school_name ?? '');
-  const [schoolEmail, setSchoolEmail] = useState(coach?.school_email ?? '');
-  const [division, setDivision] = useState(coach?.division ?? '');
-  const [region, setRegion] = useState(coach?.region ?? '');
-  const [positionCoached, setPositionCoached] = useState(coach?.position_coached ?? '');
-  const [positionNeeds, setPositionNeeds] = useState(coach?.position_needs ?? []);
-  const [levelBands, setLevelBands] = useState(coach?.level_bands ?? []);
-  const [phone, setPhone] = useState(coach?.phone ?? '');
-  const [phonePublic, setPhonePublic] = useState(coach?.phone_public ?? false);
-  const [twitter, setTwitter] = useState(coach?.twitter ?? '');
-  const [yearsCoaching, setYearsCoaching] = useState(coach?.years_coaching?.toString() ?? '');
-  const [previousStops, setPreviousStops] = useState(coach?.previous_stops ?? '');
-  const [bio, setBio] = useState(coach?.bio ?? '');
+  const [formData, setFormData] = useState<any>({
+    title: '',
+    full_name: '',
+    school_name: '',
+    school_email: '',
+    phone: '',
+    division: '',
+    region: null,
+    position_needs: [],
+    years_coaching: 0,
+    previous_stops: '',
+    bio: '',
+    message_to_recruits: '',
+    twitter: '',
+  });
+
   const [saving, setSaving] = useState(false);
+  const [showTitleMenu, setShowTitleMenu] = useState(false);
+  const [showDivisionMenu, setShowDivisionMenu] = useState(false);
+  const [showRegionMenu, setShowRegionMenu] = useState(false);
+
+  useEffect(() => {
+    if (coach) {
+      setFormData({
+        title: coach.title || '',
+        full_name: coach.full_name || '',
+        school_name: coach.school_name || '',
+        school_email: coach.school_email || '',
+        phone: coach.phone || '',
+        division: coach.division || '',
+        region: coach.region || null,
+        position_needs: coach.position_needs || [],
+        years_coaching: coach.years_coaching || 0,
+        previous_stops: coach.previous_stops || '',
+        bio: coach.bio || '',
+        message_to_recruits: coach.message_to_recruits || '',
+        twitter: coach.twitter || '',
+      });
+    }
+  }, [coach]);
 
   const handleSave = async () => {
     if (!coach?.id) return;
     setSaving(true);
-
     try {
-      const minScore = floorFromLevels(levelBands);
-      const updateData: any = {
-        full_name: fullName,
-        title,
-        school_name: schoolName,
-        school_email: schoolEmail,
-        division,
-        region: division === 'NJCAA' ? region : null,
-        position_coached: positionCoached,
-        position_needs: positionNeeds,
-        level_bands: levelBands,
+      const minScore = formData.position_needs.length ? floorFromLevels(formData.position_needs) : null;
+      const data = {
+        title: formData.title,
+        full_name: formData.full_name,
+        school_name: formData.school_name,
+        school_email: formData.school_email,
+        phone: formData.phone,
+        division: formData.division,
+        region: formData.division !== 'NJCAA' ? null : formData.region,
+        position_needs: formData.position_needs,
         min_score: minScore,
-        phone,
-        phone_public: phonePublic,
-        twitter,
-        years_coaching: yearsCoaching ? parseInt(yearsCoaching) : null,
-        previous_stops: previousStops,
-        bio,
+        years_coaching: formData.years_coaching,
+        previous_stops: formData.previous_stops,
+        bio: formData.bio,
+        message_to_recruits: formData.message_to_recruits,
+        twitter: formData.twitter,
       };
 
-      await supabase.from('coach_accounts').update(updateData).eq('id', coach.id);
-      await refresh();
+      await supabase.from('coach_accounts').update(data).eq('id', coach.id);
       router.back();
     } catch (e) {
       console.error('Save error:', e);
@@ -73,138 +106,192 @@ export default function CoachProfileEditScreen() {
     }
   };
 
-  if (!coach) return null;
+  if (loading) {
+    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+  }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-      <View style={s.header}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={28} color={C.text} />
-        </Pressable>
-        <Text style={s.title}>Edit Profile</Text>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <Card>
-        <Text style={s.fieldLabel}>Full Name</Text>
-        <TextInput style={s.input} value={fullName} onChangeText={setFullName} />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>Title</Text>
-        <View style={s.dropdown}>
-          <TextInput style={s.input} value={title} onChangeText={setTitle} placeholder="Select or type…" />
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+        <View style={s.header}>
+          <Text style={s.title}>Edit Profile</Text>
+          <Text style={s.subtitle}>Update your coaching information</Text>
         </View>
-      </Card>
 
-      <Card>
-        <Text style={s.fieldLabel}>School Name</Text>
-        <TextInput style={s.input} value={schoolName} onChangeText={setSchoolName} />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>School Email</Text>
-        <TextInput style={s.input} value={schoolEmail} onChangeText={setSchoolEmail} keyboardType="email-address" />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>Division</Text>
-        <View style={s.dropdown}>
-          <TextInput style={s.input} value={division} onChangeText={setDivision} placeholder="Select…" />
-        </View>
-      </Card>
-
-      {division === 'NJCAA' && (
+        {/* Personal Info */}
         <Card>
-          <Text style={s.fieldLabel}>Region</Text>
-          <View style={s.dropdown}>
-            <TextInput style={s.input} value={region} onChangeText={setRegion} placeholder="Select…" />
+          <Text style={s.sectionTitle}>Personal Information</Text>
+          <FieldInput label="Full Name" value={formData.full_name} onChangeText={v => setFormData({ ...formData, full_name: v })} C={C} />
+          <FieldSelect
+            label="Title"
+            value={formData.title}
+            options={TITLES}
+            onSelect={v => setFormData({ ...formData, title: v })}
+            open={showTitleMenu}
+            setOpen={setShowTitleMenu}
+            C={C}
+          />
+        </Card>
+
+        {/* School Info */}
+        <Card>
+          <Text style={s.sectionTitle}>School Information</Text>
+          <FieldInput label="School Name" value={formData.school_name} onChangeText={v => setFormData({ ...formData, school_name: v })} C={C} />
+          <FieldInput label="School Email" value={formData.school_email} onChangeText={v => setFormData({ ...formData, school_email: v })} C={C} />
+          <FieldInput label="Phone" value={formData.phone} onChangeText={v => setFormData({ ...formData, phone: v })} C={C} />
+        </Card>
+
+        {/* Division & Region */}
+        <Card>
+          <Text style={s.sectionTitle}>Division & Region</Text>
+          <FieldSelect
+            label="Division"
+            value={DIVISIONS.find(d => d.value === formData.division)?.label || ''}
+            options={DIVISIONS.map(d => d.label)}
+            onSelect={v => {
+              const div = DIVISIONS.find(d => d.label === v)?.value || '';
+              setFormData({ ...formData, division: div, region: null });
+            }}
+            open={showDivisionMenu}
+            setOpen={setShowDivisionMenu}
+            C={C}
+          />
+          {formData.division === 'NJCAA' && (
+            <FieldSelect
+              label="Region"
+              value={formData.region || ''}
+              options={NJCAA_REGIONS}
+              onSelect={v => setFormData({ ...formData, region: v })}
+              open={showRegionMenu}
+              setOpen={setShowRegionMenu}
+              C={C}
+            />
+          )}
+        </Card>
+
+        {/* Recruiting Needs */}
+        <Card>
+          <Text style={s.sectionTitle}>Recruiting Needs</Text>
+          <Text style={s.fieldLabel}>Position Targets</Text>
+          <View style={s.chipGrid}>
+            {RECRUITING_LEVEL_BANDS.map(band => (
+              <Pressable
+                key={band.level}
+                style={[s.chip, formData.position_needs.includes(band.level) && s.chipActive]}
+                onPress={() => {
+                  const next = formData.position_needs.includes(band.level)
+                    ? formData.position_needs.filter((l: string) => l !== band.level)
+                    : [...formData.position_needs, band.level];
+                  setFormData({ ...formData, position_needs: next });
+                }}
+              >
+                <Text style={[s.chipText, formData.position_needs.includes(band.level) && s.chipTextActive]}>
+                  {band.level}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </Card>
-      )}
 
-      <Card>
-        <Text style={s.fieldLabel}>Position Coached</Text>
-        <TextInput style={s.input} value={positionCoached} onChangeText={setPositionCoached} />
-      </Card>
+        {/* Coaching History */}
+        <Card>
+          <Text style={s.sectionTitle}>Coaching History</Text>
+          <FieldInput label="Years Coaching" value={String(formData.years_coaching)} onChangeText={v => setFormData({ ...formData, years_coaching: Number(v) })} keyboardType="numeric" C={C} />
+          <FieldInput label="Previous Stops" value={formData.previous_stops} onChangeText={v => setFormData({ ...formData, previous_stops: v })} multiline C={C} />
+          <FieldInput label="Bio" value={formData.bio} onChangeText={v => setFormData({ ...formData, bio: v })} multiline C={C} />
+        </Card>
 
-      <Card>
-        <Text style={s.fieldLabel}>Positions Recruiting</Text>
-        <FilterChips
-          options={POSITIONS.map(p => ({ label: p, value: p }))}
-          selected={positionNeeds}
-          onToggle={p => setPositionNeeds(positionNeeds.includes(p) ? positionNeeds.filter(x => x !== p) : [...positionNeeds, p])}
-          horizontal={false}
-        />
-      </Card>
+        {/* Messaging */}
+        <Card>
+          <Text style={s.sectionTitle}>Messaging</Text>
+          <FieldInput label="Message to Recruits" value={formData.message_to_recruits} onChangeText={v => setFormData({ ...formData, message_to_recruits: v })} multiline C={C} />
+          <FieldInput label="Twitter" value={formData.twitter} onChangeText={v => setFormData({ ...formData, twitter: v })} placeholder="@handle" C={C} />
+        </Card>
 
-      <Card>
-        <Text style={s.fieldLabel}>Recruiting Level Bands</Text>
-        <FilterChips
-          options={RECRUITING_LEVEL_BANDS.map(b => ({ label: b.level, value: b.level }))}
-          selected={levelBands}
-          onToggle={b => setLevelBands(levelBands.includes(b) ? levelBands.filter(x => x !== b) : [...levelBands, b])}
-          horizontal={false}
-        />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>Phone</Text>
-        <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <Pressable style={s.toggleRow} onPress={() => setPhonePublic(!phonePublic)}>
-          <Text style={s.toggleLabel}>Make phone public</Text>
-          <View style={[s.toggle, phonePublic && { backgroundColor: C.primary }]}>
-            <View style={[s.toggleThumb, phonePublic && s.toggleThumbActive]} />
-          </View>
+        {/* Save Button */}
+        <Pressable style={s.saveBtn} onPress={handleSave} disabled={saving}>
+          <Text style={s.saveBtnText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
         </Pressable>
-      </Card>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
 
-      <Card>
-        <Text style={s.fieldLabel}>Twitter</Text>
-        <TextInput style={s.input} value={twitter} onChangeText={setTwitter} />
-      </Card>
+function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboardType, C }: any) {
+  const s = useMemo(() => createStyles(C), [C]);
+  return (
+    <View style={s.fieldBox}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      <TextInput
+        style={[s.input, multiline && { minHeight: 80 }]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder || ''}
+        placeholderTextColor={C.textDim}
+        multiline={multiline}
+        keyboardType={keyboardType as any}
+      />
+    </View>
+  );
+}
 
-      <Card>
-        <Text style={s.fieldLabel}>Years Coaching</Text>
-        <TextInput style={s.input} value={yearsCoaching} onChangeText={setYearsCoaching} keyboardType="number-pad" />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>Previous Stops</Text>
-        <TextInput style={[s.input, s.multiline]} value={previousStops} onChangeText={setPreviousStops} multiline numberOfLines={3} />
-      </Card>
-
-      <Card>
-        <Text style={s.fieldLabel}>Bio</Text>
-        <TextInput style={[s.input, s.multiline]} value={bio} onChangeText={setBio} multiline numberOfLines={4} />
-      </Card>
-
-      <Pressable
-        style={[s.saveButton, saving && { opacity: 0.6 }]}
-        onPress={handleSave}
-        disabled={saving}
-      >
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveButtonText}>Save Changes</Text>}
+function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: any) {
+  const s = useMemo(() => createStyles(C), [C]);
+  return (
+    <View style={s.fieldBox}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      <Pressable style={s.selectBtn} onPress={() => setOpen(!open)}>
+        <Text style={s.selectText}>{value || 'Select...'}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textDim} />
       </Pressable>
-    </ScrollView>
+      {open && (
+        <View style={s.menu}>
+          {options.map((opt: string) => (
+            <Pressable
+              key={opt}
+              style={s.menuItem}
+              onPress={() => {
+                onSelect(opt);
+                setOpen(false);
+              }}
+            >
+              <Text style={s.menuItemText}>{opt}</Text>
+              {value === opt && <Ionicons name="checkmark" size={16} color={C.primary} />}
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    container: { padding: 20, paddingBottom: 48 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    title: { fontFamily: FontFamily.bodyBold, fontSize: 16, color: C.text },
-    fieldLabel: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textDim, marginBottom: 8 },
-    input: { backgroundColor: C.background, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontFamily: FontFamily.body, fontSize: 14, color: C.text, borderWidth: 1, borderColor: C.border },
-    multiline: { textAlignVertical: 'top' },
-    dropdown: { borderRadius: 8, overflow: 'hidden' },
-    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border },
-    toggleLabel: { fontFamily: FontFamily.body, fontSize: 13, color: C.text },
-    toggle: { width: 50, height: 30, borderRadius: 15, backgroundColor: C.border2, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 3 },
-    toggleThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.text },
-    toggleThumbActive: { alignSelf: 'flex-end' },
-    saveButton: { backgroundColor: C.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
-    saveButtonText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
+    container: { padding: 20, paddingBottom: 48, backgroundColor: C.background },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
+    header: { marginBottom: 24 },
+    title: { fontFamily: FontFamily.headline, fontSize: 28, fontWeight: '900', color: C.text, marginBottom: 6 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
+
+    sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 14 },
+    fieldBox: { marginBottom: 14 },
+    fieldLabel: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text, marginBottom: 6 },
+    input: { fontFamily: FontFamily.body, fontSize: 13, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, color: C.text, backgroundColor: C.surface },
+
+    selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: C.surface },
+    selectText: { fontFamily: FontFamily.body, fontSize: 13, color: C.text },
+
+    menu: { backgroundColor: C.surface, borderRadius: 10, borderWidth: 1, borderColor: C.border, marginTop: 8, overflow: 'hidden' },
+    menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border },
+    menuItemText: { fontFamily: FontFamily.body, fontSize: 13, color: C.text },
+
+    chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+    chipActive: { backgroundColor: C.primary + '20', borderColor: C.primary },
+    chipText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+    chipTextActive: { color: C.primary, fontWeight: '600' },
+
+    saveBtn: { backgroundColor: C.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
+    saveBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
   });
 }
