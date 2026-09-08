@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -69,11 +69,10 @@ export default function DrawerLayout() {
         <LinearGradient
           colors={['#ff0000', '#ffbc00']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={floatStyles.gradient}
         >
-          <Ionicons name="help-circle" size={15} color="#fff" />
-          <Text style={floatStyles.label}>Questions</Text>
+          <Ionicons name="help-circle-outline" size={22} color="#fff" />
         </LinearGradient>
       </Pressable>
 
@@ -114,31 +113,31 @@ export default function DrawerLayout() {
   );
 }
 
+// Matches web's actual DOM (element.style, confirmed via inspector):
+// position:fixed; right:-12px; bottom:110px; width/height:48px;
+// border-radius:8px 0 0 8px; background:linear-gradient(130deg, red, #ffbc00);
+// box-shadow: -2px 4px 12px rgba(0,0,0,0.2). Rounded on the left edge only —
+// a tab, not a circle.
 const floatStyles = StyleSheet.create({
   btn: {
     position: 'absolute',
-    bottom: 24,
-    right: 16,
+    bottom: 110,
+    right: -12,
+    width: 48,
+    height: 48,
     zIndex: 999,
-    borderRadius: 100,
-    shadowColor: '#ff6000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     elevation: 8,
   },
   gradient: {
-    flexDirection: 'row',
+    width: 48,
+    height: 48,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingRight: 16,
-    paddingLeft: 12,
-    borderRadius: 100,
-  },
-  label: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    justifyContent: 'center',
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
   },
 });

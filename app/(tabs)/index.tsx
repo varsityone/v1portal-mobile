@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +47,77 @@ const TOUR_STEPS = [
   },
 ];
 
+// Matches web's .gp-spot-rest-wrap/.gp-spot-rest-track: an infinite,
+// linear-speed auto-scrolling marquee (not a manually-dragged ScrollView).
+// The item list is rendered twice back-to-back and translated by exactly
+// one copy's measured width, on a loop, for a seamless wrap — same trick
+// as web's translateX(0) -> translateX(-50%) over a duplicated track.
+const MARQUEE_SPEED = 18; // px/sec, matches web's ~32s loop for typical item widths
+
+function SpotRestMarquee({ programs, C, s }: { programs: TopFitProgram[]; C: ThemeColors; s: ReturnType<typeof createStyles> }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const [setWidth, setSetWidth] = useState(0);
+  const animRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    animRef.current?.stop();
+    if (!setWidth) return;
+    translateX.setValue(0);
+    animRef.current = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: -setWidth,
+        duration: (setWidth / MARQUEE_SPEED) * 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    animRef.current.start();
+    return () => animRef.current?.stop();
+  }, [setWidth]);
+
+  const renderItem = (p: TopFitProgram, key: string) => {
+    const initials = p.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    return (
+      <View key={key} style={s.spotRestItem}>
+        {p.logoUrl ? (
+          <Image source={{ uri: p.logoUrl }} style={s.spotRestLogoImg} resizeMode="contain" />
+        ) : (
+          <View style={s.spotRestLogoWrap}>
+            <Text style={s.spotRestLogoInitials}>{initials}</Text>
+          </View>
+        )}
+        <Text style={s.spotRestName} numberOfLines={1}>{p.name}</Text>
+        <Text style={s.spotRestPct}>{p.fitPct}%</Text>
+      </View>
+    );
+  };
+
+  return (
+    <View style={s.spotRestWrap}>
+      <Animated.View style={[s.spotRestTrack, { transform: [{ translateX }] }]}>
+        <View style={s.spotRestGroup} onLayout={e => setSetWidth(e.nativeEvent.layout.width)}>
+          {programs.map(p => renderItem(p, `a-${p.id}`))}
+        </View>
+        <View style={s.spotRestGroup} aria-hidden>
+          {programs.map(p => renderItem(p, `b-${p.id}`))}
+        </View>
+      </Animated.View>
+      <LinearGradient
+        colors={[C.surface, 'transparent']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={[s.spotRestFade, { left: 0 }]}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['transparent', C.surface]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={[s.spotRestFade, { right: 0 }]}
+        pointerEvents="none"
+      />
+    </View>
+  );
+}
+
 export default function DashboardScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
@@ -92,6 +163,8 @@ export default function DashboardScreen() {
     });
   }, []);
 
+  const [tourArmed, setTourArmed] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -99,11 +172,24 @@ export default function DashboardScreen() {
         const forced = await consumeTourRequest();
         const seen = await hasSeenTour();
         if (cancelled || (!forced && seen)) return;
-        setTimeout(() => { if (!cancelled) measureAndOpenTour(); }, 400);
+        if (!cancelled) setTourArmed(true);
       })();
-      return () => { cancelled = true; };
-    }, [measureAndOpenTour])
+      return () => { cancelled = true; setTourArmed(false); };
+    }, [])
   );
+
+  // Don't measure targets until the async data that can change their layout
+  // (unread count, top-fit programs, gameplan phases) has actually settled —
+  // measuring on a blind timeout race a slow first load and captures stale
+  // coordinates once that data arrives and reflows the page underneath it.
+  useEffect(() => {
+    if (!tourArmed || loading || loadingStats) return;
+    const t = setTimeout(() => {
+      measureAndOpenTour();
+      setTourArmed(false);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [tourArmed, loading, loadingStats, measureAndOpenTour]);
 
   const closeTour = () => {
     setTourOpen(false);
@@ -407,20 +493,7 @@ export default function DashboardScreen() {
           )}
 
           {topFitPrograms.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.spotRestScroll} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
-              {topFitPrograms.slice(1).map(p => {
-                const initials = p.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                return (
-                  <View key={p.id} style={s.spotRestItem}>
-                    <View style={s.spotRestLogoWrap}>
-                      <Text style={s.spotRestLogoInitials}>{initials}</Text>
-                    </View>
-                    <Text style={s.spotRestName} numberOfLines={1}>{p.name}</Text>
-                    <Text style={s.spotRestPct}>{p.fitPct}%</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
+            <SpotRestMarquee programs={topFitPrograms.slice(1)} C={C} s={s} />
           )}
 
           {matchCount > 0 && (
@@ -532,11 +605,15 @@ function createStyles(C: ThemeColors) {
     spotTierBtn: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
     spotTierBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13, color: '#fff' },
 
-    spotRestScroll: { marginHorizontal: -20, paddingLeft: 20, marginTop: 12 },
-    spotRestItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: 100, paddingVertical: 8, paddingHorizontal: 12 },
-    spotRestLogoWrap: { width: 22, height: 22, borderRadius: 6, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+    spotRestWrap: { position: 'relative', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, overflow: 'hidden', marginTop: 12 },
+    spotRestTrack: { flexDirection: 'row', alignItems: 'center', gap: 22, paddingVertical: 16, paddingHorizontal: 20 },
+    spotRestGroup: { flexDirection: 'row', alignItems: 'center', gap: 22 },
+    spotRestFade: { position: 'absolute', top: 0, bottom: 0, width: 48 },
+    spotRestItem: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+    spotRestLogoWrap: { width: 26, height: 26, borderRadius: 6, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+    spotRestLogoImg: { width: 26, height: 26 },
     spotRestLogoInitials: { fontFamily: FontFamily.bodyExtraBold, fontSize: 8, color: C.textMuted },
-    spotRestName: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted, maxWidth: 120 },
+    spotRestName: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
     spotRestPct: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim },
 
     timelineLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, marginTop: 4 },

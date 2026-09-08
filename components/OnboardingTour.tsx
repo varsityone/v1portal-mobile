@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontFamily } from '../constants/Fonts';
 
 export interface TourStep {
@@ -65,45 +65,47 @@ export default function OnboardingTour({ isOpen, onClose, steps, targets }: Prop
   const goPrev = () => { if (stepIndex > 0) setStepIndex(i => i - 1); };
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+    <Modal transparent visible={isOpen} animationType="none" onRequestClose={onClose}>
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-      {/* Spotlight cutout: four dim bands framing the highlight box */}
-      <View pointerEvents="none" style={[s.dim, { top: 0, left: 0, right: 0, height: Math.max(0, hl.top) }]} />
-      <View pointerEvents="none" style={[s.dim, { top: hl.top + hl.height, left: 0, right: 0, bottom: 0 }]} />
-      <View pointerEvents="none" style={[s.dim, { top: hl.top, left: 0, width: Math.max(0, hl.left), height: hl.height }]} />
-      <View pointerEvents="none" style={[s.dim, { top: hl.top, left: hl.left + hl.width, right: 0, height: hl.height }]} />
-      <View pointerEvents="none" style={[s.highlightBox, { top: hl.top, left: hl.left, width: hl.width, height: hl.height }]} />
+        {/* Spotlight cutout: four dim bands framing the highlight box */}
+        <View pointerEvents="none" style={[s.dim, { top: 0, left: 0, right: 0, height: Math.max(0, hl.top) }]} />
+        <View pointerEvents="none" style={[s.dim, { top: hl.top + hl.height, left: 0, right: 0, bottom: 0 }]} />
+        <View pointerEvents="none" style={[s.dim, { top: hl.top, left: 0, width: Math.max(0, hl.left), height: hl.height }]} />
+        <View pointerEvents="none" style={[s.dim, { top: hl.top, left: hl.left + hl.width, right: 0, height: hl.height }]} />
+        <View pointerEvents="none" style={[s.highlightBox, { top: hl.top, left: hl.left, width: hl.width, height: hl.height }]} />
 
-      <Animated.View style={[s.popover, { top: popTop, left: popLeft, opacity: fade }]}>
-        <View style={s.headerRow}>
-          <Text style={s.stepLabel}>STEP {stepIndex + 1} OF {steps.length}</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Text style={s.skipText}>SKIP TOUR</Text>
-          </Pressable>
-        </View>
-
-        <View style={s.progressRow}>
-          {steps.map((_, i) => (
-            <View key={i} style={[s.progressSeg, i <= stepIndex && s.progressSegFilled]} />
-          ))}
-        </View>
-
-        <Text style={s.title}>{cur.title}</Text>
-        <Text style={s.description}>{cur.description}</Text>
-
-        <View style={s.actions}>
-          {stepIndex > 0 && (
-            <Pressable style={s.backBtn} onPress={goPrev}>
-              <Text style={s.backBtnText}>← Back</Text>
+        <Animated.View style={[s.popover, { top: popTop, left: popLeft, opacity: fade }]}>
+          <View style={s.headerRow}>
+            <Text style={s.stepLabel}>STEP {stepIndex + 1} OF {steps.length}</Text>
+            <Pressable onPress={onClose} hitSlop={8}>
+              <Text style={s.skipText}>SKIP TOUR</Text>
             </Pressable>
-          )}
-          <Pressable style={s.nextBtn} onPress={goNext}>
-            <Text style={s.nextBtnText}>{stepIndex === steps.length - 1 ? 'Done →' : 'Next →'}</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
-    </View>
+          </View>
+
+          <View style={s.progressRow}>
+            {steps.map((_, i) => (
+              <View key={i} style={[s.progressSeg, i <= stepIndex && s.progressSegFilled]} />
+            ))}
+          </View>
+
+          <Text style={s.title}>{cur.title}</Text>
+          <Text style={s.description}>{cur.description}</Text>
+
+          <View style={s.actions}>
+            {stepIndex > 0 && (
+              <Pressable style={s.backBtn} onPress={goPrev}>
+                <Text style={s.backBtnText}>← Back</Text>
+              </Pressable>
+            )}
+            <Pressable style={s.nextBtn} onPress={goNext}>
+              <Text style={s.nextBtnText}>{stepIndex === steps.length - 1 ? 'Done →' : 'Next →'}</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
