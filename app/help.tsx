@@ -16,23 +16,32 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useColors } from '../context/ThemeContext';
 import { ThemeColors } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 import { GradientButton } from '../components/GradientButton';
 
+// Mirrors web's lib/faqs.ts SUPPORT_FAQS exactly.
 const FAQS = [
-  { q: 'How do I complete my V1 Assessment?', a: 'Tap the Assessment tab or go to Settings → Retake V1 Assessment. Answer the questions about your athletic profile, academics, and recruiting status. It takes about 10–15 minutes. Your V1 Score will be calculated automatically.' },
-  { q: 'What is my V1 Score and what does it mean?', a: 'Your V1 Score is a 0–100 rating across four categories: Athletic, Academic, Production, and Intangibles. It determines which division level of college football programs are the best fit for you.' },
-  { q: 'Why am I not seeing any program matches?', a: "Complete your assessment first and make sure you have an active V1Portal account. If you have both, go to the Matches tab and pull to refresh. Still nothing? Submit a support ticket below." },
-  { q: 'How do I message a coach?', a: "Swipe on programs in the Matches tab. Messaging only opens up once a coach matches back with you — there's no cold outreach to send, so there's nothing to compose until you have a mutual match." },
-  { q: 'How do I update my profile information?', a: 'Go to Settings → Edit Profile. You can update your personal info, athletic stats, academic scores, film links, and social handles.' },
-  { q: 'How do I manage my account?', a: 'Visit v1portal.com to manage your account. You can also reach us at support@v1portal.com.' },
+  { q: 'How do I complete my V1 Assessment?', a: "Start the assessment from the home page or your dashboard. It's a series of questions about your athletic profile, academics, and recruiting status — takes about 5-10 minutes. Your V1 Score is calculated automatically once you finish." },
+  { q: 'What is my V1 Score and what does it mean?', a: 'Your V1 Score is a 0–100 rating across four categories: Athletic Ability, Academics, Football Production, and Intangibles. It determines which division level — D1, D2, D3, NAIA, or JUCO — your profile realistically fits.' },
+  { q: 'Why am I not seeing any program matches?', a: 'Free shows your V1 Score and a few matched programs once your assessment is complete; Match+ unlocks your full match list (300+). If you have Match+ and still see nothing, go to the Matches tab and click "Refresh Matches." Still nothing? Submit a ticket below and we\'ll look into it within 24 hours.' },
+  { q: 'How do I send an outreach email to a coach?', a: 'Go to the Outreach tab, find the coach, and click "Send Email." You can review and customize the message before it goes out. Coach replies go directly to your email address — make sure the email on your profile is correct.' },
+  { q: 'How do I update my profile information?', a: 'Click "Edit Profile" in the navigation. You can update personal info, athletic stats, academic scores, film links, and social handles. Save before leaving.' },
+  { q: 'Why does my profile show outdated information?', a: 'Your profile pulls from what you entered during the assessment and any manual edits in Edit Profile. If something looks wrong, go to Edit Profile and update it directly.' },
+  { q: 'How do I upgrade my subscription?', a: 'Go to the Pricing page and select the Match+ plan at $29/month. Match+ gives you full access to program matches, coach outreach, analytics, and your complete recruiting calendar.' },
+  { q: 'How do I cancel my subscription?', a: 'Go to Settings and click "Manage Subscription" — it opens Stripe\'s secure billing portal where you can cancel immediately. Need help? Submit a ticket below and we\'ll take care of it within 24 hours.' },
+  { q: 'I signed up with Apple or Google — how do I manage my account?', a: 'Your account is tied to your Apple ID or Google account. Sign in at v1portal.com using the same method you used when you created your account. To manage or cancel your subscription, go to Settings → Manage Subscription.' },
+  { q: 'My analytics are showing zeros — is something wrong?', a: 'Profile views only count when someone visits your public profile page. Share your profile link with coaches to start generating views. Outreach stats update after your first sent email.' },
 ];
 
+// Mirrors web's <select> subject options exactly.
 const SUBJECTS = [
   'Assessment Issue',
   'V1 Score Problem',
-  'Program Matches',
-  'Messaging',
-  'Account Management',
+  'Program Matches Not Showing',
+  'Outreach / Email Issue',
+  'Profile Update Issue',
+  'Billing / Subscription',
+  'Cancel Subscription',
   'Bug Report',
   'Other',
 ];
@@ -230,16 +239,16 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   navTitle: {
-    fontSize: 16, fontWeight: '700', color: C.text,
+    fontFamily: FontFamily.bodyBold, fontSize: 16, color: C.text,
   },
   content: {
     padding: 20, paddingBottom: 48,
   },
   sectionTitle: {
-    fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 4,
+    fontFamily: FontFamily.statNumber, fontSize: 20, color: C.text, marginBottom: 4,
   },
   sectionSub: {
-    fontSize: 13, color: C.textMuted, marginBottom: 14,
+    fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginBottom: 14,
   },
 
   // FAQ
@@ -252,8 +261,8 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 14, gap: 12,
   },
-  faqQ: { flex: 1, fontSize: 14, fontWeight: '500', color: C.text, lineHeight: 20 },
-  faqA: { fontSize: 13, color: C.textMuted, lineHeight: 20, paddingBottom: 14 },
+  faqQ: { flex: 1, fontFamily: FontFamily.body, fontSize: 14, color: C.text, lineHeight: 20 },
+  faqA: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 20, paddingBottom: 14 },
 
   // Form
   formCard: {
@@ -262,11 +271,11 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   formRow: { paddingVertical: 12 },
   formBorder: { borderTopWidth: 1, borderTopColor: C.border },
   label: {
-    fontSize: 11, fontWeight: '600', color: C.textMuted,
+    fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
   },
   input: {
-    fontSize: 14, color: C.text,
+    fontFamily: FontFamily.body, fontSize: 14, color: C.text,
     backgroundColor: C.surfaceAlt,
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
     borderWidth: 1, borderColor: C.border,
@@ -280,13 +289,13 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   chipActive: {
     backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(131,58,180,0.4)',
   },
-  chipText: { fontSize: 12, fontWeight: '500', color: C.textMuted },
-  chipTextActive: { color: '#a855f7', fontWeight: '700' },
-  errorText: { fontSize: 12, color: C.error, marginTop: 4 },
+  chipText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+  chipTextActive: { fontFamily: FontFamily.bodyBold, color: '#a855f7' },
+  errorText: { fontFamily: FontFamily.body, fontSize: 12, color: C.error, marginTop: 4 },
   submitBtn: {
     marginTop: 16, paddingVertical: 14, borderRadius: 100, alignItems: 'center',
   },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  submitBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
 
   // Success
   successCard: {
@@ -298,11 +307,11 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(113,255,126,0.2)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  successTitle: { fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 8 },
-  successBody: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
-  resetLink: { fontSize: 13, color: '#a855f7', fontWeight: '600' },
+  successTitle: { fontFamily: FontFamily.statNumber, fontSize: 18, color: C.text, marginBottom: 8 },
+  successBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  resetLink: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff' },
 
   // Footer
-  footer: { fontSize: 12, color: C.textDim, textAlign: 'center', marginTop: 24 },
-  footerLink: { color: '#a855f7' },
+  footer: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, textAlign: 'center', marginTop: 24 },
+  footerLink: { color: '#fff' },
 });

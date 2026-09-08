@@ -53,6 +53,6 @@ function createStyles(C: ThemeColors) {
     body: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim, marginBottom: 20, textAlign: 'center', lineHeight: 19 },
     actionWrap: { borderRadius: 100, paddingHorizontal: 20, paddingVertical: 10, overflow: 'hidden' },
     actionText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
-    retryLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
+    retryLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
   });
 }

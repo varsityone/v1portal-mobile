@@ -13,7 +13,10 @@ export const DIVISION_LABELS: Record<Division, string> = {
   NJCAA: 'NJCAA',
 };
 
-// Typical V1 Score floor coaches at each division actually recruit from.
+// Typical V1 Score floor coaches at each division actually recruit from —
+// only for coach-setup defaults/warnings, NEVER for "what division fits
+// this athlete" (that's DIVISION_BAND_FLOOR below). Mirrors web's
+// lib/recruitingLevels.js DIVISION_MIN_SCORE_DEFAULT exactly.
 export const DIVISION_MIN_SCORE_DEFAULT: Record<Division, number> = {
   D1_FBS: 80,
   D1_FCS: 75,
@@ -23,6 +26,23 @@ export const DIVISION_MIN_SCORE_DEFAULT: Record<Division, number> = {
   NJCAA: 50,
 };
 
-export function getAthleteLevel(score: number): Division {
-  return DIVISION_ORDER.find(d => score >= DIVISION_MIN_SCORE_DEFAULT[d]) ?? DIVISION_ORDER[DIVISION_ORDER.length - 1];
+// Bridges the athlete-tier ladder (RECRUITING_LEVEL_BANDS in recruitingLevels.ts)
+// to the six-division bucket used by the swipe deck and reach-alerts. Deliberately
+// separate from DIVISION_MIN_SCORE_DEFAULT above. Mirrors web's DIVISION_BAND_FLOOR
+// exactly — use THIS for "what division fits this athlete," never the table above.
+export const DIVISION_BAND_FLOOR: Record<Division, number> = {
+  D1_FBS: 85,
+  D1_FCS: 75,
+  D2: 65,
+  D3: 55,
+  NAIA: 55,
+  NJCAA: 0,
+};
+
+export function getBandFloorForDivision(division: Division): number {
+  return DIVISION_BAND_FLOOR[division];
+}
+
+export function getPrimaryDivisionForScore(score: number): Division {
+  return DIVISION_ORDER.find(d => score >= DIVISION_BAND_FLOOR[d]) ?? DIVISION_ORDER[DIVISION_ORDER.length - 1];
 }

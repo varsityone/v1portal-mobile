@@ -1,52 +1,25 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { supabase } from '../../lib/supabase';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
-import { useCoachSaved } from '../../hooks/useCoachSaved';
-import { starsForScore } from '../../lib/recruitingLevels';
+import { useCoachSaved, SavedProspect } from '../../hooks/useCoachSaved';
 import { ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
-import { useColors } from '../../context/ThemeContext';
-import { Avatar } from '../../components/ui/Avatar';
-import { Card } from '../../components/ui/Card';
-import { EmptyState } from '../../components/ui/EmptyState';
-
-interface SavedProspect {
-  id: string;
-  athlete_id: string;
-  notes: string | null;
-  saved_at: string;
-  athlete: {
-    id: string;
-    full_name: string | null;
-    profile_photo_url: string | null;
-    position: string | null;
-    state: string | null;
-    graduation_year: number | null;
-    v1_score: number | null;
-  } | null;
-}
+import { useColors, useTheme } from '../../context/ThemeContext';
 
 export default function SavedProspectsScreen() {
   const router = useRouter();
   const C = useColors();
+  const { theme } = useTheme();
   const s = useMemo(() => createStyles(C), [C]);
-  const { coach, loading: coachLoading } = useCoachData();
+  const { loading: coachLoading } = useCoachData();
   const { saved, loading, sort, setSort, remove } = useCoachSaved();
   const [removing, setRemoving] = useState<string | null>(null);
 
   if (coachLoading || loading) {
     return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
-  }
-
-  if (!coach?.verified) {
-    return (
-      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-        <EmptyState icon="alert-circle-outline" title="Verification Pending" />
-      </ScrollView>
-    );
   }
 
   const handleRemove = async (id: string) => {
@@ -58,76 +31,80 @@ export default function SavedProspectsScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
-        <Text style={s.eyebrow}>RECRUITMENT</Text>
-        <View style={s.titleRow}>
-          <Text style={s.title}>Saved Prospects</Text>
-          <Text style={s.count}>{saved.length}</Text>
-        </View>
+        <Text style={s.title}>Saved Prospects</Text>
+        <Text style={s.subtitle}>Athletes you've bookmarked to track and follow up with.</Text>
       </View>
 
-      <View style={s.sortRow}>
-        <Pressable
-          style={[s.sortButton, sort === 'recent' && s.sortButtonActive]}
-          onPress={() => setSort('recent')}
-        >
-          <Text style={[s.sortText, sort === 'recent' && s.sortTextActive]}>Recently Saved</Text>
-        </Pressable>
-        <Pressable
-          style={[s.sortButton, sort === 'score' && s.sortButtonActive]}
-          onPress={() => setSort('score')}
-        >
-          <Text style={[s.sortText, sort === 'score' && s.sortTextActive]}>Highest Score</Text>
-        </Pressable>
-      </View>
+      {saved.length > 0 && (
+        <View style={s.sortRow}>
+          <Pressable
+            style={[s.sortButton, sort === 'recent' && s.sortButtonActive]}
+            onPress={() => setSort('recent')}
+          >
+            <Text style={[s.sortText, sort === 'recent' && s.sortTextActive]}>Recently Saved</Text>
+          </Pressable>
+          <Pressable
+            style={[s.sortButton, sort === 'score' && s.sortButtonActive]}
+            onPress={() => setSort('score')}
+          >
+            <Text style={[s.sortText, sort === 'score' && s.sortTextActive]}>Highest Score</Text>
+          </Pressable>
+        </View>
+      )}
 
       {saved.length === 0 ? (
-        <EmptyState
-          title="No saved prospects yet"
-          body="Save athletes from the search or your matches to keep track of top recruits."
-          actionLabel="Search for Players"
-          onAction={() => router.push('/(coach)/search' as any)}
-        />
+        <View style={s.emptyWrap}>
+          <View style={s.emptyIcon}>
+            <Ionicons name="bookmark-outline" size={26} color="#a855f7" />
+          </View>
+          <Text style={s.emptyTitle}>No saved prospects yet</Text>
+          <Text style={s.emptyBody}>Save prospects as you swipe to build your watchlist.</Text>
+          <Pressable onPress={() => router.push('/(coach)/match' as any)}>
+            <Text style={s.emptyLink}>Start Swiping →</Text>
+          </Pressable>
+        </View>
       ) : (
         <View style={{ gap: 10, marginTop: 16 }}>
           {saved.map((row: SavedProspect) => {
             const athlete = row.athlete;
             if (!athlete) return null;
-            const stars = starsForScore(athlete.v1_score);
             return (
               <Pressable
                 key={row.id}
                 style={s.row}
-                onPress={() => router.push(`/(coach)/recruit/${athlete.full_name?.replace(/\s+/g, '-').toLowerCase()}-${row.athlete_id}` as any)}
+                onPress={() => router.push(`/(coach)/recruits/${row.athlete_id}` as any)}
               >
-                <Avatar uri={athlete.profile_photo_url} name={athlete.full_name} size={48} />
+                {athlete.profile_photo_url ? (
+                  <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
+                ) : (
+                  <View style={[s.photo, s.photoFallback]}>
+                    <Ionicons name="person" size={22} color={theme === 'dark' ? '#000' : '#fff'} />
+                  </View>
+                )}
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.name} numberOfLines={1}>{athlete.full_name ?? 'Unknown'}</Text>
                   <Text style={s.meta} numberOfLines={1}>
                     {athlete.position ?? '—'} · {athlete.state ?? '—'} · Class of {athlete.graduation_year ?? '—'}
                   </Text>
-                  {athlete.v1_score != null && (
-                    <View style={s.starsRow}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons
-                          key={i}
-                          name={i < stars ? 'star' : 'star-outline'}
-                          size={12}
-                          color={i < stars ? '#F6BA00' : C.textDim}
-                        />
-                      ))}
-                    </View>
-                  )}
-                  {row.notes && <Text style={s.notes} numberOfLines={1}>{row.notes}</Text>}
+                  {row.notes ? <Text style={s.notes} numberOfLines={1}>{row.notes}</Text> : null}
                 </View>
                 {athlete.v1_score != null && (
-                  <Text style={s.score}>{athlete.v1_score}</Text>
+                  <LinearGradient
+                    colors={['#501af0', '#a855f7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.scoreBadge}
+                  >
+                    <Text style={s.scoreBadgeText}>{athlete.v1_score}</Text>
+                  </LinearGradient>
                 )}
                 <Pressable
                   onPress={() => handleRemove(row.id)}
                   disabled={removing === row.id}
                   hitSlop={10}
+                  style={s.removeBtn}
                 >
-                  <Ionicons name="trash-outline" size={16} color={C.error} opacity={removing === row.id ? 0.5 : 1} />
+                  <Text style={[s.removeBtnText, removing === row.id && { opacity: 0.5 }]}>Remove</Text>
                 </Pressable>
               </Pressable>
             );
@@ -143,10 +120,8 @@ function createStyles(C: ThemeColors) {
     container: { padding: 20, paddingBottom: 48 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     header: { marginBottom: 20 },
-    eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
-    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    title: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text },
-    count: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textDim },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text, marginBottom: 4 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
 
     sortRow: { flexDirection: 'row', gap: 8 },
     sortButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
@@ -154,11 +129,21 @@ function createStyles(C: ThemeColors) {
     sortText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textDim },
     sortTextActive: { color: '#fff' },
 
+    emptyWrap: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
+    emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(131,58,180,0.12)', borderWidth: 1, borderColor: 'rgba(168,85,247,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+    emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 6 },
+    emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 16 },
+    emptyLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border },
+    photo: { width: 60, height: 60, borderRadius: 10 },
+    photoFallback: { backgroundColor: '#71ff7e', alignItems: 'center', justifyContent: 'center' },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
     meta: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
-    starsRow: { flexDirection: 'row', gap: 3, marginTop: 4 },
     notes: { fontFamily: FontFamily.body, fontSize: 11, color: C.textMuted, marginTop: 4, fontStyle: 'italic' },
-    score: { fontFamily: FontFamily.headline, fontSize: 17, color: C.primary },
+    scoreBadge: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+    scoreBadgeText: { fontFamily: FontFamily.statNumber, fontSize: 15, color: '#fff' },
+    removeBtn: { paddingHorizontal: 4 },
+    removeBtnText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.error },
   });
 }

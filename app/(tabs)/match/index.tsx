@@ -20,9 +20,9 @@ import { useColors } from '../../../context/ThemeContext';
 import {
   DIVISION_ORDER,
   DIVISION_LABELS,
-  DIVISION_MIN_SCORE_DEFAULT,
   Division,
-  getAthleteLevel,
+  getBandFloorForDivision,
+  getPrimaryDivisionForScore,
 } from '../../../constants/RecruitingLevels';
 
 const API_BASE = 'https://v1portal.com';
@@ -68,6 +68,13 @@ export default function MatchScreen() {
   const [swiping, setSwiping] = useState(false);
   const [matchNotif, setMatchNotif] = useState<{ id: string; name: string } | null>(null);
   const [pendingReach, setPendingReach] = useState<{ division: Division; typicalScore: number } | null>(null);
+  const [swipeErrorNotif, setSwipeErrorNotif] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!swipeErrorNotif) return;
+    const t = setTimeout(() => setSwipeErrorNotif(null), 4000);
+    return () => clearTimeout(t);
+  }, [swipeErrorNotif]);
 
   useEffect(() => {
     if (athleteLoading || !athlete?.id) return;
@@ -103,7 +110,7 @@ export default function MatchScreen() {
   }, [athleteLoading, athlete?.id]);
 
   const athleteScore = athlete?.v1_score ?? 0;
-  const athleteLevel = getAthleteLevel(athleteScore);
+  const athleteLevel = getPrimaryDivisionForScore(athleteScore);
   const isPremium = !!athlete && (
     (athlete.subscription_status === 'active' && athlete.subscription_tier === 'pro')
     || !!athlete.is_admin || !!athlete.manual_access
@@ -151,11 +158,24 @@ export default function MatchScreen() {
         body: JSON.stringify({ athlete_id: athlete!.id, coach_id: coachId, swiped_by: 'athlete', direction }),
       });
       const data = await res.json();
+
+      // A failed swipe (network error, 403 from a stale session, etc.) never
+      // reached the swipes table — advancing the card anyway would silently
+      // drop a like with no sign anything went wrong. Keep the card in place
+      // and surface it instead.
+      if (!res.ok || data.error) {
+        setSwiping(false);
+        setSwipeErrorNotif("That didn't save. Check your connection and try again.");
+        return;
+      }
+
       if (data.matched) {
         setMatchNotif({ id: data.match_id, name: current?.school_name ?? 'Program' });
       }
     } catch {
-      // Silently fall through — the swipe just won't record; user can try again.
+      setSwiping(false);
+      setSwipeErrorNotif("That didn't save. Check your connection and try again.");
+      return;
     }
     setSwiping(false);
     setCurrentIndex(i => i + 1);
@@ -166,7 +186,7 @@ export default function MatchScreen() {
 
     if (direction === 'like' && current.division) {
       const div = current.division as Division;
-      const typicalScore = DIVISION_MIN_SCORE_DEFAULT[div];
+      const typicalScore = current.min_score ?? getBandFloorForDivision(div);
       if (typicalScore != null && athleteScore < typicalScore) {
         setPendingReach({ division: div, typicalScore });
         return;
@@ -314,6 +334,11 @@ export default function MatchScreen() {
   // ── Card deck — fills the whole device screen (header hidden above) ──
   return (
     <SafeAreaView style={s.deckRoot}>
+      {swipeErrorNotif && (
+        <View style={s.errorToast}>
+          <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
+        </View>
+      )}
       {isPremium && (
         <Pressable style={s.backRow} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}>
           <Ionicons name="chevron-back" size={16} color={C.textMuted} />
@@ -463,6 +488,8 @@ function createStyles(C: ThemeColors) {
     // (the drawer header is hidden while it's showing) instead of floating
     // as an inset card the way it used to.
     deckRoot: { flex: 1, backgroundColor: C.background },
+    errorToast: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
+    errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingBottom: 10 },
     backText: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textMuted, letterSpacing: 0.5 },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },

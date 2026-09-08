@@ -1,6 +1,8 @@
 // Matches web's type system: Big Shoulders Display (headlines), Archivo (body),
-// JetBrains Mono (labels/data). Registered via useFonts() in app/_layout.tsx —
-// these string values are the exact keys passed there.
+// JetBrains Mono (labels/data), DM Sans (big stat numbers — V1 Score, StatCard
+// values — matches web's var(--font-dm-sans) used specifically for those).
+// Registered via useFonts() in app/_layout.tsx — these string values are the
+// exact keys passed there.
 export const FontFamily = {
   headline:      'BigShouldersDisplay_900Black',
   headlineBold:  'BigShouldersDisplay_800ExtraBold',
@@ -11,6 +13,7 @@ export const FontFamily = {
   bodyExtraBold: 'Archivo_800ExtraBold',
   mono:          'JetBrainsMono_600SemiBold',
   monoBold:      'JetBrainsMono_700Bold',
+  statNumber:    'DMSans_900Black',
 } as const;
 
 export const Fonts = {

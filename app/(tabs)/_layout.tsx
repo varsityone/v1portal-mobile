@@ -100,13 +100,9 @@ export default function DrawerLayout() {
       >
         <Drawer.Screen name="results"          options={{ title: 'My V1 Score' }} />
         <Drawer.Screen name="match"            options={{ title: 'Program Matches' }} />
-        <Drawer.Screen name="tracker"          options={{ title: 'Tracker', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="targeting"        options={{ title: 'Targeting', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="outreach"         options={{ title: 'Outreach', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="messages"         options={{ title: 'Messages', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="calendar"         options={{ title: 'Calendar', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="analytics"        options={{ title: 'Analytics', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="help"             options={{ title: 'Help', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="profile"          options={{ title: 'Build Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="edit-profile"     options={{ title: 'Edit Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="settings"         options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />

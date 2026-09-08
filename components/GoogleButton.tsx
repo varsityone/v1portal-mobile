@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useColors } from '../context/ThemeContext';
+import { FontFamily } from '../constants/Fonts';
 
 interface GoogleButtonProps {
   onPress: () => void;
@@ -49,7 +50,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   label: {
+    fontFamily: FontFamily.body,
     fontSize: 14,
-    fontWeight: '600',
   },
 });

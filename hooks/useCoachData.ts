@@ -28,6 +28,7 @@ export interface Coach {
   years_coaching: number | null;
   previous_stops: string | null;
   program_id: string | null;
+  profile_slug: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,7 +51,7 @@ export function useCoachData(): CoachData {
 
     const { data } = await supabase
       .from('coach_accounts')
-      .select('id, user_id, full_name, school_name, school_email, title, division, region, verified, verified_at, email_verified, needs_review, position_coached, position_needs, level_bands, min_score, bio, profile_photo_url, phone, phone_public, twitter, message_to_recruits, years_coaching, previous_stops, program_id, created_at, updated_at')
+      .select('id, user_id, full_name, school_name, school_email, title, division, region, verified, verified_at, email_verified, needs_review, position_coached, position_needs, level_bands, min_score, bio, profile_photo_url, phone, phone_public, twitter, message_to_recruits, years_coaching, previous_stops, program_id, profile_slug, created_at, updated_at')
       .eq('user_id', session.user.id)
       .maybeSingle();
 

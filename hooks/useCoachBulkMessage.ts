@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
 
+const API_BASE = 'https://v1portal.com';
 const CONTACT_INFO_PATTERN = /(?:phone|number|call|text|contact)[:\s]+\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|[0-9]{10}|\d{3}-\d{3}-\d{4}/gi;
 
 export interface BulkMessageProgress {
@@ -21,25 +22,33 @@ export function useCoachBulkMessage(): UseCoachBulkMessageResult {
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState<BulkMessageProgress>({ total: 0, sent: 0, failed: 0 });
 
-  const checkCompliance = useCallback(async (): Promise<boolean> => {
-    if (!coach?.id) return false;
+  // Mirrors the resilience posture of (coach)/match/[matchId].tsx's compliance
+  // check: only a thrown network error fails open (a blip shouldn't silently
+  // block every bulk send). The /api/compliance/check contract requires
+  // `action` and `athlete_id` — the period it evaluates is coach-level
+  // (division/region), so one check against the first recipient covers the
+  // whole batch rather than round-tripping once per athlete.
+  const checkCompliance = useCallback(async (athleteId: string): Promise<boolean> => {
+    if (!coach?.id) return true;
 
     try {
-      const res = await fetch('/api/compliance/check', {
+      const res = await fetch(`${API_BASE}/api/compliance/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           coach_id: coach.id,
           division: coach.division,
-          region: coach.region,
+          region: coach.region ?? undefined,
+          action: 'message',
+          athlete_id: athleteId,
         }),
       });
 
       const result = await res.json();
-      return result.allowed ?? false;
+      return result.allowed ?? true;
     } catch (e) {
       console.error('Compliance check error:', e);
-      return false;
+      return true;
     }
   }, [coach]);
 
@@ -50,7 +59,7 @@ export function useCoachBulkMessage(): UseCoachBulkMessageResult {
       setSending(true);
       setProgress({ total: athleteIds.length, sent: 0, failed: 0 });
 
-      const allowed = await checkCompliance();
+      const allowed = await checkCompliance(athleteIds[0]);
       if (!allowed) {
         alert('Messaging is blocked during a dead or quiet period');
         setSending(false);
@@ -67,15 +76,23 @@ export function useCoachBulkMessage(): UseCoachBulkMessageResult {
 
       for (let i = 0; i < athleteIds.length; i++) {
         try {
-          // Find or create conversation
-          const { data: conv } = await supabase
+          // Find or create conversation — mirrors (coach)/search.tsx's messageAthlete
+          const { data: existing } = await supabase
             .from('coach_athlete_conversations')
             .select('id')
             .eq('coach_id', coach.id)
             .eq('athlete_id', athleteIds[i])
             .single();
 
-          const conversationId = conv?.id;
+          let conversationId = existing?.id;
+          if (!conversationId) {
+            const { data: created } = await supabase
+              .from('coach_athlete_conversations')
+              .insert({ coach_id: coach.id, athlete_id: athleteIds[i] })
+              .select()
+              .single();
+            conversationId = created?.id;
+          }
           if (!conversationId) throw new Error('Conversation creation failed');
 
           // Send via RPC if available

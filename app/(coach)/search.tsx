@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,19 +8,11 @@ import { useCoachData } from '../../hooks/useCoachData';
 import { GRADIENT, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { starsForScore, POSITIONS, GRAD_YEARS, getRecruitingLevelBand } from '../../lib/recruitingLevels';
+import { starsForScore, POSITIONS, GRAD_YEARS, STATES } from '../../lib/recruitingLevels';
 import { Avatar } from '../../components/ui/Avatar';
-import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
-
-const STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-];
+import { BottomSheetModal } from '../../components/ui/BottomSheetModal';
 
 interface Prospect {
   id: string;
@@ -45,6 +37,8 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { positions: [], gradYears: [], states: [], minScore: 0, verifiedOnly: false };
 const PAGE_SIZE = 24;
+const MIN_SCORE_OPTIONS = [0, 50, 60, 70, 80, 90];
+type FilterSheet = 'position' | 'class' | 'state' | 'more' | null;
 
 export default function CoachSearchScreen() {
   const router = useRouter();
@@ -62,7 +56,7 @@ export default function CoachSearchScreen() {
   const [pendingAthleteId, setPendingAthleteId] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
-  const [activeFiltersOpen, setActiveFiltersOpen] = useState(false);
+  const [openSheet, setOpenSheet] = useState<FilterSheet>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -248,7 +242,7 @@ export default function CoachSearchScreen() {
       <View style={s.filterRow}>
         <Pressable
           style={[s.filterPill, filters.positions.length > 0 && s.filterPillActive]}
-          onPress={() => setActiveFiltersOpen(!activeFiltersOpen)}
+          onPress={() => setOpenSheet('position')}
         >
           <Text style={[s.filterPillText, filters.positions.length > 0 && s.filterPillTextActive]}>
             Position {filters.positions.length > 0 ? `(${filters.positions.length})` : ''}
@@ -258,7 +252,7 @@ export default function CoachSearchScreen() {
 
         <Pressable
           style={[s.filterPill, filters.gradYears.length > 0 && s.filterPillActive]}
-          onPress={() => setActiveFiltersOpen(!activeFiltersOpen)}
+          onPress={() => setOpenSheet('class')}
         >
           <Text style={[s.filterPillText, filters.gradYears.length > 0 && s.filterPillTextActive]}>
             Class {filters.gradYears.length > 0 ? `(${filters.gradYears.length})` : ''}
@@ -268,7 +262,7 @@ export default function CoachSearchScreen() {
 
         <Pressable
           style={[s.filterPill, filters.states.length > 0 && s.filterPillActive]}
-          onPress={() => setActiveFiltersOpen(!activeFiltersOpen)}
+          onPress={() => setOpenSheet('state')}
         >
           <Text style={[s.filterPillText, filters.states.length > 0 && s.filterPillTextActive]}>
             State {filters.states.length > 0 ? `(${filters.states.length})` : ''}
@@ -278,7 +272,7 @@ export default function CoachSearchScreen() {
 
         <Pressable
           style={[s.filterPill, (filters.minScore > 0 || filters.verifiedOnly) && s.filterPillActive]}
-          onPress={() => setActiveFiltersOpen(!activeFiltersOpen)}
+          onPress={() => setOpenSheet('more')}
         >
           <Ionicons name="options" size={12} color={(filters.minScore > 0 || filters.verifiedOnly) ? C.text : C.textDim} />
           <Text style={[s.filterPillText, (filters.minScore > 0 || filters.verifiedOnly) && s.filterPillTextActive]}>More</Text>
@@ -372,13 +366,96 @@ export default function CoachSearchScreen() {
           <Text style={s.loadMoreText}>Load more</Text>
         </Pressable>
       )}
+
+      <BottomSheetModal visible={openSheet === 'position'} onClose={() => setOpenSheet(null)}>
+        <Text style={s.sheetTitle}>Position</Text>
+        <View style={s.sheetChipWrap}>
+          {POSITIONS.map(pos => (
+            <Pressable
+              key={pos}
+              style={[s.sheetChip, filters.positions.includes(pos) && s.sheetChipActive]}
+              onPress={() => toggleArrayFilter('positions', pos)}
+            >
+              <Text style={[s.sheetChipText, filters.positions.includes(pos) && s.sheetChipTextActive]}>{pos}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
+          <Text style={s.sheetDoneBtnText}>Done</Text>
+        </Pressable>
+      </BottomSheetModal>
+
+      <BottomSheetModal visible={openSheet === 'class'} onClose={() => setOpenSheet(null)}>
+        <Text style={s.sheetTitle}>Class Year</Text>
+        <View style={s.sheetChipWrap}>
+          {GRAD_YEARS.map(year => (
+            <Pressable
+              key={year}
+              style={[s.sheetChip, filters.gradYears.includes(year) && s.sheetChipActive]}
+              onPress={() => toggleGradYear(year)}
+            >
+              <Text style={[s.sheetChipText, filters.gradYears.includes(year) && s.sheetChipTextActive]}>{year}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
+          <Text style={s.sheetDoneBtnText}>Done</Text>
+        </Pressable>
+      </BottomSheetModal>
+
+      <BottomSheetModal visible={openSheet === 'state'} onClose={() => setOpenSheet(null)}>
+        <Text style={s.sheetTitle}>State</Text>
+        <ScrollView style={{ maxHeight: 360, alignSelf: 'stretch' }}>
+          <View style={s.sheetChipWrap}>
+            {STATES.map(({ code, name }) => (
+              <Pressable
+                key={code}
+                style={[s.sheetChip, filters.states.includes(code) && s.sheetChipActive]}
+                onPress={() => toggleArrayFilter('states', code)}
+              >
+                <Text style={[s.sheetChipText, filters.states.includes(code) && s.sheetChipTextActive]}>{name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+        <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
+          <Text style={s.sheetDoneBtnText}>Done</Text>
+        </Pressable>
+      </BottomSheetModal>
+
+      <BottomSheetModal visible={openSheet === 'more'} onClose={() => setOpenSheet(null)}>
+        <Text style={s.sheetTitle}>More Filters</Text>
+        <Text style={s.sheetSectionLabel}>Min V1 Score</Text>
+        <View style={s.sheetChipWrap}>
+          {MIN_SCORE_OPTIONS.map(score => (
+            <Pressable
+              key={score}
+              style={[s.sheetChip, filters.minScore === score && s.sheetChipActive]}
+              onPress={() => setFilters(prev => ({ ...prev, minScore: score }))}
+            >
+              <Text style={[s.sheetChipText, filters.minScore === score && s.sheetChipTextActive]}>
+                {score === 0 ? 'Any' : `${score}+`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable
+          style={s.sheetToggleRow}
+          onPress={() => setFilters(prev => ({ ...prev, verifiedOnly: !prev.verifiedOnly }))}
+        >
+          <Text style={s.sheetToggleLabel}>Verified only</Text>
+          <Ionicons
+            name={filters.verifiedOnly ? 'checkbox' : 'square-outline'}
+            size={20}
+            color={filters.verifiedOnly ? C.primary : C.textDim}
+          />
+        </Pressable>
+        <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
+          <Text style={s.sheetDoneBtnText}>Done</Text>
+        </Pressable>
+      </BottomSheetModal>
     </ScrollView>
   );
-}
-
-function Image({ source, style }: any) {
-  // React Native Image component - using native
-  return null;
 }
 
 function createStyles(C: ThemeColors) {
@@ -429,6 +506,18 @@ function createStyles(C: ThemeColors) {
     messageBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     loadMoreBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 16 },
-    loadMoreText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
+    loadMoreText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+
+    sheetTitle: { fontFamily: FontFamily.headlineBold, fontSize: 18, color: C.text, marginBottom: 4 },
+    sheetSectionLabel: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: 0.6, alignSelf: 'flex-start', marginTop: 16, marginBottom: 10 },
+    sheetChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 },
+    sheetChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt },
+    sheetChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+    sheetChipText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted },
+    sheetChipTextActive: { color: '#fff' },
+    sheetToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 12, marginTop: 8, borderTopWidth: 1, borderTopColor: C.border },
+    sheetToggleLabel: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.text },
+    sheetDoneBtn: { backgroundColor: C.primary, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 40, marginTop: 20, alignSelf: 'stretch', alignItems: 'center' },
+    sheetDoneBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
   });
 }

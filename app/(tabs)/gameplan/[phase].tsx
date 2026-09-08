@@ -401,7 +401,7 @@ type P2Fields = {
   position: string; height: string; weight: string; graduation_year: string;
   gpa: string; sat_score: string; act_score: string; ncaa_id: string;
   high_school: string; city: string; state: string;
-  hudl_video_link: string;
+  hudl_link: string;
   guardian_name: string; guardian_relationship: string; guardian_phone: string; guardian_email: string;
 };
 
@@ -410,7 +410,7 @@ const P2_EMPTY: P2Fields = {
   position: '', height: '', weight: '', graduation_year: '',
   gpa: '', sat_score: '', act_score: '', ncaa_id: '',
   high_school: '', city: '', state: '',
-  hudl_video_link: '',
+  hudl_link: '',
   guardian_name: '', guardian_relationship: '', guardian_phone: '', guardian_email: '',
 };
 
@@ -446,7 +446,7 @@ const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>[
     { label: 'State', key: 'state', placeholder: 'e.g. TX' },
   ]},
   { title: 'Film', icon: 'videocam', rows: [
-    { label: 'Hudl Film Link', key: 'hudl_video_link', keyboardType: 'url',
+    { label: 'Hudl Film Link', key: 'hudl_link', keyboardType: 'url',
       hint: 'Your highlight reel URL from hudl.com' },
   ]},
   { title: 'Guardian', icon: 'shield', rows: [
@@ -459,7 +459,7 @@ const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>[
 
 const P2_TRACKED: (keyof P2Fields)[] = [
   'full_name', 'phone', 'bio', 'position', 'graduation_year', 'height', 'weight',
-  'high_school', 'city', 'gpa', 'ncaa_id', 'hudl_video_link',
+  'high_school', 'city', 'gpa', 'ncaa_id', 'hudl_link',
   'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
 ];
 
@@ -497,7 +497,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
       high_school:           String(a.high_school           ?? ''),
       city:                  String(a.city                  ?? ''),
       state:                 String(a.state                 ?? ''),
-      hudl_video_link:       String(a.hudl_video_link       ?? ''),
+      hudl_link:       String(a.hudl_link       ?? ''),
       guardian_name:         String(a.guardian_name         ?? ''),
       guardian_relationship: String(a.guardian_relationship ?? ''),
       guardian_phone:        String(a.guardian_phone        ?? ''),

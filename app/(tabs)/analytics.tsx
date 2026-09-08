@@ -14,9 +14,12 @@ import Svg, {
   Path,
   Stop,
 } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
+import { isAthletePremium } from '../../lib/subscription';
 import { ThemeColors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { DIVISION_ORDER, DIVISION_LABELS, Division } from '../../constants/RecruitingLevels';
 
@@ -144,7 +147,9 @@ function BarRow({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function AnalyticsScreen() {
+  const router = useRouter();
   const { athlete, loading: dataLoading } = useAthleteData();
+  const isPremium = isAthletePremium(athlete);
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const { width: deviceWidth } = useWindowDimensions();
@@ -394,15 +399,27 @@ export default function AnalyticsScreen() {
         )}
       </View>
 
-      {/* ── Recruiting Intelligence ── */}
-      <View style={{ gap: 4 }}>
-        <Text style={s.intelligenceTitle}>Recruiting Intelligence</Text>
-        <Text style={s.intelligenceSub}>
-          Real conversion by division, coach reply time, and who's actually engaging back.
-        </Text>
-      </View>
+      {/* ── Recruiting Intelligence (Match+) ── */}
+      {!isPremium ? (
+        <View style={s.upsellCard}>
+          <Text style={s.intelligenceTitle}>Recruiting Intelligence</Text>
+          <Text style={s.upsellBody}>
+            Unlock conversion funnels by division, coach response time benchmarks, and momentum tracking.
+          </Text>
+          <Text style={s.upsellBtn} onPress={() => router.push('/(tabs)/upgrade' as any)}>
+            Upgrade to Match+ →
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View style={{ gap: 4 }}>
+            <Text style={s.intelligenceTitle}>Recruiting Intelligence</Text>
+            <Text style={s.intelligenceSub}>
+              Real conversion by division, coach reply time, and who's actually engaging back.
+            </Text>
+          </View>
 
-      {recruiting ? (
+          {recruiting ? (
         <>
           {/* Conversion Funnel by Division */}
           <View style={s.card}>
@@ -475,10 +492,12 @@ export default function AnalyticsScreen() {
             </View>
           )}
         </>
-      ) : (
-        <View style={s.center}>
-          <ActivityIndicator color={C.primary} />
-        </View>
+          ) : (
+            <View style={s.center}>
+              <ActivityIndicator color={C.primary} />
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   );
@@ -492,10 +511,10 @@ function createStyles(C: ThemeColors) {
     container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 16 },
     center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, backgroundColor: C.background },
 
-    title: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 3 },
-    subtitle: { fontSize: 13, color: C.textMuted },
+    title: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text, letterSpacing: -0.5, marginBottom: 3 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
 
-    dimText: { fontSize: 12, color: C.textDim },
+    dimText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
 
     // 2×2 stat grid
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -508,8 +527,8 @@ function createStyles(C: ThemeColors) {
       paddingVertical: 18,
       gap: 6,
     },
-    statCardLabel: { fontSize: 11, color: C.textDim },
-    statCardValue: { fontSize: 32, fontWeight: '900', color: C.text, lineHeight: 36 },
+    statCardLabel: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim },
+    statCardValue: { fontFamily: FontFamily.headline, fontSize: 32, color: C.text, lineHeight: 36 },
 
     // Generic card
     card: {
@@ -518,12 +537,12 @@ function createStyles(C: ThemeColors) {
       padding: 16,
       gap: 12,
     },
-    cardTitle: { fontSize: 14, fontWeight: '700', color: C.text },
+    cardTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
 
     // Chart
     chartPlaceholder: { height: 140, alignItems: 'center', justifyContent: 'center' },
     chartLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-    chartLabel: { fontSize: 10, color: C.textDim },
+    chartLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim },
 
     // Match activity 4-cell grid
     outreachGrid: { flexDirection: 'row', gap: 8 },
@@ -535,30 +554,33 @@ function createStyles(C: ThemeColors) {
       backgroundColor: C.surfaceAlt,
       borderRadius: 10,
     },
-    outreachValue: { fontSize: 24, fontWeight: '900', lineHeight: 28 },
+    outreachValue: { fontFamily: FontFamily.headline, fontSize: 24, lineHeight: 28 },
     outreachLabel: {
+      fontFamily: FontFamily.bodySemi,
       fontSize: 9,
       color: C.textDim,
-      fontWeight: '600',
       textTransform: 'uppercase',
       textAlign: 'center',
       letterSpacing: 0.3,
       marginTop: 2,
     },
-    replyLine: { fontSize: 12, color: C.textMuted, textAlign: 'center' },
+    replyLine: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, textAlign: 'center' },
 
     // Rate bars (kept for potential reuse)
     barRowWrap: { gap: 5 },
     barRowHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-    barRowLabel: { fontSize: 12, color: C.textMuted },
-    barRowValue: { fontSize: 12, fontWeight: '700' },
+    barRowLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+    barRowValue: { fontFamily: FontFamily.bodyBold, fontSize: 12 },
     barTrack: { height: 6, borderRadius: 3, backgroundColor: C.surfaceAlt, overflow: 'hidden' },
     barFill: { height: '100%', borderRadius: 3 },
-    barRowSub: { fontSize: 10, color: C.textDim, marginTop: 1 },
+    barRowSub: { fontFamily: FontFamily.body, fontSize: 10, color: C.textDim, marginTop: 1 },
 
     // Recruiting Intelligence header
-    intelligenceTitle: { fontSize: 18, fontWeight: '800', color: C.text },
-    intelligenceSub: { fontSize: 12, color: C.textMuted, lineHeight: 18 },
+    intelligenceTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+    intelligenceSub: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, lineHeight: 18 },
+    upsellCard: { backgroundColor: `${C.primary}14`, borderRadius: 14, padding: 32, alignItems: 'center' },
+    upsellBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 19, marginTop: 8, marginBottom: 20, maxWidth: 320 },
+    upsellBtn: { fontFamily: FontFamily.bodyBold, backgroundColor: C.primary, color: '#fff', fontSize: 13, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 28, overflow: 'hidden' },
 
     // Division funnel
     tierGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -570,14 +592,14 @@ function createStyles(C: ThemeColors) {
       padding: 12,
       gap: 8,
     },
-    tierCardTitle: { fontSize: 12, fontWeight: '800', color: C.text },
+    tierCardTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 12, color: C.text },
     tierBarRow: { gap: 3 },
     tierBarHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-    tierBarLabel: { fontSize: 11, color: C.textMuted },
-    tierBarPct: { fontSize: 11, fontWeight: '700', color: C.text },
+    tierBarLabel: { fontFamily: FontFamily.body, fontSize: 11, color: C.textMuted },
+    tierBarPct: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.text },
     tierBarTrack: { height: 4, borderRadius: 2, backgroundColor: C.surface, overflow: 'hidden' },
     tierBarFill: { height: '100%', borderRadius: 2 },
-    tierCount: { fontSize: 10, color: C.textDim, fontWeight: '600' },
+    tierCount: { fontFamily: FontFamily.bodySemi, fontSize: 10, color: C.textDim },
 
     // Response time
     responseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -590,9 +612,9 @@ function createStyles(C: ThemeColors) {
       paddingVertical: 12,
       paddingHorizontal: 8,
     },
-    responseTier: { fontSize: 11, color: C.textDim, fontWeight: '600', marginBottom: 4 },
-    responseDays: { fontSize: 24, fontWeight: '900' },
-    responseSub: { fontSize: 10, color: C.textDim },
+    responseTier: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.textDim, marginBottom: 4 },
+    responseDays: { fontFamily: FontFamily.headline, fontSize: 24 },
+    responseSub: { fontFamily: FontFamily.body, fontSize: 10, color: C.textDim },
 
     // Coach momentum
     coachRow: {
@@ -604,11 +626,11 @@ function createStyles(C: ThemeColors) {
       backgroundColor: C.surfaceAlt,
       borderRadius: 8,
     },
-    coachRank: { fontSize: 13, fontWeight: '900', color: C.textDim, width: 26 },
+    coachRank: { fontFamily: FontFamily.headline, fontSize: 13, color: C.textDim, width: 26 },
     coachInfo: { flex: 1, gap: 2 },
-    coachName: { fontSize: 12, fontWeight: '700', color: C.text },
-    coachSub: { fontSize: 10, color: C.textDim },
+    coachName: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text },
+    coachSub: { fontFamily: FontFamily.body, fontSize: 10, color: C.textDim },
     coachBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: 'rgba(131,58,180,0.15)' },
-    coachBadgeText: { fontSize: 9, fontWeight: '700', color: C.primary },
+    coachBadgeText: { fontFamily: FontFamily.bodyBold, fontSize: 9, color: C.primary },
   });
 }

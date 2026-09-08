@@ -2,30 +2,37 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
 
-export interface CoachTargeting {
+export interface TargetedProspect {
   id: string;
-  coach_id: string;
-  target_states: string[];
-  min_score: number;
-  created_at: string;
+  full_name: string | null;
+  position: string | null;
+  state: string | null;
+  city: string | null;
+  v1_score: number | null;
+  profile_photo_url: string | null;
+  graduation_year: number | string | null;
 }
 
-export interface TargetingStats {
-  totalProspects: number;
-  verifiedCount: number;
-  topPosition: string | null;
-  avgScore: number;
+export interface ProspectAnalytics {
+  averageScore: number | null;
+  topPositions: { position: string; count: number; avgScore: number }[];
+  scoreDistribution: { excellent: number; strong: number; developing: number; unknown: number };
+}
+
+export interface CoachTargetingStats {
+  totalAthletes: number;
+  targetedStates: number;
+  targetedAthletes: number;
 }
 
 export interface UseCoachTargetingResult {
-  targeting: CoachTargeting | null;
-  stats: TargetingStats | null;
-  loading: boolean;
   selectedStates: Set<string>;
-  minScore: number;
-  setSelectedStates: (states: Set<string>) => void;
-  setMinScore: (score: number) => void;
-  save: () => Promise<void>;
+  prospects: TargetedProspect[];
+  stats: CoachTargetingStats;
+  analytics: ProspectAnalytics | null;
+  loading: boolean;
+  toggleState: (state: string) => Promise<void>;
+  clearAll: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -39,109 +46,128 @@ const STATES = [
 
 export { STATES };
 
+// Mirrors web's lib/recruitingAnalytics.ts analyzeProspects — same
+// buckets/rounding, so a coach sees identical numbers on both platforms.
+function analyzeProspects(prospects: TargetedProspect[]): ProspectAnalytics {
+  const scores = prospects.filter(p => p.v1_score).map(p => p.v1_score as number);
+  const averageScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+
+  const positionCounts: Record<string, number> = {};
+  const positionScores: Record<string, number[]> = {};
+  prospects.forEach(p => {
+    const pos = p.position || 'Unknown';
+    positionCounts[pos] = (positionCounts[pos] ?? 0) + 1;
+    positionScores[pos] = positionScores[pos] ?? [];
+    if (p.v1_score) positionScores[pos].push(p.v1_score);
+  });
+
+  const topPositions = Object.entries(positionCounts)
+    .map(([position, count]) => ({
+      position,
+      count,
+      avgScore: positionScores[position]?.length
+        ? Math.round(positionScores[position].reduce((a, b) => a + b, 0) / positionScores[position].length)
+        : 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const scoreDistribution = {
+    excellent: prospects.filter(p => p.v1_score && p.v1_score >= 90).length,
+    strong: prospects.filter(p => p.v1_score && p.v1_score >= 80 && p.v1_score < 90).length,
+    developing: prospects.filter(p => p.v1_score && p.v1_score < 80).length,
+    unknown: prospects.filter(p => !p.v1_score).length,
+  };
+
+  return { averageScore, topPositions, scoreDistribution };
+}
+
 export function useCoachTargeting(): UseCoachTargetingResult {
   const { coach } = useCoachData();
-  const [targeting, setTargeting] = useState<CoachTargeting | null>(null);
-  const [stats, setStats] = useState<TargetingStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedStates, setSelectedStates] = useState<Set<string>>(new Set());
-  const [minScore, setMinScore] = useState(0);
+  const [prospects, setProspects] = useState<TargetedProspect[]>([]);
+  const [totalAthletes, setTotalAthletes] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const fetchTargeting = useCallback(async () => {
+  const loadProspects = useCallback(async (states: Set<string>) => {
+    if (states.size === 0) {
+      setProspects([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('athletes')
+      .select('id, full_name, position, state, city, v1_score, profile_photo_url, graduation_year')
+      .in('state', Array.from(states))
+      .order('v1_score', { ascending: false });
+
+    if (error) {
+      console.error('Targeted prospects fetch error:', error);
+      return;
+    }
+    setProspects((data as TargetedProspect[]) ?? []);
+  }, []);
+
+  const refresh = useCallback(async () => {
     if (!coach?.id) return;
     setLoading(true);
-
     try {
-      const { data: tgt } = await supabase
-        .from('coach_targeting')
-        .select('*')
-        .eq('coach_id', coach.id)
-        .single();
+      const [{ data: tgt, error: tgtError }, { count }] = await Promise.all([
+        supabase.from('coach_targeting').select('state').eq('coach_id', coach.id),
+        supabase.from('athletes').select('id', { count: 'exact', head: true }),
+      ]);
+      if (tgtError) throw tgtError;
 
-      if (tgt) {
-        setTargeting(tgt);
-        setSelectedStates(new Set(tgt.target_states ?? []));
-        setMinScore(tgt.min_score ?? 0);
-
-        // Fetch stats for selected states
-        const states = tgt.target_states ?? [];
-        if (states.length > 0) {
-          const { data: prospects } = await supabase
-            .from('athletes')
-            .select('id, position, v1_score')
-            .in('state', states)
-            .gte('v1_score', tgt.min_score ?? 0);
-
-          if (prospects) {
-            const verified = prospects.filter(p => p.v1_score != null).length;
-            const positions: Record<string, number> = {};
-            let totalScore = 0;
-
-            prospects.forEach(p => {
-              if (p.position) positions[p.position] = (positions[p.position] ?? 0) + 1;
-              if (p.v1_score) totalScore += p.v1_score;
-            });
-
-            const topPos = Object.entries(positions).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-            const avgScore = prospects.length > 0 && totalScore > 0 ? Math.round(totalScore / verified) : 0;
-
-            setStats({ totalProspects: prospects.length, verifiedCount: verified, topPosition: topPos, avgScore });
-          }
-        }
-      } else {
-        setSelectedStates(new Set());
-        setMinScore(0);
-        setStats(null);
-      }
+      const states = new Set((tgt ?? []).map(r => r.state));
+      setSelectedStates(states);
+      setTotalAthletes(count ?? 0);
+      await loadProspects(states);
     } catch (e) {
       console.error('Targeting fetch error:', e);
     } finally {
       setLoading(false);
     }
+  }, [coach?.id, loadProspects]);
+
+  // One row per (coach_id, state) on coach_targeting — toggling inserts or
+  // deletes a single row, mirroring web's RecruitingMap.tsx exactly. There
+  // is no min_score column on this table (that lives on coach_accounts and
+  // isn't used to filter this screen's prospect list on either platform).
+  const toggleState = useCallback(async (state: string) => {
+    if (!coach?.id) return;
+    const wasTargeted = selectedStates.has(state);
+    const next = new Set(selectedStates);
+    if (wasTargeted) next.delete(state); else next.add(state);
+    setSelectedStates(next);
+    await loadProspects(next);
+
+    if (wasTargeted) {
+      await supabase.from('coach_targeting').delete().eq('coach_id', coach.id).eq('state', state);
+    } else {
+      await supabase.from('coach_targeting').insert({ coach_id: coach.id, state });
+    }
+  }, [coach?.id, selectedStates, loadProspects]);
+
+  const clearAll = useCallback(async () => {
+    if (!coach?.id) return;
+    await supabase.from('coach_targeting').delete().eq('coach_id', coach.id);
+    setSelectedStates(new Set());
+    setProspects([]);
   }, [coach?.id]);
 
-  const save = useCallback(async () => {
-    if (!coach?.id) return;
-
-    try {
-      const payload = {
-        coach_id: coach.id,
-        target_states: Array.from(selectedStates),
-        min_score: minScore,
-      };
-
-      if (targeting?.id) {
-        await supabase
-          .from('coach_targeting')
-          .update(payload)
-          .eq('id', targeting.id);
-      } else {
-        const { data } = await supabase
-          .from('coach_targeting')
-          .insert([payload])
-          .select()
-          .single();
-        if (data) setTargeting(data);
-      }
-    } catch (e) {
-      console.error('Targeting save error:', e);
-      throw e;
-    }
-  }, [coach?.id, targeting?.id, selectedStates, minScore]);
-
   useEffect(() => {
-    fetchTargeting();
-  }, [fetchTargeting]);
+    refresh();
+  }, [refresh]);
+
+  const analytics = prospects.length > 0 ? analyzeProspects(prospects) : null;
 
   return {
-    targeting,
-    stats,
-    loading,
     selectedStates,
-    minScore,
-    setSelectedStates,
-    setMinScore,
-    save,
-    refresh: fetchTargeting,
+    prospects,
+    stats: { totalAthletes, targetedStates: selectedStates.size, targetedAthletes: prospects.length },
+    analytics,
+    loading,
+    toggleState,
+    clearAll,
+    refresh,
   };
 }

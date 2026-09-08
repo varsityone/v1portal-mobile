@@ -78,7 +78,8 @@ export default function CoachMatchesScreen() {
           .select('*', { count: 'exact', head: true })
           .eq('match_id', m.id)
           .eq('sender_type', 'athlete')
-          .eq('status', 'sent');
+          .eq('status', 'sent')
+          .eq('read', false);
         return { id: m.id, matched_at: m.matched_at, athlete_id: m.athlete_id, athlete: athlete ?? null, unread: count ?? 0 };
       }));
       setMatches(enriched);
@@ -178,9 +179,12 @@ export default function CoachMatchesScreen() {
                     )}
                   </View>
                   <Text style={s.meta} numberOfLines={1}>
-                    {match.athlete?.position ? `${match.athlete.position} · ` : ''}
-                    {match.athlete?.graduation_year ? `Class of ${match.athlete.graduation_year}` : ''}
-                    {match.athlete?.state ? ` · ${match.athlete.state}` : ''}
+                    {[
+                      match.athlete?.position,
+                      match.athlete?.graduation_year ? `Class of ${match.athlete.graduation_year}` : null,
+                      match.athlete?.state,
+                      match.athlete?.high_school,
+                    ].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
                 {match.athlete?.v1_score != null && (
@@ -248,6 +252,6 @@ function createStyles(C: ThemeColors) {
     scoreLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim },
     date: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginBottom: 4 },
 
-    findMore: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
+    findMore: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
   });
 }

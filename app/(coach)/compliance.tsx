@@ -17,6 +17,7 @@ interface CalendarPeriod {
   end_date: string;
   communication_allowed: string[];
   description: string;
+  academic_year: string;
 }
 
 const PERIOD_CONFIG: Record<string, { label: string; color: string }> = {
@@ -60,7 +61,7 @@ export default function CoachComplianceScreen() {
 
     supabase
       .from('recruiting_calendars')
-      .select('id, division, region, period_type, start_date, end_date, communication_allowed, description')
+      .select('id, division, region, period_type, start_date, end_date, communication_allowed, description, academic_year')
       .eq('division', coach.division)
       .is('region', null)
       .order('start_date', { ascending: true })
@@ -90,9 +91,10 @@ export default function CoachComplianceScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
-        <Text style={s.eyebrow}>COACH DASHBOARD</Text>
         <Text style={s.title}>Compliance</Text>
-        <Text style={s.sub}>{coach.division} recruiting calendar</Text>
+        <Text style={s.sub}>
+          {coach.division} recruiting calendar{periods[0]?.academic_year ? ` · ${periods[0].academic_year} academic year` : ''}
+        </Text>
       </View>
 
       {/* Current period hero */}
@@ -155,6 +157,34 @@ export default function CoachComplianceScreen() {
 
       {/* Full calendar */}
       <Text style={s.calendarTitle}>Full Year Calendar</Text>
+
+      {periods.length > 0 && (() => {
+        const first = new Date(periods[0].start_date).getTime();
+        const last = new Date(periods[periods.length - 1].end_date).getTime();
+        const span = last - first;
+        const todayMs = new Date(today).getTime();
+        const todayPct = Math.max(0, Math.min(100, ((todayMs - first) / span) * 100));
+        return (
+          <View style={s.timelineWrap}>
+            <View style={s.timelineBar}>
+              {periods.map((p, i) => {
+                const pStart = new Date(p.start_date).getTime();
+                const pEnd = new Date(p.end_date).getTime();
+                const pct = ((pEnd - pStart) / span) * 100;
+                const c = PERIOD_CONFIG[p.period_type]?.color ?? '#6b7280';
+                return <View key={i} style={{ width: `${pct}%`, backgroundColor: c, opacity: 0.8 }} />;
+              })}
+              <View style={[s.todayMarker, { left: `${todayPct}%` }]} />
+            </View>
+            <View style={s.timelineLabels}>
+              <Text style={s.timelineLabelText}>{formatDate(periods[0].start_date)}</Text>
+              <Text style={s.timelineTodayText}>Today</Text>
+              <Text style={s.timelineLabelText}>{formatDate(periods[periods.length - 1].end_date)}</Text>
+            </View>
+          </View>
+        );
+      })()}
+
       <View style={{ gap: 8 }}>
         {periods.map(p => {
           const c = PERIOD_CONFIG[p.period_type] ?? PERIOD_CONFIG.unknown;
@@ -276,6 +306,12 @@ function createStyles(C: ThemeColors) {
     nextText: { flex: 1, fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19 },
 
     calendarTitle: { fontFamily: FontFamily.headlineBold, fontSize: 16, color: C.text, marginBottom: 14 },
+    timelineWrap: { marginBottom: 20 },
+    timelineBar: { height: 12, borderRadius: 100, overflow: 'hidden', flexDirection: 'row', marginBottom: 8, position: 'relative' },
+    todayMarker: { position: 'absolute', top: -2, bottom: -2, width: 2, backgroundColor: '#fff', opacity: 0.9 },
+    timelineLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+    timelineLabelText: { fontFamily: FontFamily.body, fontSize: 10, color: C.textDim },
+    timelineTodayText: { fontFamily: FontFamily.bodyBold, fontSize: 10, color: '#fff' },
     periodCard: { backgroundColor: C.surface, borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
     periodRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
     periodLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13 },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,10 +10,12 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { AuthInput } from '../../components/AuthInput';
 import { AuthButton } from '../../components/AuthButton';
 import { Colors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -22,10 +25,7 @@ export default function ForgotPasswordScreen() {
   const [sent, setSent] = useState(false);
 
   const handleReset = async () => {
-    if (!email.trim()) {
-      setError('Please enter your email address.');
-      return;
-    }
+    if (!email.trim()) return;
     setError('');
     setLoading(true);
 
@@ -53,57 +53,61 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.back} onPress={() => router.back()}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
+        <View style={styles.card}>
+          <Image
+            source={require('../../assets/logo-dark.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-        <View style={styles.header}>
-          <Text style={styles.logo}>
-            <Text style={styles.logoAccent}>V1</Text>Portal
-          </Text>
-          <Text style={styles.title}>Reset your password</Text>
-          <Text style={styles.description}>
-            Enter your email and we'll send you a link to set a new password.
-          </Text>
-        </View>
-
-        <View style={styles.form}>
           {sent ? (
-            <View style={styles.successBox}>
-              <Text style={styles.successTitle}>Check your inbox</Text>
-              <Text style={styles.successText}>
-                We sent a password reset link to{' '}
-                <Text style={styles.successEmail}>{email.trim()}</Text>
+            <View style={styles.center}>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark" size={22} color={Colors.success} />
+              </View>
+              <Text style={styles.successTitle}>Check your email</Text>
+              <Text style={styles.sub}>
+                We sent a reset link to <Text style={styles.emailBold}>{email.trim()}</Text>.
+                Check your inbox and follow the instructions.
               </Text>
+              <Pressable onPress={() => router.replace('/(auth)/login')} hitSlop={8}>
+                <Text style={styles.backLink}>← Back to login</Text>
+              </Pressable>
             </View>
           ) : (
             <>
-              {!!error && <Text style={styles.errorBanner}>{error}</Text>}
-              <AuthInput
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                returnKeyType="done"
-                onSubmitEditing={handleReset}
-              />
-              <AuthButton
-                label="Send Reset Link"
-                onPress={handleReset}
-                loading={loading}
-              />
+              <View style={styles.center}>
+                <Text style={styles.title}>Reset Password</Text>
+                <Text style={styles.sub}>Enter your email and we'll send you a reset link</Text>
+              </View>
+
+              {!!error && (
+                <View style={styles.errorBanner}>
+                  <Ionicons name="alert-circle-outline" size={14} color="#f87171" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+
+              <View style={styles.fields}>
+                <AuthInput
+                  label="Email Address"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@email.com"
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  returnKeyType="done"
+                  onSubmitEditing={handleReset}
+                />
+                <AuthButton label="Send Reset Link →" onPress={handleReset} loading={loading} />
+              </View>
+
+              <Pressable style={styles.switchRow} onPress={() => router.replace('/(auth)/login')} hitSlop={8}>
+                <Text style={styles.backLink}>← Back to login</Text>
+              </Pressable>
             </>
           )}
         </View>
-
-        <Pressable
-          style={styles.loginLink}
-          onPress={() => router.replace('/(auth)/login')}
-        >
-          <Text style={styles.loginLinkText}>Back to sign in</Text>
-        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -116,85 +120,94 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 48,
+    paddingVertical: 48,
   },
-  back: {
-    marginBottom: 36,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  backText: {
-    color: Colors.textMuted,
-    fontSize: 16,
-  },
-  header: {
-    marginBottom: 40,
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    padding: 32,
   },
   logo: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -1,
-    marginBottom: 16,
+    height: 30,
+    width: 140,
+    alignSelf: 'center',
+    marginBottom: 28,
   },
-  logoAccent: {
-    color: Colors.primary,
+  center: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontFamily: FontFamily.statNumber,
+    fontSize: 30,
     color: Colors.text,
+    letterSpacing: -0.8,
     marginBottom: 8,
   },
-  description: {
-    fontSize: 15,
+  sub: {
+    fontFamily: FontFamily.body,
+    fontWeight: '300',
+    fontSize: 13,
     color: Colors.textMuted,
-    lineHeight: 22,
+    textAlign: 'center',
+    lineHeight: 19,
   },
-  form: {
-    flex: 1,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(239,68,68,0.1)',
+  successIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(113,255,126,0.1)',
     borderWidth: 1,
-    borderColor: Colors.error,
-    borderRadius: 8,
-    padding: 12,
-    color: Colors.error,
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  successBox: {
-    backgroundColor: 'rgba(34,197,94,0.08)',
-    borderWidth: 1,
-    borderColor: Colors.success,
-    borderRadius: 10,
-    padding: 20,
+    borderColor: 'rgba(113,255,126,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
   },
   successTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.success,
-    marginBottom: 6,
-  },
-  successText: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    lineHeight: 20,
-  },
-  successEmail: {
+    fontFamily: FontFamily.statNumber,
+    fontSize: 24,
     color: Colors.text,
-    fontWeight: '500',
+    letterSpacing: -0.6,
+    marginBottom: 10,
   },
-  loginLink: {
+  emailBold: {
+    fontFamily: FontFamily.bodySemi,
+    color: Colors.text,
+  },
+  backLink: {
+    fontFamily: FontFamily.body,
+    fontSize: 13,
+    color: '#ffffff',
+    marginTop: 18,
+  },
+  errorBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 36,
-    paddingVertical: 8,
+    gap: 8,
+    backgroundColor: 'rgba(220,38,38,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(220,38,38,0.25)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
   },
-  loginLinkText: {
-    color: Colors.textMuted,
-    fontSize: 14,
+  errorText: {
+    fontFamily: FontFamily.body,
+    fontSize: 12,
+    color: '#f87171',
+  },
+  fields: {
+    gap: 16,
+  },
+  switchRow: {
+    alignItems: 'center',
+    marginTop: 4,
   },
 });

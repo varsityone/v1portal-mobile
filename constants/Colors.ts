@@ -73,6 +73,12 @@ export const SCORE_GRADIENT = ['#EA0C5F', '#FF5341', '#FF8820', '#F6BA00'] as co
 export const PINK_RED = '#EA0C5F';
 export const BRAND_GREEN = '#71ff7e';
 
+// Instagram-style purple -> pink -> orange -> gold sweep used specifically for
+// the dashboard tier pill and the Match+/Free tier status panel — matches
+// web's literal `linear-gradient(135deg, #833AB4, #C13584, #E1306C, #F56040, #FCAF45)`,
+// a different (less saturated) stop set than the general brand GRADIENT above.
+export const TIER_GRADIENT = ['#833AB4', '#C13584', '#E1306C', '#F56040', '#FCAF45'] as const;
+
 // Tier progression bars (matches web ScoreAnimator)
 export const TIER_BARS = [
   { label: 'Dev',   color: '#006aff' },

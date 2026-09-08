@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../context/ThemeContext';
 import { FontFamily } from '../constants/Fonts';
@@ -82,14 +82,6 @@ export default function SurveyModal({ onClose }: SurveyModalProps) {
         </View>
       </View>
     </Modal>
-  );
-}
-
-function TextInput({ style, ...props }: any) {
-  return (
-    <view style={style}>
-      {/* React Native TextInput - use native component */}
-    </view>
   );
 }
 

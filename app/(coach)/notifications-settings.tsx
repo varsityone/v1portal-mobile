@@ -5,7 +5,6 @@ import { useCoachData } from '../../hooks/useCoachData';
 import { ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { Card } from '../../components/ui/Card';
 
 interface NotificationSettings {
   id: string;
@@ -88,90 +87,79 @@ export default function NotificationsSettingsScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
-        <Text style={s.eyebrow}>PREFERENCES</Text>
         <Text style={s.title}>Notifications</Text>
+        <Text style={s.headerSub}>Control how you receive updates</Text>
       </View>
 
-      <View style={{ gap: 12 }}>
-        <Card>
-          <View style={s.setting}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.label}>Email: New Messages</Text>
-              <Text style={s.sub}>When an athlete messages you</Text>
-            </View>
-            <Pressable
-              onPress={() => handleToggle('email_new_messages', !settings.email_new_messages)}
-              disabled={saving}
-              style={[s.toggle, settings.email_new_messages && { backgroundColor: C.primary }]}
-            >
-              <View style={[s.toggleThumb, settings.email_new_messages && s.toggleThumbActive]} />
-            </Pressable>
+      <View style={s.card}>
+        <Text style={s.groupTitle}>Email Notifications</Text>
+        <View style={[s.setting, s.settingBorder]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>New Messages</Text>
+            <Text style={s.sub}>Get notified when a prospect replies to you</Text>
           </View>
-        </Card>
+          <Pressable
+            onPress={() => handleToggle('email_new_messages', !settings.email_new_messages)}
+            disabled={saving}
+            style={[s.toggle, settings.email_new_messages && { backgroundColor: C.primary }]}
+          >
+            <View style={[s.toggleThumb, settings.email_new_messages && s.toggleThumbActive]} />
+          </Pressable>
+        </View>
+        <View style={[s.setting, s.settingBorder]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>New Matches</Text>
+            <Text style={s.sub}>Get notified when you match with a prospect</Text>
+          </View>
+          <Pressable
+            onPress={() => handleToggle('email_new_matches', !settings.email_new_matches)}
+            disabled={saving}
+            style={[s.toggle, settings.email_new_matches && { backgroundColor: C.primary }]}
+          >
+            <View style={[s.toggleThumb, settings.email_new_matches && s.toggleThumbActive]} />
+          </Pressable>
+        </View>
+        <View style={s.setting}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>Daily Digest</Text>
+            <Text style={s.sub}>Receive a daily summary of your recruiting activity</Text>
+          </View>
+          <Pressable
+            onPress={() => handleToggle('email_daily_digest', !settings.email_daily_digest)}
+            disabled={saving}
+            style={[s.toggle, settings.email_daily_digest && { backgroundColor: C.primary }]}
+          >
+            <View style={[s.toggleThumb, settings.email_daily_digest && s.toggleThumbActive]} />
+          </Pressable>
+        </View>
 
-        <Card>
-          <View style={s.setting}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.label}>Email: New Matches</Text>
-              <Text style={s.sub}>When you match with an athlete</Text>
-            </View>
-            <Pressable
-              onPress={() => handleToggle('email_new_matches', !settings.email_new_matches)}
-              disabled={saving}
-              style={[s.toggle, settings.email_new_matches && { backgroundColor: C.primary }]}
-            >
-              <View style={[s.toggleThumb, settings.email_new_matches && s.toggleThumbActive]} />
-            </Pressable>
+        <Text style={[s.groupTitle, { marginTop: 24 }]}>Push Notifications</Text>
+        <View style={[s.setting, s.settingBorder]}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>New Messages</Text>
+            <Text style={s.sub}>Get real-time alerts for new prospect messages</Text>
           </View>
-        </Card>
-
-        <Card>
-          <View style={s.setting}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.label}>Email: Daily Digest</Text>
-              <Text style={s.sub}>Morning summary of activity</Text>
-            </View>
-            <Pressable
-              onPress={() => handleToggle('email_daily_digest', !settings.email_daily_digest)}
-              disabled={saving}
-              style={[s.toggle, settings.email_daily_digest && { backgroundColor: C.primary }]}
-            >
-              <View style={[s.toggleThumb, settings.email_daily_digest && s.toggleThumbActive]} />
-            </Pressable>
+          <Pressable
+            onPress={() => handleToggle('push_new_messages', !settings.push_new_messages)}
+            disabled={saving}
+            style={[s.toggle, settings.push_new_messages && { backgroundColor: C.primary }]}
+          >
+            <View style={[s.toggleThumb, settings.push_new_messages && s.toggleThumbActive]} />
+          </Pressable>
+        </View>
+        <View style={s.setting}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>New Matches</Text>
+            <Text style={s.sub}>Get instant alerts when you match with a prospect</Text>
           </View>
-        </Card>
-
-        <Card>
-          <View style={s.setting}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.label}>Push: New Messages</Text>
-              <Text style={s.sub}>Mobile notification</Text>
-            </View>
-            <Pressable
-              onPress={() => handleToggle('push_new_messages', !settings.push_new_messages)}
-              disabled={saving}
-              style={[s.toggle, settings.push_new_messages && { backgroundColor: C.primary }]}
-            >
-              <View style={[s.toggleThumb, settings.push_new_messages && s.toggleThumbActive]} />
-            </Pressable>
-          </View>
-        </Card>
-
-        <Card>
-          <View style={s.setting}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.label}>Push: New Matches</Text>
-              <Text style={s.sub}>Mobile notification</Text>
-            </View>
-            <Pressable
-              onPress={() => handleToggle('push_new_matches', !settings.push_new_matches)}
-              disabled={saving}
-              style={[s.toggle, settings.push_new_matches && { backgroundColor: C.primary }]}
-            >
-              <View style={[s.toggleThumb, settings.push_new_matches && s.toggleThumbActive]} />
-            </Pressable>
-          </View>
-        </Card>
+          <Pressable
+            onPress={() => handleToggle('push_new_matches', !settings.push_new_matches)}
+            disabled={saving}
+            style={[s.toggle, settings.push_new_matches && { backgroundColor: C.primary }]}
+          >
+            <View style={[s.toggleThumb, settings.push_new_matches && s.toggleThumbActive]} />
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
@@ -182,9 +170,12 @@ function createStyles(C: ThemeColors) {
     container: { padding: 20, paddingBottom: 48 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     header: { marginBottom: 20 },
-    eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
-    title: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text },
-    setting: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text, marginBottom: 4 },
+    headerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
+    card: { backgroundColor: C.surface, borderRadius: 12, padding: 20 },
+    groupTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 4 },
+    setting: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 },
+    settingBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
     label: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
     sub: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
     toggle: { width: 50, height: 30, borderRadius: 15, backgroundColor: C.border2, justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 3 },

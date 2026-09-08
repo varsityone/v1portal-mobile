@@ -47,6 +47,13 @@ export default function CoachMatchScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [matchNotif, setMatchNotif] = useState<{ id: string; name: string } | null>(null);
+  const [swipeErrorNotif, setSwipeErrorNotif] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!swipeErrorNotif) return;
+    const t = setTimeout(() => setSwipeErrorNotif(null), 4000);
+    return () => clearTimeout(t);
+  }, [swipeErrorNotif]);
 
   const isSetupComplete = !!coach?.position_coached && coach?.min_score != null;
 
@@ -107,8 +114,33 @@ export default function CoachMatchScreen() {
     return () => { navigation.getParent()?.setOptions({ headerShown: true }); };
   }, [isFullScreenDeck, navigation]);
 
+  // Swipe is always `allowed: true` at the API level (recruiting-calendar
+  // rules only ever restrict message/visit/evaluation) — this call exists
+  // so the swipe still lands in compliance_logs for the audit trail, same
+  // as web's dashboard/match/page.tsx. Network failure fails open, same
+  // resilience posture as the message-compliance check in [matchId].tsx.
+  const logSwipeCompliance = async (athleteId: string) => {
+    if (!coach) return;
+    try {
+      await fetch(`${API_BASE}/api/compliance/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coach_id: coach.id,
+          division: coach.division,
+          region: coach.region ?? undefined,
+          action: 'swipe',
+          athlete_id: athleteId,
+        }),
+      });
+    } catch {
+      // Logging-only call — never blocks the swipe.
+    }
+  };
+
   const recordSwipe = async (direction: 'like' | 'pass', athleteId: string) => {
     setSwiping(true);
+    await logSwipeCompliance(athleteId);
     try {
       const res = await fetch(`${API_BASE}/api/match/swipe`, {
         method: 'POST',
@@ -119,11 +151,23 @@ export default function CoachMatchScreen() {
         body: JSON.stringify({ athlete_id: athleteId, coach_id: coach!.id, swiped_by: 'coach', direction }),
       });
       const data = await res.json();
+
+      // A failed swipe (network error, 403 from a stale session, etc.) never
+      // reached the swipes table — advancing the card anyway would silently
+      // drop the swipe with no sign anything went wrong.
+      if (!res.ok || data.error) {
+        setSwiping(false);
+        setSwipeErrorNotif("That didn't save. Check your connection and try again.");
+        return;
+      }
+
       if (data.matched) {
         setMatchNotif({ id: data.match_id, name: current?.full_name ?? 'Athlete' });
       }
     } catch {
-      // Swipe just won't record; user can try again.
+      setSwiping(false);
+      setSwipeErrorNotif("That didn't save. Check your connection and try again.");
+      return;
     }
     setSwiping(false);
     setCurrentIndex(i => i + 1);
@@ -211,6 +255,11 @@ export default function CoachMatchScreen() {
   // ── Card deck ──
   return (
     <SafeAreaView style={s.deckRoot}>
+      {swipeErrorNotif && (
+        <View style={s.errorToast}>
+          <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
+        </View>
+      )}
       <View style={s.card}>
         {current?.profile_photo_url ? (
           <Image source={{ uri: current.profile_photo_url }} style={StyleSheet.absoluteFill} />
@@ -309,6 +358,8 @@ function createStyles(C: ThemeColors) {
     matchCelebrationDismiss: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
 
     deckRoot: { flex: 1, backgroundColor: C.background },
+    errorToast: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
+    errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
     cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
     cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },

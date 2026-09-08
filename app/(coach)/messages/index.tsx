@@ -1,24 +1,14 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useCoachInbox } from '../../../hooks/useCoachInbox';
 import { ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
-import { Avatar } from '../../../components/ui/Avatar';
 import { EmptyState } from '../../../components/ui/EmptyState';
-
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 export default function MessagesInboxScreen() {
   const router = useRouter();
@@ -42,31 +32,41 @@ export default function MessagesInboxScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
-        <Text style={s.eyebrow}>MESSAGES</Text>
-        <Text style={s.title}>Conversations</Text>
+        <Text style={s.eyebrow}>OUTREACH</Text>
+        <Text style={s.title}>Messages</Text>
       </View>
 
       {conversations.length === 0 ? (
-        <EmptyState
-          title="No conversations yet"
-          body="Message an athlete to start a conversation."
-          actionLabel="Search for Players"
-          onAction={() => router.push('/(coach)/search' as any)}
-        />
+        <View style={s.emptyCard}>
+          <View style={s.emptyIcon}>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color="#a78bfa" />
+          </View>
+          <Text style={s.emptyTitle}>No messages yet</Text>
+          <Text style={s.emptyBody}>Start reaching out to prospects to begin conversations</Text>
+          <Pressable onPress={() => router.push('/(coach)/search' as any)}>
+            <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.emptyBtn}>
+              <Text style={s.emptyBtnText}>Find Prospects</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       ) : (
-        <View style={{ gap: 8, marginTop: 16 }}>
+        <View style={{ gap: 8 }}>
           {conversations.map(conv => {
             const athlete = conv.athlete;
-            const lastSender = conv.last_message_from === 'coach' ? 'You: ' : `${athlete?.full_name?.split(' ')[0]}: `;
+            const senderLabel = conv.last_message_from === 'athlete' ? 'They: ' : 'You: ';
             return (
               <Pressable
                 key={conv.id}
-                style={[s.row, conv.coach_unread_count > 0 && s.rowHighlighted]}
+                style={s.row}
                 onPress={() => router.push(`/(coach)/messages/${conv.id}` as any)}
               >
-                <Avatar uri={athlete?.profile_photo_url} name={athlete?.full_name} size={44} />
+                {athlete?.profile_photo_url ? (
+                  <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
+                ) : (
+                  <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photo} />
+                )}
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text style={s.name} numberOfLines={1}>{athlete?.full_name ?? 'Unknown'}</Text>
                     {conv.coach_unread_count > 0 && (
                       <View style={s.badge}>
@@ -74,9 +74,15 @@ export default function MessagesInboxScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={s.preview} numberOfLines={1}>{lastSender}{athlete?.position ?? '—'}</Text>
+                  <View style={s.metaRow}>
+                    {athlete?.position ? <Text style={s.meta}>{athlete.position}</Text> : null}
+                    {athlete?.v1_score != null ? <Text style={s.meta}>V1: {athlete.v1_score}</Text> : null}
+                  </View>
+                  <Text style={s.lastLine}>
+                    {senderLabel}{new Date(conv.last_message_at).toLocaleDateString()}
+                  </Text>
                 </View>
-                <Text style={s.time}>{formatDate(conv.last_message_at)}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.textDim} />
               </Pressable>
             );
           })}
@@ -91,15 +97,23 @@ function createStyles(C: ThemeColors) {
     container: { padding: 20, paddingBottom: 48 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     header: { marginBottom: 20 },
-    eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
-    title: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text },
+    eyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text },
 
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: C.border },
-    rowHighlighted: { borderColor: `${C.primary}4D`, backgroundColor: `${C.primary}08` },
+    emptyCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingVertical: 56, paddingHorizontal: 32, alignItems: 'center' },
+    emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(168,85,247,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 8 },
+    emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 20 },
+    emptyBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+    emptyBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+
+    row: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 16 },
+    photo: { width: 56, height: 56, borderRadius: 10 },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
-    preview: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
-    badge: { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-    badgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 9, color: '#fff' },
-    time: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim },
+    badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100, backgroundColor: C.primary },
+    badgeText: { fontFamily: FontFamily.bodyBold, fontSize: 10, color: '#fff' },
+    metaRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    meta: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
+    lastLine: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, marginTop: 4 },
   });
 }

@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 
 interface AuthInputProps extends TextInputProps {
   label: string;
@@ -50,10 +51,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textDim,
-    marginBottom: 7,
+    fontFamily: FontFamily.mono,
+    fontSize: 10,
+    color: '#6b6d70',
+    marginBottom: 8,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
@@ -63,9 +64,10 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: Colors.surface,
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontFamily: FontFamily.body,
+    fontSize: 17,
     color: Colors.text,
   },
   inputPadded: {
@@ -73,6 +75,7 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: Colors.error,
+    borderWidth: 1,
   },
   eyeBtn: {
     position: 'absolute',
@@ -82,8 +85,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
+    fontFamily: FontFamily.body,
     fontSize: 11,
-    color: Colors.error,
+    color: '#ff8a8a',
     marginTop: 4,
   },
 });

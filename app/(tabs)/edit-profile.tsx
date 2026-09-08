@@ -18,7 +18,149 @@ import { useRouter } from 'expo-router';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
 import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
+
+// ─── Season-stats field definitions (mirrors web's app/profile/edit/page.tsx
+// position groups and stat questions 1:1, so edits here write to the exact
+// same assessments.responses keys the assessment itself uses) ───────────────
+
+const POS_QB = ['QB']; const POS_RB = ['RB']; const POS_WR = ['WR']; const POS_TE = ['TE'];
+const POS_OL = ['OL']; const POS_DL = ['DL']; const POS_LB = ['LB']; const POS_DB = ['CB', 'S'];
+const POS_ATH = ['ATH'];
+const OFF_PASS = [...POS_QB, ...POS_ATH];
+const OFF_RUSH = [...POS_QB, ...POS_RB, ...POS_ATH];
+const OFF_REC = [...POS_WR, ...POS_TE, ...POS_RB, ...POS_ATH];
+const DEF_TACK = [...POS_DL, ...POS_LB, ...POS_DB];
+const DEF_RUSH = [...POS_DL, ...POS_LB];
+const DEF_COV = [...POS_DB, ...POS_LB];
+
+const GRADE_LABELS: Record<number, string> = { 9: 'Freshman', 10: 'Sophomore', 11: 'Junior', 12: 'Senior' };
+const GRADE_OPTIONS = [
+  { label: '9th (Freshman)', value: '9th (Freshman)' },
+  { label: '10th (Sophomore)', value: '10th (Sophomore)' },
+  { label: '11th (Junior)', value: '11th (Junior)' },
+  { label: '12th (Senior)', value: '12th (Senior)' },
+  { label: 'Never played varsity', value: 'Never played varsity' },
+];
+const VARSITY_YEARS_OPTIONS = ['0 (JV only)', '1', '2', '3', '4+'];
+
+function parseGradeOption(opt: string): number {
+  if (opt?.startsWith('12')) return 12;
+  if (opt?.startsWith('11')) return 11;
+  if (opt?.startsWith('10')) return 10;
+  if (opt?.startsWith('9')) return 9;
+  return 0;
+}
+
+function deriveGradeFromGradYear(graduationYear: number): number {
+  if (!graduationYear) return 0;
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const academicYear = month >= 8 ? year : year - 1;
+  return Math.min(12, Math.max(9, 13 + academicYear - graduationYear));
+}
+
+type StatField = { id: string; label: string; keyboardType: 'numeric' | 'decimal-pad'; placeholder?: string };
+
+function getCurrentSeasonStatFields(position: string): StatField[] {
+  const f: StatField[] = [{ id: 'games_played_current', label: 'Games Played', keyboardType: 'numeric', placeholder: '11' }];
+  if (OFF_PASS.includes(position)) f.push(
+    { id: 'passing_yards', label: 'Passing Yards', keyboardType: 'numeric', placeholder: '2500' },
+    { id: 'passing_tds', label: 'Passing TDs', keyboardType: 'numeric', placeholder: '24' },
+  );
+  if (POS_QB.includes(position)) f.push({ id: 'completion_pct', label: 'Completion %', keyboardType: 'numeric', placeholder: '62' });
+  if (OFF_PASS.includes(position)) f.push({ id: 'interceptions_thrown', label: 'Interceptions Thrown', keyboardType: 'numeric', placeholder: '6' });
+  if (OFF_RUSH.includes(position)) f.push(
+    { id: 'rushing_yards', label: 'Rushing Yards', keyboardType: 'numeric', placeholder: '1200' },
+    { id: 'rushing_tds', label: 'Rushing TDs', keyboardType: 'numeric', placeholder: '12' },
+    { id: 'yards_per_carry', label: 'Yards Per Carry', keyboardType: 'decimal-pad', placeholder: '6.2' },
+  );
+  if (OFF_REC.includes(position)) f.push(
+    { id: 'receiving_yards', label: 'Receiving Yards', keyboardType: 'numeric', placeholder: '800' },
+    { id: 'receiving_tds', label: 'Receiving TDs', keyboardType: 'numeric', placeholder: '8' },
+  );
+  if ([...POS_WR, ...POS_TE, ...POS_ATH].includes(position)) f.push({ id: 'receptions', label: 'Receptions', keyboardType: 'numeric', placeholder: '45' });
+  if (POS_OL.includes(position)) f.push({ id: 'pancake_blocks', label: 'Pancake Blocks', keyboardType: 'numeric', placeholder: '30' });
+  if (DEF_TACK.includes(position)) f.push({ id: 'total_tackles', label: 'Total Tackles', keyboardType: 'numeric', placeholder: '75' });
+  if (DEF_RUSH.includes(position)) f.push(
+    { id: 'sacks', label: 'Sacks', keyboardType: 'decimal-pad', placeholder: '6.5' },
+    { id: 'tackles_for_loss', label: 'Tackles For Loss', keyboardType: 'numeric', placeholder: '10' },
+  );
+  if (DEF_COV.includes(position)) f.push(
+    { id: 'interceptions', label: 'Interceptions', keyboardType: 'numeric', placeholder: '3' },
+    { id: 'passes_defended', label: 'Pass Breakups', keyboardType: 'numeric', placeholder: '8' },
+  );
+  if (position === 'K') f.push(
+    { id: 'fg_long', label: 'Longest FG Made (yds)', keyboardType: 'numeric', placeholder: '45' },
+    { id: 'fg_pct', label: 'FG % Inside 40', keyboardType: 'numeric', placeholder: '85' },
+    { id: 'kickoff_distance', label: 'Avg Kickoff Distance (yds)', keyboardType: 'numeric', placeholder: '62' },
+  );
+  if (position === 'P') f.push(
+    { id: 'punt_average', label: 'Punt Average (yds)', keyboardType: 'numeric', placeholder: '42' },
+    { id: 'punt_inside_20', label: 'Punts Inside the 20', keyboardType: 'numeric', placeholder: '12' },
+  );
+  return f;
+}
+
+function getPriorSeasonStatFields(position: string, grade: number): StatField[] {
+  const p = `s${grade}_`;
+  const f: StatField[] = [
+    { id: `${p}games_played`, label: 'Games Played', keyboardType: 'numeric', placeholder: '10' },
+    { id: `${p}games_started`, label: 'Games Started', keyboardType: 'numeric', placeholder: '8' },
+  ];
+  if (OFF_PASS.includes(position)) f.push(
+    { id: `${p}passing_yards`, label: 'Passing Yards', keyboardType: 'numeric', placeholder: '1800' },
+    { id: `${p}passing_tds`, label: 'Passing TDs', keyboardType: 'numeric', placeholder: '16' },
+  );
+  if (OFF_RUSH.includes(position)) f.push(
+    { id: `${p}rushing_yards`, label: 'Rushing Yards', keyboardType: 'numeric', placeholder: '900' },
+    { id: `${p}rushing_tds`, label: 'Rushing TDs', keyboardType: 'numeric', placeholder: '10' },
+  );
+  if ([...POS_WR, ...POS_TE].includes(position)) f.push(
+    { id: `${p}receiving_yards`, label: 'Receiving Yards', keyboardType: 'numeric', placeholder: '700' },
+    { id: `${p}receiving_tds`, label: 'Receiving TDs', keyboardType: 'numeric', placeholder: '8' },
+  );
+  if (position === 'RB') f.push({ id: `${p}receiving_yards`, label: 'Receiving Yards', keyboardType: 'numeric', placeholder: '200' });
+  if (DEF_TACK.includes(position)) f.push({ id: `${p}total_tackles`, label: 'Total Tackles', keyboardType: 'numeric', placeholder: '60' });
+  if (DEF_RUSH.includes(position)) f.push(
+    { id: `${p}sacks`, label: 'Sacks', keyboardType: 'decimal-pad', placeholder: '5' },
+    { id: `${p}tackles_for_loss`, label: 'Tackles For Loss', keyboardType: 'numeric', placeholder: '8' },
+  );
+  if (DEF_COV.includes(position)) f.push(
+    { id: `${p}interceptions`, label: 'Interceptions', keyboardType: 'numeric', placeholder: '2' },
+    { id: `${p}passes_defended`, label: 'Pass Breakups', keyboardType: 'numeric', placeholder: '5' },
+  );
+  if (position === 'OL') f.push({ id: `${p}pancake_blocks`, label: 'Pancake Blocks', keyboardType: 'numeric', placeholder: '20' });
+  if (position === 'K') f.push({ id: `${p}fg_pct`, label: 'FG % Inside 40', keyboardType: 'numeric', placeholder: '80' });
+  if (position === 'P') f.push({ id: `${p}punt_average`, label: 'Punt Average (yds)', keyboardType: 'numeric', placeholder: '38' });
+  return f;
+}
+
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY', 'district of columbia': 'DC',
+};
+function normalizeStateCode(state: string | null | undefined): string | null {
+  if (!state) return null;
+  const s = state.trim();
+  if (s.length === 2) return s.toUpperCase();
+  return STATE_NAME_TO_CODE[s.toLowerCase()] || null;
+}
+const DEFAULT_CLASS_OPTIONS_LETTER = ['6A (largest)', '5A', '4A', '3A', '2A', '1A', '8-Man / 6-Man (smallest)'];
+const DEFAULT_CLASS_OPTIONS_DIVISION = ['Division I (D1)', 'Division II (D2)', 'Division III (D3)', 'Division IV (D4)', 'Division V (D5)', 'Division VI (D6)', 'Division VII+ (D7+)'];
 
 // ─── Field definitions ────────────────────────────────────────────────────────
 
@@ -114,7 +256,10 @@ const SECTIONS: Section[] = [
     title: 'Film & Social',
     icon: 'play-circle',
     rows: [
-      { label: 'Hudl Video URL',    key: 'hudl_video_link',   keyboardType: 'url' },
+      { label: 'Hudl Profile Link', key: 'hudl_link',         keyboardType: 'url',
+        hint: "Your full Hudl profile page. Shows as a 'View on Hudl' button on your profile." },
+      { label: 'Hudl Video Link',   key: 'hudl_video_link',   keyboardType: 'url',
+        hint: 'A specific highlight video to embed on your profile. On Hudl, open a video and copy the URL from your browser.' },
       { label: 'YouTube URL',       key: 'youtube_link',      keyboardType: 'url' },
       { label: 'Twitter Handle',    key: 'twitter_handle',    placeholder: '@handle' },
       { label: 'Instagram Handle',  key: 'instagram_handle',  placeholder: '@handle' },
@@ -136,7 +281,7 @@ type Fields = {
   positional_coach_name: string; positional_coach_phone: string; positional_coach_email: string;
   guardian_name: string; guardian_relationship: string;
   guardian_phone: string; guardian_email: string;
-  hudl_video_link: string; youtube_link: string;
+  hudl_link: string; hudl_video_link: string; youtube_link: string;
   twitter_handle: string; instagram_handle: string;
 };
 
@@ -153,7 +298,7 @@ const EMPTY: Fields = {
   positional_coach_name: '', positional_coach_phone: '', positional_coach_email: '',
   guardian_name: '', guardian_relationship: '',
   guardian_phone: '', guardian_email: '',
-  hudl_video_link: '', youtube_link: '',
+  hudl_link: '', hudl_video_link: '', youtube_link: '',
   twitter_handle: '', instagram_handle: '',
 };
 
@@ -168,7 +313,7 @@ const DIRECT_COLS = new Set([
   'graduation_year', 'high_school', 'ncaa_id',
   'city', 'state',
   'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
-  'hudl_video_link', 'youtube_link', 'twitter_handle', 'instagram_handle',
+  'hudl_link', 'hudl_video_link', 'youtube_link', 'twitter_handle', 'instagram_handle',
 ]);
 
 // Keys that live inside coach_info JSONB
@@ -181,16 +326,46 @@ const COACH_INFO_KEYS: (keyof Fields)[] = [
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { athlete, refresh } = useAthleteData();
+  const { athlete, assessment, refresh } = useAthleteData();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
 
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [isPublic, setIsPublic] = useState(true);
+  const [testScoresNotTaken, setTestScoresNotTaken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const profileSlug = (athlete as any)?.profile_slug ?? null;
+
+  const [statResponses, setStatResponses] = useState<Record<string, string>>({});
+  const [schoolClassification, setSchoolClassification] = useState('');
+  const [stateClassOptions, setStateClassOptions] = useState<string[]>([]);
+  const assessmentId = assessment?.id ?? null;
+
+  useEffect(() => {
+    const r = assessment?.responses as Record<string, unknown> | null;
+    if (!r) return;
+    const strResponses: Record<string, string> = {};
+    Object.entries(r).forEach(([k, v]) => { if (v != null) strResponses[k] = String(v); });
+    setStatResponses(strResponses);
+    setSchoolClassification((r.school_classification as string) ?? '');
+  }, [assessment?.responses]);
+
+  useEffect(() => {
+    const stateCode = normalizeStateCode(fields.state);
+    if (!stateCode) { setStateClassOptions([]); return; }
+    let cancelled = false;
+    supabase
+      .from('state_classifications')
+      .select('classification_label')
+      .eq('state_code', stateCode)
+      .order('multiplier', { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) setStateClassOptions((data ?? []).map((d: any) => d.classification_label));
+      });
+    return () => { cancelled = true; };
+  }, [fields.state]);
 
   useEffect(() => {
     if (!athlete) return;
@@ -231,16 +406,30 @@ export default function EditProfileScreen() {
       guardian_relationship:  a.guardian_relationship  ?? '',
       guardian_phone:         a.guardian_phone         ?? '',
       guardian_email:         a.guardian_email         ?? '',
+      hudl_link:              a.hudl_link              ?? '',
       hudl_video_link:        a.hudl_video_link        ?? '',
       youtube_link:           a.youtube_link           ?? '',
       twitter_handle:         a.twitter_handle         ?? '',
       instagram_handle:       a.instagram_handle       ?? '',
     });
     setIsPublic(a.is_profile_public ?? true);
+    setTestScoresNotTaken(a.test_scores_not_taken ?? false);
     setLoading(false);
   }, [athlete]);
 
   const set = (k: keyof Fields) => (v: string) => setFields(f => ({ ...f, [k]: v }));
+  const setStat = (id: string) => (v: string) => setStatResponses(r => ({ ...r, [id]: v }));
+
+  const currentGrade = deriveGradeFromGradYear(fields.graduation_year ? parseInt(fields.graduation_year) : 0);
+  const firstVarsityGrade = parseGradeOption(statResponses.first_varsity_grade || '');
+  const priorGrades = (firstVarsityGrade > 0 && currentGrade > 0 && firstVarsityGrade < currentGrade)
+    ? Array.from({ length: currentGrade - firstVarsityGrade }, (_, i) => firstVarsityGrade + i)
+    : [];
+  const editableStatKeys = [
+    'varsity_years', 'first_varsity_grade',
+    ...getCurrentSeasonStatFields(fields.position).map(f => f.id),
+    ...priorGrades.flatMap(g => getPriorSeasonStatFields(fields.position, g).map(f => f.id)),
+  ];
 
   const handleSave = async () => {
     if (!athlete?.id) return;
@@ -254,6 +443,8 @@ export default function EditProfileScreen() {
       }
     });
     updates.is_profile_public = isPublic;
+    updates.test_scores_not_taken = testScoresNotTaken;
+    if (testScoresNotTaken) { updates.sat_score = null; updates.act_score = null; }
 
     // Pack coach_info JSONB
     const coachInfo: Record<string, string | null> = {};
@@ -261,6 +452,19 @@ export default function EditProfileScreen() {
     updates.coach_info = coachInfo;
 
     const { error } = await supabase.from('athletes').update(updates).eq('id', athlete.id);
+
+    if (!error && assessmentId) {
+      const { data: existing } = await supabase.from('assessments').select('responses').eq('id', assessmentId).single();
+      if (existing) {
+        const r = typeof existing.responses === 'string' ? JSON.parse(existing.responses) : (existing.responses || {});
+        const statUpdates: Record<string, string> = {};
+        editableStatKeys.forEach(key => { if (statResponses[key] !== undefined) statUpdates[key] = statResponses[key]; });
+        await supabase.from('assessments').update({
+          responses: { ...r, ...statUpdates, school_classification: schoolClassification || r.school_classification },
+        }).eq('id', assessmentId);
+      }
+    }
+
     setSaving(false);
     if (error) { Alert.alert('Error', error.message); return; }
     await refresh();
@@ -331,7 +535,7 @@ export default function EditProfileScreen() {
                 }}
                 style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>{copied ? 'Copied!' : 'Copy Link'}</Text>
+                <Text style={{ fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' }}>{copied ? 'Copied!' : 'Copy Link'}</Text>
               </Pressable>
             </View>
           </View>
@@ -345,7 +549,9 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={s.card}>
-              {section.rows.map((row, idx) => {
+              {section.rows
+                .filter(row => !(testScoresNotTaken && (row.key === 'sat_score' || row.key === 'act_score')))
+                .map((row, idx) => {
                 const isBio = row.key === 'bio';
                 return (
                   <View key={row.key} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
@@ -374,15 +580,158 @@ export default function EditProfileScreen() {
                   </View>
                 );
               })}
+              {section.title === 'Academic' && (
+                <View style={[s.fieldRow, s.fieldRowBorder, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={{ fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.text, marginBottom: 2 }}>Haven't taken SAT or ACT yet</Text>
+                    <Text style={{ fontFamily: FontFamily.body, fontSize: 11, color: C.textDim }}>Many programs don't require test scores. Add them later.</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setTestScoresNotTaken(v => !v)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 100,
+                      backgroundColor: testScoresNotTaken ? C.primary : C.surfaceAlt,
+                      borderWidth: 1, borderColor: testScoresNotTaken ? C.primary : C.border,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <View style={{ position: 'absolute', top: 2, left: testScoresNotTaken ? 22 : 2, width: 18, height: 18, borderRadius: 9, backgroundColor: '#fff' }} />
+                  </Pressable>
+                </View>
+              )}
             </View>
           </View>
         ))}
 
+        {/* ── Playing Time ── */}
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="time" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>PLAYING TIME</Text>
+          </View>
+          <Text style={s.sectionSub}>Made a mistake on your assessment? Update it here.</Text>
+          <View style={s.card}>
+            <View style={s.fieldRow}>
+              <Text style={s.label}>Varsity Seasons Played</Text>
+              <View style={s.chipWrap}>
+                {VARSITY_YEARS_OPTIONS.map(opt => (
+                  <Pressable
+                    key={opt}
+                    style={[s.chip, statResponses.varsity_years === opt && s.chipActive]}
+                    onPress={() => setStat('varsity_years')(opt)}
+                  >
+                    <Text style={[s.chipText, statResponses.varsity_years === opt && s.chipTextActive]}>{opt}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            <View style={[s.fieldRow, s.fieldRowBorder]}>
+              <Text style={s.label}>First Varsity Grade</Text>
+              <View style={s.chipWrap}>
+                {GRADE_OPTIONS.map(opt => (
+                  <Pressable
+                    key={opt.value}
+                    style={[s.chip, statResponses.first_varsity_grade === opt.value && s.chipActive]}
+                    onPress={() => setStat('first_varsity_grade')(opt.value)}
+                  >
+                    <Text style={[s.chipText, statResponses.first_varsity_grade === opt.value && s.chipTextActive]}>{opt.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── This Season's Stats ── */}
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="stats-chart" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>THIS SEASON'S STATS</Text>
+          </View>
+          {assessmentId ? (
+            <>
+              <Text style={s.sectionSub}>Production from your most recent varsity season. Made a mistake during your assessment? Fix it here.</Text>
+              <View style={s.card}>
+                {getCurrentSeasonStatFields(fields.position).map((f, idx) => (
+                  <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                    <Text style={s.label}>{f.label}</Text>
+                    <TextInput
+                      style={s.input}
+                      value={statResponses[f.id] ?? ''}
+                      onChangeText={setStat(f.id)}
+                      placeholder={f.placeholder}
+                      placeholderTextColor={C.textDim}
+                      keyboardType={f.keyboardType}
+                    />
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <View style={s.card}>
+              <Text style={{ fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, padding: 16 }}>
+                Complete your assessment first to add season stats.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* ── Prior season stats, one section per grade between first varsity year and now ── */}
+        {priorGrades.map(g => (
+          <View key={g} style={s.sectionWrap}>
+            <View style={s.sectionHeader}>
+              <Ionicons name="stats-chart-outline" size={14} color="#fff" />
+              <Text style={s.sectionTitle}>{GRADE_LABELS[g].toUpperCase()} SEASON STATS</Text>
+            </View>
+            <View style={s.card}>
+              {getPriorSeasonStatFields(fields.position, g).map((f, idx) => (
+                <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                  <Text style={s.label}>{f.label}</Text>
+                  <TextInput
+                    style={s.input}
+                    value={statResponses[f.id] ?? ''}
+                    onChangeText={setStat(f.id)}
+                    placeholder={f.placeholder}
+                    placeholderTextColor={C.textDim}
+                    keyboardType={f.keyboardType}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+
+        {/* ── School Classification ── */}
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="school" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>SCHOOL CLASSIFICATION</Text>
+          </View>
+          <View style={s.card}>
+            <View style={s.fieldRow}>
+              <View style={s.chipWrap}>
+                {(stateClassOptions.length > 0 ? stateClassOptions : [...DEFAULT_CLASS_OPTIONS_LETTER, ...DEFAULT_CLASS_OPTIONS_DIVISION])
+                  .concat(['Private / Independent', 'Not sure'])
+                  .map(opt => (
+                    <Pressable
+                      key={opt}
+                      style={[s.chip, schoolClassification === opt && s.chipActive]}
+                      onPress={() => setSchoolClassification(opt)}
+                    >
+                      <Text style={[s.chipText, schoolClassification === opt && s.chipTextActive]}>{opt}</Text>
+                    </Pressable>
+                  ))}
+              </View>
+              {!assessmentId && <Text style={s.hint}>Complete your assessment first to set your classification.</Text>}
+            </View>
+          </View>
+        </View>
+
         {/* ── Public Profile Toggle ── */}
         <View style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, marginBottom: 20 }]}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: C.text, marginBottom: 2 }}>Public Profile</Text>
-            <Text style={{ fontSize: 11, color: C.textDim }}>Allow coaches to view your profile</Text>
+            <Text style={{ fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.text, marginBottom: 2 }}>Public Profile</Text>
+            <Text style={{ fontFamily: FontFamily.body, fontSize: 11, color: C.textDim }}>Allow coaches to view your profile</Text>
           </View>
           <Pressable
             onPress={() => setIsPublic(v => !v)}
@@ -435,8 +784,8 @@ function createStyles(C: ThemeColors) {
       borderRadius: 100, alignItems: 'center', justifyContent: 'center',
     },
     headerCenter: { alignItems: 'center' },
-    eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.4, color: C.primary, marginBottom: 2 },
-    headerTitle: { fontSize: 17, fontWeight: '800', color: C.text },
+    eyebrow: { fontFamily: FontFamily.bodyBold, fontSize: 10, letterSpacing: 1.4, color: C.primary, marginBottom: 2 },
+    headerTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
 
     accentBar: { height: 3, marginHorizontal: 20, borderRadius: 100, marginBottom: 20 },
 
@@ -445,7 +794,14 @@ function createStyles(C: ThemeColors) {
 
     sectionWrap: { marginBottom: 20 },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-    sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0, color: C.textMuted },
+    sectionTitle: { fontFamily: FontFamily.mono, fontSize: 11, letterSpacing: 1.0, color: C.textMuted },
+    sectionSub: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginBottom: 8, marginTop: -4 },
+
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt },
+    chipActive: { backgroundColor: C.primary, borderColor: C.primary },
+    chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
+    chipTextActive: { color: '#fff' },
 
     card: { backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden' },
     fieldRow: { paddingHorizontal: 16, paddingVertical: 12 },
@@ -454,21 +810,21 @@ function createStyles(C: ThemeColors) {
       flexDirection: 'row', alignItems: 'center',
       justifyContent: 'space-between', marginBottom: 6,
     },
-    label: { fontSize: 12, fontWeight: '500', color: C.textMuted },
+    label: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
 
-    input: { fontSize: 15, color: C.text, paddingVertical: 0 },
+    input: { fontFamily: FontFamily.body, fontSize: 15, color: C.text, paddingVertical: 0 },
     inputMulti: { height: 80, textAlignVertical: 'top' },
 
-    hint: { fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
+    hint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
 
     starterBioBtn: {
       backgroundColor: `${C.primary}22`, borderRadius: 100,
       paddingHorizontal: 10, paddingVertical: 3,
     },
-    starterBioBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
+    starterBioBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.primary },
 
     saveBtnWrap: { marginTop: 8 },
     saveBtn: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    saveBtnText: { fontSize: 16, fontWeight: '800', color: '#ffffff', letterSpacing: 0.3 },
+    saveBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 16, color: '#ffffff', letterSpacing: 0.3 },
   });
 }

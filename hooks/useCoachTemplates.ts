@@ -5,7 +5,7 @@ import { useCoachData } from './useCoachData';
 export interface MessageTemplate {
   id: string;
   coach_id: string;
-  name: string;
+  title: string;
   category: string;
   content: string;
   created_at: string;
@@ -14,8 +14,8 @@ export interface MessageTemplate {
 export interface UseCoachTemplatesResult {
   templates: MessageTemplate[];
   loading: boolean;
-  create: (name: string, category: string, content: string) => Promise<void>;
-  update: (id: string, name: string, category: string, content: string) => Promise<void>;
+  create: (title: string, category: string, content: string) => Promise<void>;
+  update: (id: string, title: string, category: string, content: string) => Promise<void>;
   delete: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -45,13 +45,13 @@ export function useCoachTemplates(): UseCoachTemplatesResult {
   }, [coach?.id]);
 
   const create = useCallback(
-    async (name: string, category: string, content: string) => {
+    async (title: string, category: string, content: string) => {
       if (!coach?.id) return;
 
       try {
         const { data } = await supabase
           .from('coach_message_templates')
-          .insert([{ coach_id: coach.id, name, category, content }])
+          .insert([{ coach_id: coach.id, title, category, content }])
           .select()
           .single();
 
@@ -64,14 +64,14 @@ export function useCoachTemplates(): UseCoachTemplatesResult {
     [coach?.id],
   );
 
-  const update = useCallback(async (id: string, name: string, category: string, content: string) => {
+  const update = useCallback(async (id: string, title: string, category: string, content: string) => {
     try {
       await supabase
         .from('coach_message_templates')
-        .update({ name, category, content })
+        .update({ title, category, content })
         .eq('id', id);
 
-      setTemplates(prev => prev.map(t => (t.id === id ? { ...t, name, category, content } : t)));
+      setTemplates(prev => prev.map(t => (t.id === id ? { ...t, title, category, content } : t)));
     } catch (e) {
       console.error('Template update error:', e);
       throw e;

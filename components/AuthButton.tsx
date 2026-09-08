@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '../constants/Colors';
+import { Colors, GRADIENT } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 
 interface AuthButtonProps {
   label: string;
@@ -40,9 +41,9 @@ export function AuthButton({
       style={({ pressed }) => [isDisabled && styles.disabled, pressed && !isDisabled && styles.pressed]}
     >
       <LinearGradient
-        colors={['#ff0000', '#aa00ff']}
+        colors={GRADIENT}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0 }}
         style={styles.button}
       >
         {loading
@@ -55,7 +56,7 @@ export function AuthButton({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 10,
+    borderRadius: 100,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
@@ -75,13 +76,13 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   label: {
+    fontFamily: FontFamily.bodyBold,
     fontSize: 14,
-    fontWeight: '700',
     color: '#fff',
     letterSpacing: -0.2,
   },
   ghostLabel: {
+    fontFamily: FontFamily.body,
     color: Colors.textMuted,
-    fontWeight: '400',
   },
 });

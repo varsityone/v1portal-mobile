@@ -17,6 +17,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { Phase } from '../../../constants/Phases';
 import { UpgradeSheet } from '../../../components/UpgradeSheet';
 import { ThemeColors } from '../../../constants/Colors';
+import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
 interface PhaseCardProps {
@@ -106,7 +107,7 @@ function createCardStyles(C: ThemeColors) {
     badgeDone: { backgroundColor: C.text },
     badgeActive: { backgroundColor: C.primary },
     badgeUpcoming: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-    badgeNum: { fontSize: 13, fontWeight: '800', color: C.white },
+    badgeNum: { fontFamily: FontFamily.headline, fontSize: 13, color: C.white },
     badgeNumDim: { color: C.textDim },
     connector: { flex: 1, width: 2, backgroundColor: C.border, marginVertical: 4 },
     connectorDone: { backgroundColor: C.text, opacity: 0.4 },
@@ -119,19 +120,19 @@ function createCardStyles(C: ThemeColors) {
     cardLast: { marginBottom: 0 },
     cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
     cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    phaseNum: { fontSize: 11, fontWeight: '600', color: C.primary, letterSpacing: 0.4 },
+    phaseNum: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.primary, letterSpacing: 0.4 },
     statusBadge: {
       backgroundColor: C.surfaceAlt, borderRadius: 4,
       paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: C.border,
     },
-    statusBadgeText: { fontSize: 9, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase' },
+    statusBadgeText: { fontFamily: FontFamily.bodyBold, fontSize: 9, color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase' },
     statusBadgeActive: { backgroundColor: `${C.primary}18`, borderColor: `${C.primary}40` },
     statusBadgeActiveText: { color: C.primary },
-    title: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 6, letterSpacing: -0.2 },
+    title: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 6, letterSpacing: -0.2 },
     textDim: { color: C.textMuted },
-    description: { fontSize: 13, color: C.textMuted, lineHeight: 19 },
+    description: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19 },
     descDim: { color: C.textDim },
-    completePrevious: { marginTop: 8, fontSize: 12, color: C.textDim, fontStyle: 'italic' },
+    completePrevious: { fontFamily: FontFamily.body, marginTop: 8, fontSize: 12, color: C.textDim, fontStyle: 'italic' },
   });
 }
 
@@ -244,16 +245,16 @@ function createStyles(C: ThemeColors) {
     container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20 },
 
     header: { marginBottom: 20 },
-    title: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 6 },
-    subtitle: { fontSize: 15, color: C.textMuted, lineHeight: 22 },
+    title: { fontFamily: FontFamily.headline, fontSize: 30, color: C.text, letterSpacing: -0.5, marginBottom: 6 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 15, color: C.textMuted, lineHeight: 22 },
 
     progressCard: {
       backgroundColor: C.surface,
       borderRadius: 14, padding: 18, marginBottom: 24,
     },
     progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    progressLabel: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.4 },
-    progressCount: { fontSize: 14, fontWeight: '700', color: C.text },
+    progressLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 1.4 },
+    progressCount: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
     progressTrack: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden' },
     progressSegment: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 3 },
     progressSegmentGap: { marginRight: 3 },

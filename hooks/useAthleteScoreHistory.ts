@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './useAuth';
 
 export interface ScoreHistoryEntry {
-  id: string;
-  athlete_id: string;
-  v1_score: number;
-  recorded_at: string;
+  score: number;
+  scored_at: string;
 }
 
 export interface UseAthleteScoreHistoryResult {
@@ -15,22 +12,21 @@ export interface UseAthleteScoreHistoryResult {
   refresh: () => Promise<void>;
 }
 
-export function useAthleteScoreHistory(): UseAthleteScoreHistoryResult {
-  const { session } = useAuth();
+export function useAthleteScoreHistory(athleteId: string | null | undefined): UseAthleteScoreHistoryResult {
   const [history, setHistory] = useState<ScoreHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (!athleteId) return;
     setLoading(true);
 
     try {
       const { data } = await supabase
         .from('athlete_score_history')
-        .select('*')
-        .eq('athlete_id', session.user.id)
-        .order('recorded_at', { ascending: true })
-        .limit(30);
+        .select('score, scored_at')
+        .eq('athlete_id', athleteId)
+        .order('scored_at', { ascending: true })
+        .limit(50);
 
       setHistory((data ?? []) as ScoreHistoryEntry[]);
     } catch (e) {
@@ -38,7 +34,7 @@ export function useAthleteScoreHistory(): UseAthleteScoreHistoryResult {
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.id]);
+  }, [athleteId]);
 
   useEffect(() => {
     fetch();

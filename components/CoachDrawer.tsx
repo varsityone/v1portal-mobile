@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
@@ -7,10 +8,21 @@ import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useAuth } from '../hooks/useAuth';
 import { useCoachData } from '../hooks/useCoachData';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../lib/supabase';
+import { GRADIENT } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 
-// ─── Nav structure — Phase 2+ screens grouped by intent ─────────────
+// ─── Nav structure — mirrors web's components/CoachShell.tsx NAV_GROUPS exactly ──
 
-const NAV_GROUPS = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  iconOff: React.ComponentProps<typeof Ionicons>['name'];
+  badgeKey?: 'matches';
+};
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Overview',
     items: [
@@ -20,44 +32,46 @@ const NAV_GROUPS = [
   {
     label: 'Find Talent',
     items: [
+      { label: 'Discover', href: '/(coach)/match', icon: 'heart' as const, iconOff: 'heart-outline' as const },
       { label: 'Recruit Search', href: '/(coach)/search', icon: 'search' as const, iconOff: 'search-outline' as const },
-      { label: 'Saved Prospects', href: '/(coach)/saved', icon: 'bookmark' as const, iconOff: 'bookmark-outline' as const },
-      { label: 'My Matches', href: '/(coach)/matches', icon: 'heart' as const, iconOff: 'heart-outline' as const },
+      { label: 'Saved', href: '/(coach)/saved', icon: 'bookmark' as const, iconOff: 'bookmark-outline' as const },
+      { label: 'My Matches', href: '/(coach)/matches', icon: 'people' as const, iconOff: 'people-outline' as const, badgeKey: 'matches' as const },
     ],
   },
   {
     label: 'Pipeline',
     items: [
-      { label: 'Recruiting', href: '/(coach)/recruiting', icon: 'map' as const, iconOff: 'map-outline' as const },
-      { label: 'Pipeline', href: '/(coach)/pipeline', icon: 'git-branch' as const, iconOff: 'git-branch' as const },
+      { label: 'Pipeline', href: '/(coach)/pipeline', icon: 'git-branch' as const, iconOff: 'git-branch-outline' as const },
+      { label: 'Recruiting Board', href: '/(coach)/recruiting', icon: 'grid' as const, iconOff: 'grid-outline' as const },
     ],
   },
   {
     label: 'Outreach',
     items: [
-      { label: 'Messages', href: '/(coach)/messages', icon: 'chatbubble' as const, iconOff: 'chatbubble-outline' as const },
-      { label: 'Templates', href: '/(coach)/templates', icon: 'document' as const, iconOff: 'document-outline' as const },
+      { label: 'Messages', href: '/(coach)/messages', icon: 'mail' as const, iconOff: 'mail-outline' as const },
       { label: 'Bulk Message', href: '/(coach)/bulk-message', icon: 'send' as const, iconOff: 'send-outline' as const },
+      { label: 'Templates', href: '/(coach)/templates', icon: 'document' as const, iconOff: 'document-outline' as const },
       { label: 'Calendar', href: '/(coach)/calendar', icon: 'calendar' as const, iconOff: 'calendar-outline' as const },
-      { label: 'Compliance', href: '/(coach)/compliance', icon: 'shield' as const, iconOff: 'shield-outline' as const },
     ],
   },
   {
     label: 'Insights',
     items: [
       { label: 'Analytics', href: '/(coach)/analytics', icon: 'bar-chart' as const, iconOff: 'bar-chart-outline' as const },
-    ],
-  },
-  {
-    label: 'Account',
-    items: [
-      { label: 'Profile', href: '/(coach)/profile', icon: 'person' as const, iconOff: 'person-outline' as const },
-      { label: 'Settings', href: '/(coach)/settings', icon: 'settings' as const, iconOff: 'settings-outline' as const },
+      { label: 'Compliance', href: '/(coach)/compliance', icon: 'shield-checkmark' as const, iconOff: 'shield-checkmark-outline' as const },
     ],
   },
 ];
 
-// ─── Social icons — same SVG paths as AppDrawer ───────────────────────────────
+// Profile + Settings sub-items — matches web CoachShell exactly
+const PROFILE_SUB_ITEMS = [
+  { label: 'Edit Profile',      href: '/(coach)/profile/edit' },
+  { label: 'Program Profile',   href: '/(coach)/profile'      },
+  { label: 'Notifications',     href: '/(coach)/notifications-settings' },
+  { label: 'Settings',          href: '/(coach)/settings'     },
+];
+
+// ─── Social icons — matches web CoachShell's set (X, LinkedIn, Instagram, YouTube) ──
 
 function IconX({ color }: { color: string }) {
   return (
@@ -76,14 +90,6 @@ function IconLinkedIn({ color }: { color: string }) {
   );
 }
 
-function IconFacebook({ color }: { color: string }) {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill={color}>
-      <Path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-    </Svg>
-  );
-}
-
 function IconInstagram({ color }: { color: string }) {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -94,33 +100,39 @@ function IconInstagram({ color }: { color: string }) {
   );
 }
 
+function IconYouTube({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill={color}>
+      <Path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </Svg>
+  );
+}
+
 const SOCIAL = [
-  { label: 'X',         url: 'https://x.com/thev1portal',               Icon: IconX         },
-  { label: 'LinkedIn',  url: 'https://linkedin.com/company/v1portal',    Icon: IconLinkedIn  },
-  { label: 'Facebook',  url: 'https://facebook.com/v1portal',            Icon: IconFacebook  },
-  { label: 'Instagram', url: 'https://instagram.com/v1.portal',          Icon: IconInstagram },
+  { label: 'X',         url: 'https://x.com/thev1portal',            Icon: IconX         },
+  { label: 'LinkedIn',  url: 'https://linkedin.com/company/v1portal', Icon: IconLinkedIn  },
+  { label: 'Instagram', url: 'https://instagram.com/v1.portal',       Icon: IconInstagram },
+  { label: 'YouTube',   url: 'https://youtube.com/@v1portal',         Icon: IconYouTube   },
 ];
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 const DARK = {
   bg:        '#18191d',
-  surface:   '#28292e',
+  surfaceAlt: '#28292e',
   border:    'rgba(255,255,255,0.09)',
   text:      '#e8e9ea',
   textMuted: '#9a9da2',
   textDim:   '#5a5d63',
-  primary:   '#833AB4',
 };
 
 const LIGHT = {
   bg:        '#f0f0f0',
-  surface:   '#ffffff',
+  surfaceAlt: '#e4e4e6',
   border:    'rgba(0,0,0,0.08)',
   text:      '#1a1b1d',
   textMuted: '#5a5d63',
   textDim:   '#9a9da2',
-  primary:   '#833AB4',
 };
 
 // ─── Drawer content ───────────────────────────────────────────────────────────
@@ -134,6 +146,30 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
   const { session, signOut } = useAuth();
   const { coach } = useCoachData();
 
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [unreadMatches, setUnreadMatches] = useState(0);
+
+  // Unread badge for "My Matches" — matches web's CoachShell poll exactly.
+  useEffect(() => {
+    const coachId = coach?.id;
+    if (!coachId) return;
+    let cancelled = false;
+
+    const loadUnread = async () => {
+      const { count } = await supabase
+        .from('match_messages')
+        .select('id, mutual_matches!inner(coach_id)', { count: 'exact', head: true })
+        .eq('sender_type', 'athlete')
+        .eq('read', false)
+        .eq('mutual_matches.coach_id', coachId);
+      if (!cancelled) setUnreadMatches(count ?? 0);
+    };
+
+    loadUnread();
+    const interval = setInterval(loadUnread, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [coach?.id]);
+
   const isActive = (href: string) => {
     if (href === '/(coach)') return pathname === '/' || pathname === '/(coach)';
     const clean = href.replace('/(coach)', '');
@@ -145,9 +181,11 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
     router.push(href as any);
   };
 
+  const profileSettingsActive = isActive('/(coach)/profile') || isActive('/(coach)/notifications-settings') || isActive('/(coach)/settings');
+
   const email = session?.user?.email ?? '';
   const fullName = coach?.full_name || '';
-  const displayName = fullName || email;
+  const displayName = fullName || email || 'Coach';
   const initials = fullName
     ? fullName.trim().split(' ').filter(Boolean).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()
     : email.slice(0, 2).toUpperCase();
@@ -155,7 +193,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
   return (
     <View style={[d.root, { backgroundColor: C.bg }]}>
 
-      {/* Logo */}
+      {/* Header: logo + close */}
       <View style={d.logoBox}>
         <Image
           source={
@@ -171,57 +209,78 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
         </Pressable>
       </View>
 
-      {/* Coach profile header */}
-      <View style={[d.profileHeader, { borderBottomColor: C.border }]}>
+      {/* Coach avatar + name + tier badge — matches web's shell-drawer-header exactly */}
+      <View style={d.profileHeader}>
         {coach?.profile_photo_url ? (
-          <Image source={{ uri: coach.profile_photo_url }} style={d.profilePhoto} />
+          <Image source={{ uri: coach.profile_photo_url }} style={d.avatar} />
         ) : (
-          <View style={[d.profilePhoto, d.profilePhotoFallback, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
-            <Text style={[d.profilePhotoInitials, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
+          <View style={[d.avatar, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
+            <Text style={[d.avatarText, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
           </View>
         )}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[d.profileName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
-          <Text style={[d.profileSchool, { color: C.textMuted }]} numberOfLines={1}>
-            {coach?.school_name ?? email}
-          </Text>
-          {coach && (
-            <View style={[d.badge, { backgroundColor: coach.verified ? 'rgba(113,255,126,0.14)' : 'rgba(245,158,11,0.14)' }]}>
-              <Text style={[d.badgeText, { color: coach.verified ? '#16a34a' : '#D97706' }]}>
-                {coach.verified ? 'VERIFIED COACH' : 'PENDING VERIFICATION'}
-              </Text>
+          {coach?.verified ? (
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.tierBadge}>
+              <Text style={d.tierBadgeText}>Verified Coach</Text>
+            </LinearGradient>
+          ) : (
+            <View style={[d.tierBadge, { backgroundColor: C.surfaceAlt }]}>
+              <Text style={[d.tierBadgeText, { color: C.textMuted }]}>Unverified</Text>
             </View>
           )}
         </View>
       </View>
 
-      {/* Scrollable nav */}
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      {/* School + division */}
+      {(coach?.school_name || coach?.division) && (
+        <View style={d.schoolBlock}>
+          {coach?.school_name ? (
+            <Text style={[d.schoolName, { color: C.textMuted }]} numberOfLines={1}>{coach.school_name}</Text>
+          ) : null}
+          {coach?.division ? (
+            <Text style={[d.divisionText, { color: C.textDim }]}>{coach.division}</Text>
+          ) : null}
+        </View>
+      )}
 
-        {NAV_GROUPS.map((group, gi) => (
-          <View key={gi}>
+      {/* Signal tag — matches web's shell-signal-tag (gradient dot + "COACH PORTAL") */}
+      <View style={d.signalTag}>
+        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.signalDot} />
+        <Text style={[d.signalText, { color: scheme === 'light' ? C.textMuted : '#ffffff' }]}>Coach Portal</Text>
+      </View>
+
+      {/* Scrollable nav */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={d.scrollContent} showsVerticalScrollIndicator={false}>
+
+        {NAV_GROUPS.map(group => (
+          <View key={group.label}>
             <Text style={[d.groupLabel, { color: C.textDim }]}>{group.label}</Text>
             <View style={d.navList}>
               {group.items.map(item => {
                 const active = isActive(item.href);
+                const badge = item.badgeKey === 'matches' ? unreadMatches : 0;
                 return (
                   <Pressable
                     key={item.href}
-                    style={({ pressed }) => [
-                      d.navItem,
-                      pressed && { backgroundColor: 'rgba(255,255,255,0.05)' },
-                    ]}
+                    style={d.navItem}
                     onPress={() => navigate(item.href)}
                   >
+                    {active && <View style={d.activeDot} />}
                     <Ionicons
                       name={active ? item.icon : item.iconOff}
                       size={17}
-                      color={scheme === 'dark' ? '#ffffff' : '#252525'}
+                      color={C.text}
+                      style={{ opacity: active ? 1 : 0.6 }}
                     />
-                    <Text style={[d.navLabel, { color: scheme === 'dark' ? '#ffffff' : '#252525', fontWeight: active ? '700' : '400' }]}>
+                    <Text style={[d.navLabel, { color: C.text, opacity: active ? 1 : 0.85 }, active && d.navLabelActive]}>
                       {item.label}
                     </Text>
-                    {active && <View style={[d.activeBar, { backgroundColor: C.textMuted }]} />}
+                    {badge > 0 && (
+                      <View style={d.unreadBadge}>
+                        <Text style={d.unreadBadgeText}>{badge}</Text>
+                      </View>
+                    )}
                   </Pressable>
                 );
               })}
@@ -229,51 +288,71 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
           </View>
         ))}
 
-        {/* Divider */}
-        <View style={[d.divider, { backgroundColor: C.border }]} />
+        {/* Profile + Settings — collapsible submenu, matches web exactly */}
+        <View style={d.navList}>
+          <Pressable
+            style={d.navItem}
+            onPress={() => setProfileMenuOpen(v => !v)}
+          >
+            {profileSettingsActive && <View style={d.activeDot} />}
+            <Ionicons
+              name="settings-outline"
+              size={17}
+              color={C.text}
+              style={{ opacity: 0.6 }}
+            />
+            <Text style={[d.navLabel, { color: C.text, flex: 1 }]}>
+              Profile + Settings
+            </Text>
+            <Ionicons
+              name={profileMenuOpen ? 'chevron-down' : 'chevron-forward'}
+              size={13}
+              color={C.textDim}
+            />
+          </Pressable>
 
-        {/* Social links */}
-        <View style={d.socialSection}>
-          <Text style={[d.groupLabel, { color: C.textDim }]}>GET IN TOUCH</Text>
-          <View style={d.socialRow}>
-            {SOCIAL.map(s => (
-              <Pressable
-                key={s.label}
-                style={d.socialIcon}
-                onPress={() => Linking.openURL(s.url)}
-                hitSlop={10}
-              >
-                <s.Icon color={C.textMuted} />
-              </Pressable>
-            ))}
-          </View>
+          {profileMenuOpen && (
+            <View style={d.subMenu}>
+              {PROFILE_SUB_ITEMS.map(sub => (
+                <Pressable
+                  key={sub.label}
+                  style={d.subItem}
+                  onPress={() => navigate(sub.href)}
+                >
+                  <Text style={[d.subItemText, { color: C.textMuted }]}>
+                    {sub.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Get in Touch */}
+        <View style={[d.divider, { backgroundColor: C.border }]} />
+        <Text style={[d.groupLabel, { color: C.textDim }]}>Get in Touch</Text>
+        <View style={d.socialRow}>
+          {SOCIAL.map(s => (
+            <Pressable
+              key={s.label}
+              style={d.socialIcon}
+              onPress={() => Linking.openURL(s.url)}
+              hitSlop={10}
+            >
+              <s.Icon color={C.textDim} />
+            </Pressable>
+          ))}
         </View>
 
       </ScrollView>
 
-      {/* Footer */}
+      {/* Footer: Logout only — matches web's shell-drawer-footer exactly */}
       <View style={[d.footer, { borderTopColor: C.border }]}>
-        <View style={d.userRow}>
-          {coach?.profile_photo_url ? (
-            <Image source={{ uri: coach.profile_photo_url }} style={d.avatar} />
-          ) : (
-            <View style={[d.avatar, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
-              <Text style={[d.avatarText, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
-            </View>
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={[d.userName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
-            {fullName ? (
-              <Text style={[d.userEmail, { color: C.textMuted }]} numberOfLines={1}>{email}</Text>
-            ) : null}
-          </View>
-        </View>
         <Pressable
           style={({ pressed }) => [d.signOut, pressed && { opacity: 0.6 }]}
           onPress={signOut}
         >
-          <Ionicons name="log-out-outline" size={15} color={C.textDim} />
-          <Text style={[d.signOutText, { color: C.textDim }]}>Logout</Text>
+          <Text style={[d.signOutText, { color: C.textMuted }]}>Logout</Text>
         </Pressable>
       </View>
     </View>
@@ -290,94 +369,122 @@ const d = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 56,
-    paddingBottom: 18,
+    paddingBottom: 14,
     paddingHorizontal: 20,
-    marginBottom: 4,
   },
-  logo: { height: 28, width: 130 },
+  logo: { height: 26, width: 120 },
   closeBtn: { padding: 4 },
 
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    marginBottom: 4,
+    paddingBottom: 8,
   },
-  profilePhoto: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    flexShrink: 0,
-  },
-  profilePhotoFallback: {
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  profilePhotoInitials: {
-    fontSize: 16,
-    fontWeight: '700',
+  avatarText: {
+    fontFamily: FontFamily.bodyExtraBold,
+    fontSize: 13,
   },
   profileName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FontFamily.bodySemi,
+    fontSize: 13,
+    marginBottom: 4,
   },
-  profileSchool: {
-    fontSize: 12,
-    marginTop: 1,
-  },
-  badge: {
+  tierBadge: {
     alignSelf: 'flex-start',
-    borderRadius: 100,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginTop: 5,
+    paddingVertical: 2,
+    borderRadius: 100,
   },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  tierBadgeText: {
+    fontFamily: FontFamily.bodyExtraBold,
+    fontSize: 10,
+    color: '#ffffff',
+    letterSpacing: 0.3,
   },
 
-  groupLabel: {
+  schoolBlock: { paddingHorizontal: 20, paddingBottom: 12, gap: 2 },
+  schoolName: { fontFamily: FontFamily.bodySemi, fontSize: 12 },
+  divisionText: { fontFamily: FontFamily.mono, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
+
+  signalTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 20,
+    paddingBottom: 18,
+  },
+  signalDot: { width: 6, height: 6, borderRadius: 2 },
+  signalText: {
+    fontFamily: FontFamily.mono,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
+
+  scrollContent: { paddingBottom: 8 },
+
+  groupLabel: {
+    fontFamily: FontFamily.mono,
+    fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 6,
+    marginTop: 18,
+    marginBottom: 8,
   },
-  navList: { gap: 1, paddingHorizontal: 10 },
+  navList: { paddingHorizontal: 20 },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: 10,
+    gap: 12,
+    paddingVertical: 9,
     position: 'relative',
   },
-  navLabel: { fontSize: 14 },
-  activeBar: { width: 3, height: 18, borderRadius: 2, position: 'absolute', right: 0 },
-
-  divider: { height: 1, marginHorizontal: 16, marginVertical: 12 },
-
-  socialSection: { marginBottom: 20 },
-  socialRow: { flexDirection: 'row', gap: 0, paddingHorizontal: 20, alignItems: 'center' },
-  socialIcon: { padding: 4 },
-
-  footer: { borderTopWidth: 1, padding: 16, gap: 10 },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: {
-    width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
+  navLabel: { fontFamily: FontFamily.body, fontSize: 16, letterSpacing: -0.1 },
+  navLabelActive: { fontFamily: FontFamily.bodySemi },
+  activeDot: {
+    position: 'absolute',
+    left: -10,
+    top: '50%',
+    marginTop: -1.5,
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#FF5341',
   },
-  avatarText: { fontSize: 13, fontWeight: '700' },
-  userName: { fontSize: 13, fontWeight: '600' },
-  userEmail: { fontSize: 11 },
-  signOut: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  signOutText: { fontSize: 14 },
+  unreadBadge: {
+    marginLeft: 'auto',
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 5,
+    borderRadius: 100,
+    backgroundColor: '#71ff7e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#0a0a0a' },
+
+  subMenu: { marginLeft: 29, marginBottom: 4 },
+  subItem: { paddingVertical: 8 },
+  subItemText: { fontFamily: FontFamily.body, fontSize: 14 },
+
+  divider: { height: 1, marginHorizontal: 20, marginTop: 20, marginBottom: 4 },
+
+  socialRow: { flexDirection: 'row', gap: 4, paddingHorizontal: 16, alignItems: 'center', marginBottom: 12 },
+  socialIcon: { padding: 6 },
+
+  footer: { borderTopWidth: 1, paddingVertical: 14, paddingHorizontal: 20 },
+  signOut: { paddingVertical: 4 },
+  signOutText: { fontFamily: FontFamily.body, fontSize: 15 },
 });

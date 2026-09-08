@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,10 +12,14 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
+import { isAthletePremium } from '../../lib/subscription';
 import { GradientButton } from '../../components/GradientButton';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { Colors, ThemeColors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +52,74 @@ const TYPE_CONFIG = {
   action:   { color: Colors.primary, icon: 'checkmark-circle' as const, label: 'Action Item' },
   window:   { color: '#00b4ff',    icon: 'time'            as const, label: 'Window'      },
 };
+
+// Mirrors web's app/dashboard/calendar/page.tsx RECRUITING_DATES exactly —
+// same dates, same categories, same (deliberately loose) tier grouping.
+const RECRUITING_DATES: { date: string; event: string; tier: string; category: string }[] = [
+  { date: 'Dec 20, 2025', event: 'Early Signing Period Opens', tier: 'NCAA', category: 'Signing' },
+  { date: 'Jan 15, 2026', event: 'Early Signing Period Closes', tier: 'NCAA', category: 'Signing' },
+  { date: 'Feb 4, 2026', event: 'National Signing Day (Early)', tier: 'NCAA', category: 'Signing' },
+  { date: 'Feb 5, 2026', event: 'National Signing Day', tier: 'NCAA', category: 'Signing' },
+  { date: 'Jan 16, 2026', event: 'Spring Evaluation Period Begins', tier: 'NCAA/NAIA', category: 'Evaluation' },
+  { date: 'Apr 14, 2026', event: 'Spring Evaluation Period Ends', tier: 'NCAA/NAIA', category: 'Evaluation' },
+  { date: 'May 1, 2026', event: 'Deadline to Request LOI Release', tier: 'NCAA', category: 'Administrative' },
+  { date: 'May 15, 2026', event: 'Dead Period Begins', tier: 'NCAA', category: 'Dead Period' },
+  { date: 'May 31, 2026', event: 'Dead Period Ends / Quiet Period Begins', tier: 'NCAA', category: 'Period Change' },
+  { date: 'Jun 1, 2026', event: 'Film Submission Deadline (Recommended)', tier: 'All', category: 'Film' },
+  { date: 'Jun 15, 2026', event: 'NAIA Signing Day Opens', tier: 'NAIA', category: 'Signing' },
+  { date: 'Jul 1, 2026', event: 'July Evaluation Period Begins', tier: 'NCAA', category: 'Evaluation' },
+  { date: 'Jul 31, 2026', event: 'July Evaluation Period Ends', tier: 'NCAA', category: 'Evaluation' },
+  { date: 'Jun 1, 2026', event: 'Summer Camp Season Peak', tier: 'All', category: 'Camps' },
+  { date: 'Aug 1, 2026', event: 'Summer Camp Season Ends', tier: 'All', category: 'Camps' },
+  { date: 'Aug 1, 2026', event: 'Contact Period Resumes (Post-Quiet)', tier: 'NCAA', category: 'Contact' },
+  { date: 'Sep 1, 2026', event: 'College Football Season Begins', tier: 'All', category: 'Season Start' },
+  { date: 'Oct 1, 2026', event: 'Quiet Period Begins', tier: 'NCAA', category: 'Quiet Period' },
+  { date: 'Oct 31, 2026', event: 'Quiet Period Ends', tier: 'NCAA', category: 'Period Change' },
+  { date: 'Nov 1, 2026', event: 'Dead Period #2 Begins', tier: 'NCAA', category: 'Dead Period' },
+  { date: 'Nov 12, 2026', event: 'National Signing Day (Winter)', tier: 'NCAA', category: 'Signing' },
+  { date: 'Nov 30, 2026', event: 'Dead Period #2 Ends', tier: 'NCAA', category: 'Period Change' },
+  { date: 'Feb 1, 2026', event: 'NJCAA Spring Football Season Begins', tier: 'NJCAA', category: 'Season' },
+  { date: 'Apr 30, 2026', event: 'NJCAA Spring Football Ends', tier: 'NJCAA', category: 'Season' },
+  { date: 'Aug 15, 2026', event: 'NJCAA Fall Football Season Begins', tier: 'NJCAA', category: 'Season' },
+  { date: 'Nov 30, 2026', event: 'NJCAA Fall Football Ends', tier: 'NJCAA', category: 'Season' },
+  { date: 'Nov 15, 2025', event: 'NAIA Recruiting Contact Begins (Junior Year)', tier: 'NAIA', category: 'Contact' },
+  { date: 'Jun 15, 2027', event: 'NAIA Signing Day Ends', tier: 'NAIA', category: 'Administrative' },
+  { date: 'May 1, 2026', event: 'Film Updates Due', tier: 'All', category: 'Film' },
+  { date: 'Jun 1, 2026', event: 'Official Visit Season Begins', tier: 'NCAA', category: 'Visits' },
+  { date: 'Aug 15, 2026', event: 'Official Visits Peak Season', tier: 'NCAA', category: 'Visits' },
+  { date: 'Sep 1, 2026', event: 'In-Game Evaluation Window Opens', tier: 'All', category: 'Film' },
+];
+
+const RECRUITING_DATE_CATEGORY_COLORS: Record<string, string> = {
+  'Signing': '#10b981',
+  'Evaluation': '#3b82f6',
+  'Dead Period': '#ef4444',
+  'Quiet Period': '#f59e0b',
+  'Contact': '#8b5cf6',
+  'Film': '#ec4899',
+  'Camps': '#06b6d4',
+  'Visits': '#14b8a6',
+  'Season': '#f97316',
+  'Season Start': '#f97316',
+  'Period Change': '#6366f1',
+  'Administrative': '#64748b',
+};
+
+const RECRUITING_DATE_DIVISION_LABELS: Record<string, string> = {
+  NCAA: 'NCAA',
+  NAIA: 'NAIA',
+  NJCAA: 'NJCAA',
+  All: 'All Divisions',
+};
+
+function getUpcomingDatesByDivision() {
+  const divisions = ['NCAA', 'NAIA', 'NJCAA', 'All'];
+  const result: Record<string, typeof RECRUITING_DATES> = {};
+  for (const div of divisions) {
+    result[div] = RECRUITING_DATES.filter(d => d.tier === div);
+  }
+  return result;
+}
 
 const CUSTOM_TYPE_CONFIG: Record<string, { color: string; icon: any; label: string }> = {
   camp:     { color: '#00b4ff', icon: 'football-outline', label: 'Camp'     },
@@ -140,7 +213,9 @@ function DateStepper({ date, onChange, C }: { date: Date; onChange: (d: Date) =>
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CalendarScreen() {
-  const { athlete } = useAthleteData();
+  const router = useRouter();
+  const { athlete, loading: athleteLoading } = useAthleteData();
+  const isPremium = isAthletePremium(athlete);
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
 
@@ -287,14 +362,32 @@ export default function CalendarScreen() {
     );
   };
 
+  if (athleteLoading) {
+    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+  }
+
+  if (!isPremium) {
+    return (
+      <View style={[s.container, { flex: 1, justifyContent: 'center' }]}>
+        <EmptyState
+          icon="lock-closed"
+          title="Requires Match+"
+          body="The recruiting calendar and timeline tools are part of the Match+ plan. Upgrade to track camps, visits, deadlines, and signing day."
+          actionLabel="Upgrade to Match+"
+          onAction={() => router.push('/(tabs)/upgrade' as any)}
+        />
+      </View>
+    );
+  }
+
   return (
     <>
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={s.header}>
           <View>
-            <Text style={s.title}>Recruiting Calendar</Text>
-            <Text style={s.subtitle}>Class of {gradYear}</Text>
+            <Text style={s.title}>Calendar</Text>
+            <Text style={s.subtitle}>Class of {gradYear} · camps, visits, deadlines & signing days</Text>
           </View>
           <GradientButton style={s.addBtn} onPress={openAdd} hitSlop={4}>
             <Ionicons name="add" size={22} color="#fff" />
@@ -340,6 +433,30 @@ export default function CalendarScreen() {
             </Text>
             <Ionicons name={showAll ? 'chevron-up' : 'chevron-down'} size={14} color={C.icon} />
           </Pressable>
+        )}
+
+        {/* Recruiting Calendar — NCAA/NAIA/NJCAA dated rules, grouped by division */}
+        <Text style={s.recruitingDatesTitle}>Recruiting Calendar</Text>
+        {Object.entries(getUpcomingDatesByDivision()).map(([division, dates]) =>
+          dates.length > 0 && (
+            <View key={division} style={s.recruitingDivisionGroup}>
+              <Text style={s.recruitingDivisionLabel}>{RECRUITING_DATE_DIVISION_LABELS[division]}</Text>
+              <View style={{ gap: 10 }}>
+                {dates.map((item, idx) => (
+                  <View
+                    key={idx}
+                    style={[s.recruitingDateCard, { borderLeftColor: RECRUITING_DATE_CATEGORY_COLORS[item.category] ?? '#6b7280' }]}
+                  >
+                    <Text style={[s.recruitingDateCategory, { color: RECRUITING_DATE_CATEGORY_COLORS[item.category] ?? '#6b7280' }]}>
+                      {item.category}
+                    </Text>
+                    <Text style={s.recruitingDateDate}>{item.date}</Text>
+                    <Text style={s.recruitingDateEvent}>{item.event}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )
         )}
       </ScrollView>
 
@@ -426,34 +543,35 @@ export default function CalendarScreen() {
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
     scroll:    { flex: 1, backgroundColor: C.background },
+    center:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 14 },
 
     header:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    title:    { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
-    subtitle: { fontSize: 14, color: C.textMuted },
+    title:    { fontFamily: FontFamily.headline, fontSize: 26, color: C.text, letterSpacing: -0.5 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 14, color: C.textMuted },
 
     addBtn: {
       width: 38,
       height: 38,
       borderRadius: 19,
-      backgroundColor: Colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
     },
 
     legend:     { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    legendText: { fontSize: 11, fontWeight: '600' },
+    legendText: { fontFamily: FontFamily.bodySemi, fontSize: 11 },
 
-    sectionLabel: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.2, marginBottom: -4 },
+    sectionLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 1.2, marginBottom: -4 },
 
     timeline: { gap: 0 },
     row:      { flexDirection: 'row', gap: 12, minHeight: 0 },
 
     dateCol:   { width: 44, alignItems: 'center', paddingTop: 10 },
-    dateMonth: { fontSize: 9, fontWeight: '700', color: C.textMuted, letterSpacing: 0.5 },
-    dateDay:   { fontSize: 16, fontWeight: '800', color: C.text, lineHeight: 18 },
-    dateYear:  { fontSize: 9, color: C.textDim },
+    dateMonth: { fontFamily: FontFamily.bodyBold, fontSize: 9, color: C.textMuted, letterSpacing: 0.5 },
+    dateDay:   { fontFamily: FontFamily.headline, fontSize: 16, color: C.text, lineHeight: 18 },
+    dateYear:  { fontFamily: FontFamily.body, fontSize: 9, color: C.textDim },
     textPast:  { opacity: 0.4 },
 
     lineCol: { alignItems: 'center', width: 20 },
@@ -477,21 +595,30 @@ function createStyles(C: ThemeColors) {
     customCard: { gap: 0 },
     cardPast:   { opacity: 0.55 },
     cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
-    cardTitle:  { flex: 1, fontSize: 14, fontWeight: '700', color: C.text, lineHeight: 19 },
+    cardTitle:  { flex: 1, fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, lineHeight: 19 },
     typeBadge:  { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
-    typeBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.4 },
-    cardBody:   { fontSize: 12, color: C.textMuted, lineHeight: 17 },
+    typeBadgeText: { fontFamily: FontFamily.bodyBold, fontSize: 9, letterSpacing: 0.4 },
+    cardBody:   { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, lineHeight: 17 },
 
     emptyState:   { alignItems: 'center', paddingVertical: 48, gap: 8 },
-    emptyText:    { fontSize: 16, fontWeight: '700', color: C.textMuted },
-    emptySubtext: { fontSize: 13, color: C.textDim },
+    emptyText:    { fontFamily: FontFamily.bodyBold, fontSize: 16, color: C.textMuted },
+    emptySubtext: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim },
 
     pastToggle: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
       padding: 14, backgroundColor: C.surface,
       borderRadius: 12,
     },
-    pastToggleText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
+    pastToggleText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted },
+
+    // Recruiting Calendar (NCAA/NAIA/NJCAA dated rules)
+    recruitingDatesTitle: { fontFamily: FontFamily.headline, fontSize: 15, color: C.text, marginTop: 28, marginBottom: 4 },
+    recruitingDivisionGroup: { marginTop: 16 },
+    recruitingDivisionLabel: { fontFamily: FontFamily.mono, fontSize: 11, color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+    recruitingDateCard: { backgroundColor: C.surface, borderRadius: 10, padding: 14, borderLeftWidth: 4 },
+    recruitingDateCategory: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+    recruitingDateDate: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text, marginBottom: 4 },
+    recruitingDateEvent: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 18 },
 
     // Modal
     modalOverlay: {
@@ -513,10 +640,10 @@ function createStyles(C: ThemeColors) {
       marginBottom: 20,
     },
     modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    modalTitle:  { fontSize: 18, fontWeight: '800', color: C.text },
+    modalTitle:  { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
 
     inputLabel: {
-      fontSize: 10, fontWeight: '700', color: C.textDim,
+      fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim,
       letterSpacing: 1.2, marginBottom: 8,
     },
     textInput: {
@@ -524,6 +651,7 @@ function createStyles(C: ThemeColors) {
       borderRadius: 10,
       padding: 14,
       color: C.text,
+      fontFamily: FontFamily.body,
       fontSize: 15,
     },
 
@@ -534,20 +662,20 @@ function createStyles(C: ThemeColors) {
       borderRadius: 20,
       backgroundColor: C.surfaceAlt,
     },
-    typeChipText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
+    typeChipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
 
     modalActions: { flexDirection: 'row', gap: 10, marginTop: 24 },
     saveBtn: {
       flex: 1, height: 48, borderRadius: 100,
-      backgroundColor: Colors.primary,
       alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
     },
-    saveBtnText:  { fontSize: 14, fontWeight: '700', color: '#fff' },
+    saveBtnText:  { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
     deleteBtn: {
       height: 48, paddingHorizontal: 18, borderRadius: 100,
       backgroundColor: 'rgba(225,48,108,0.1)',
       alignItems: 'center', justifyContent: 'center',
     },
-    deleteBtnText: { fontSize: 14, fontWeight: '600', color: '#E1306C' },
+    deleteBtnText: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: '#E1306C' },
   });
 }

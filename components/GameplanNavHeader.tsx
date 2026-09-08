@@ -8,6 +8,7 @@ import { useMatchCount } from '../hooks/useMatchCount';
 import { useGameplanPhases } from '../hooks/useGameplanPhases';
 import { PhaseStepper } from './PhaseStepper';
 import { ThemeColors } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 import { useColors } from '../context/ThemeContext';
 
 /**
@@ -50,7 +51,7 @@ function createStyles(C: ThemeColors) {
     root: { backgroundColor: C.background, borderBottomWidth: 1, borderBottomColor: C.border },
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingTop: 6 },
     backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-    title: { fontSize: 15, fontWeight: '700', color: C.text },
+    title: { fontFamily: FontFamily.bodyBold, fontSize: 15, color: C.text },
     stepperWrap: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 12 },
   });
 }

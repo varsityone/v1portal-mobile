@@ -33,6 +33,7 @@ import {
   JetBrainsMono_600SemiBold,
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
+import { DMSans_900Black } from '@expo-google-fonts/dm-sans';
 import { supabase } from '../lib/supabase';
 import { configurePurchases } from '../lib/purchases';
 import { resolveHomeRoute } from '../lib/resolveHomeRoute';
@@ -68,7 +69,7 @@ function LoadingScreen() {
   return (
     <View style={ls.root}>
       <Animated.Image
-        source={require('../assets/logo-mark.png')}
+        source={require('../assets/varsityone-logo-mark-white.png')}
         style={[ls.logo, { transform: [{ scale: beat }] }]}
         resizeMode="contain"
       />
@@ -234,6 +235,7 @@ export default function RootLayout() {
     Archivo_800ExtraBold,
     JetBrainsMono_600SemiBold,
     JetBrainsMono_700Bold,
+    DMSans_900Black,
   });
 
   const showBanner = useCallback((title: string, body: string) => {
@@ -248,7 +250,14 @@ export default function RootLayout() {
   }, []);
 
   // ── Bootstrap: check auth on first mount ──────────────────────────────────
+  const bootstrapped = useRef(false);
   useEffect(() => {
+    // Guard against React 18 Strict Mode's dev-only double-invoke of effects —
+    // two concurrent getSession() calls on the same GoTrueClient at cold boot
+    // can deadlock its internal storage lock.
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+
     async function bootstrap() {
       const start = Date.now();
       const { data: { session } } = await supabase.auth.getSession();

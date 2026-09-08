@@ -287,6 +287,6 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     marginTop: 24,
   },
   supportLink: {
-    color: C.primary,
+    color: '#fff',
   },
 });

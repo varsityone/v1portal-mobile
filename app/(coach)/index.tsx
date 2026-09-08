@@ -1,28 +1,43 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, ActivityIndicator, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useCoachData, Coach } from '../../hooks/useCoachData';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, TIER_GRADIENT, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
+import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierIndex } from '../../components/StatCard';
 
-const PERIOD_COLORS: Record<string, string> = {
-  dead: '#ef4444', quiet: '#f59e0b', evaluation: '#3b82f6',
-  contact: '#22c55e', signing: '#8b5cf6', open: '#22c55e', unknown: '#6b7280',
+// Matches web's components/CoachDashboard.tsx PERIOD_BG / PERIOD_ACCENT exactly —
+// a bold solid (or gradient, for the all-clear states) status banner, not a
+// neutral card with a colored border tint.
+const PERIOD_BG: Record<string, [string, string] | string> = {
+  dead: '#7f1d1d', quiet: '#78350f', evaluation: '#1e3a5f',
+  contact: ['#177100', '#00ff49'], signing: '#4c1d95',
+  open: ['#177100', '#00ff49'], unknown: '#303238',
+};
+const PERIOD_ACCENT: Record<string, string> = {
+  dead: '#7f1d1d', quiet: '#78350f', evaluation: '#1e3a5f',
+  contact: '#177100', signing: '#4c1d95', open: '#177100', unknown: '#000',
 };
 const PERIOD_LABELS: Record<string, string> = {
   dead: 'Dead Period', quiet: 'Quiet Period', evaluation: 'Evaluation Period',
   contact: 'Contact Period', signing: 'Signing Period', open: 'Open Recruiting', unknown: 'Unknown',
 };
+const RESTRICTIVE_PERIODS = new Set(['dead', 'quiet']);
+
+function daysBetween(a: string, b: string) {
+  return Math.max(0, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
+}
 
 interface Compliance {
   period: string;
   period_description: string;
   communication_allowed: string[];
   queue_until: string | null;
+  period_end_date?: string | null;
 }
 
 interface RecentMatch {
@@ -43,11 +58,25 @@ export default function CoachDashboard() {
   const s = useMemo(() => createStyles(C), [C]);
   const { coach, loading: coachLoading } = useCoachData();
 
+  const pulseAnim = useRef(new Animated.Value(0.6)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.6, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
   const [loading, setLoading] = useState(true);
   const [compliance, setCompliance] = useState<Compliance | null>(null);
   const [matches, setMatches] = useState<RecentMatch[]>([]);
   const [matchCount, setMatchCount] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
@@ -99,11 +128,31 @@ export default function CoachDashboard() {
         .eq('status', 'active');
       setMatchCount(mCount ?? 0);
 
+      // Only count swipes the coach themselves made — the same coach_id
+      // shows up on rows where an athlete swiped on this program too.
       const { count: sCount } = await supabase
         .from('swipes')
         .select('*', { count: 'exact', head: true })
-        .eq('coach_id', c.id);
+        .eq('coach_id', c.id)
+        .eq('swiped_by', 'coach');
       setSwipeCount(sCount ?? 0);
+
+      const { count: savedC } = await supabase
+        .from('coach_saved_prospects')
+        .select('*', { count: 'exact', head: true })
+        .eq('coach_id', c.id);
+      setSavedCount(savedC ?? 0);
+
+      if (matchData && matchData.length > 0) {
+        const matchIds = matchData.map(m => m.id);
+        const { count: unread } = await supabase
+          .from('match_messages')
+          .select('*', { count: 'exact', head: true })
+          .in('match_id', matchIds)
+          .eq('sender_type', 'athlete')
+          .eq('status', 'sent');
+        setUnreadCount(unread ?? 0);
+      }
 
       setLoading(false);
     }
@@ -178,71 +227,113 @@ export default function CoachDashboard() {
   }
 
   const periodKey = compliance?.period ?? 'unknown';
-  const periodColor = PERIOD_COLORS[periodKey] ?? PERIOD_COLORS.unknown;
   const periodLabel = PERIOD_LABELS[periodKey] ?? PERIOD_LABELS.unknown;
+  const periodBg = PERIOD_BG[periodKey] ?? PERIOD_BG.unknown;
+  const periodAccent = PERIOD_ACCENT[periodKey] ?? PERIOD_ACCENT.unknown;
+  const isRestrictive = RESTRICTIVE_PERIODS.has(periodKey);
+  const daysLeftInPeriod = compliance?.period_end_date
+    ? daysBetween(new Date().toISOString().split('T')[0], compliance.period_end_date)
+    : null;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-      <View style={s.greetBlock}>
-        <Text style={s.eyebrow}>DASHBOARD</Text>
-        <Text style={s.greetTitle}>{greeting}, Coach {firstName}.</Text>
-        <Text style={s.greetSub}>{coach.school_name} · {coach.division}</Text>
-      </View>
-
-      {/* Stats */}
-      <View style={s.statsRow}>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{matchCount}</Text>
-          <Text style={s.statLabel}>Matches</Text>
-        </View>
-        <View style={s.statCard}>
-          <Text style={s.statValue}>{swipeCount}</Text>
-          <Text style={s.statLabel}>Players Viewed</Text>
-        </View>
-      </View>
-
-      {/* Compliance card */}
-      <View style={[s.complianceCard, { borderColor: `${periodColor}40` }]}>
-        <View style={s.complianceHeader}>
-          <Text style={s.complianceLabel}>COMPLIANCE · {coach.division}</Text>
-          <View style={s.periodBadge}>
-            <View style={[s.periodDot, { backgroundColor: periodColor }]} />
-            <Text style={[s.periodText, { color: periodColor }]}>{periodLabel}</Text>
-          </View>
-        </View>
-        <Text style={s.complianceBody}>
-          {compliance?.period_description ?? 'Loading compliance data…'}
-        </Text>
-        {compliance?.queue_until && (
-          <Text style={s.queueText}>
-            Next contact opens: <Text style={{ color: C.text, fontFamily: FontFamily.bodyBold }}>
-              {new Date(compliance.queue_until + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </Text>
+      {/* Greeting — white welcome card, same treatment as the athlete
+          dashboard's greeting card: eyebrow + title + status line + tier
+          pills + a pinned "View Profile" button. */}
+      <View style={s.greetCard}>
+        {coach.profile_photo_url ? (
+          <Image source={{ uri: coach.profile_photo_url }} style={s.greetBgAvatar} />
+        ) : null}
+        <View style={s.greetContent}>
+          <Text style={s.greetEyebrow}>Coach Portal Dashboard</Text>
+          <Text style={s.greetCardTitle}>{greeting}, Coach {firstName}.</Text>
+          <Text style={s.greetCardSub}>
+            {matchCount === 0
+              ? 'Start swiping to find your next signee.'
+              : `You have ${matchCount} active match${matchCount === 1 ? '' : 'es'}${unreadCount > 0 ? ` and ${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : ''}.`}
           </Text>
-        )}
-        {!!compliance?.communication_allowed?.length && (
-          <View style={s.commChips}>
-            {compliance.communication_allowed.map(c => (
-              <View key={c} style={[s.commChip, { backgroundColor: `${periodColor}18` }]}>
-                <Text style={[s.commChipText, { color: periodColor }]}>{c.replace(/_/g, ' ').toUpperCase()}</Text>
+          <View style={s.tierRow}>
+            <Text style={s.tierRowLabel}>Status:</Text>
+            <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.tierPill}>
+              <Text style={s.tierPillText}>Verified Coach</Text>
+            </LinearGradient>
+            {coach.division ? (
+              <View style={[s.tierPill, { backgroundColor: '#f0eeea' }]}>
+                <Text style={[s.tierPillText, { color: '#555' }]}>{coach.division}</Text>
               </View>
-            ))}
+            ) : null}
+            {coach.school_name ? <Text style={s.tierRowSchool}>{coach.school_name}</Text> : null}
           </View>
-        )}
-        <Pressable onPress={() => router.push('/(coach)/compliance' as any)}>
-          <Text style={s.complianceLink}>Full calendar →</Text>
-        </Pressable>
+        </View>
+        {coach.profile_slug ? (
+          <Pressable style={s.viewProfileBtn} onPress={() => router.push(`/(coach)/profile` as any)}>
+            <Text style={s.viewProfileBtnText}>View Profile</Text>
+            <Ionicons name="arrow-forward" size={12} color="#C13584" />
+          </Pressable>
+        ) : null}
       </View>
 
-      {/* CTA */}
+      {/* Primary CTA + secondary action cards */}
       <Pressable style={s.ctaWrap} onPress={() => router.push('/(coach)/match' as any)}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View>
           <Text style={s.ctaTitle}>Find Players</Text>
-          <Text style={s.ctaSub}>Swipe & match</Text>
+          <Text style={s.ctaSub}>Swipe & match with athletes who fit your program</Text>
         </View>
         <Ionicons name="arrow-forward" size={18} color="#fff" />
       </Pressable>
+
+      <View style={s.secondaryRow}>
+        {[
+          { href: '/(coach)/recruiting', label: 'Recruiting Map', sub: 'Target states', icon: 'map-outline' as const },
+          { href: '/(coach)/messages', label: 'Messages', sub: 'Reach out', icon: 'chatbubbles-outline' as const },
+          { href: '/(coach)/saved', label: 'Saved Prospects', sub: 'Your shortlist', icon: 'bookmark-outline' as const },
+        ].map(cta => (
+          <Pressable key={cta.href} style={s.secondaryCard} onPress={() => router.push(cta.href as any)}>
+            <Ionicons name={cta.icon} size={22} color="#fff" />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.secondaryCardTitle}>{cta.label}</Text>
+              <Text style={s.secondaryCardSub}>{cta.sub}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Recruiting Activity — StatCard/TierBar pattern, matching web exactly */}
+      <View style={s.sectionHeader}>
+        <Text style={s.recruitingActivityLabel}>Recruiting Activity</Text>
+        <Pressable onPress={() => router.push('/(coach)/analytics' as any)}>
+          <Text style={s.seeAll}>Full Analytics →</Text>
+        </Pressable>
+      </View>
+      <View style={s.statGrid}>
+        <StatCard label="Matches" value={matchCount} sub="Athletes who matched back with you" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(matchCount, [1, 3, 6, 10])} />
+        <StatCard label="Players Viewed" value={swipeCount} sub="Prospects you've swiped through so far" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(swipeCount, [10, 25, 50, 100])} />
+        <StatCard label="Saved Prospects" value={savedCount} sub="Athletes on your shortlist" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(savedCount, [2, 5, 10, 20])} />
+        <StatCard label="Unread Messages" value={unreadCount} sub="From matched athletes" tiers={MESSAGE_TIERS} activeIndex={unreadTierIndex(unreadCount)} />
+      </View>
+
+      {/* Compliance — a legal-status card, not just another info tile: a bold
+          solid/gradient banner (deep period-status color) with white
+          foreground, matching web's "Find Players" hero treatment rather
+          than a neutral card with a colored border tint. */}
+      {Array.isArray(periodBg) ? (
+        <LinearGradient colors={periodBg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.complianceCard}>
+          <ComplianceCardBody
+            coach={coach} periodLabel={periodLabel} isRestrictive={isRestrictive}
+            daysLeftInPeriod={daysLeftInPeriod} compliance={compliance} periodAccent={periodAccent}
+            pulseAnim={pulseAnim} s={s} router={router}
+          />
+        </LinearGradient>
+      ) : (
+        <View style={[s.complianceCard, { backgroundColor: periodBg }]}>
+          <ComplianceCardBody
+            coach={coach} periodLabel={periodLabel} isRestrictive={isRestrictive}
+            daysLeftInPeriod={daysLeftInPeriod} compliance={compliance} periodAccent={periodAccent}
+            pulseAnim={pulseAnim} s={s} router={router}
+          />
+        </View>
+      )}
 
       {/* Recent matches */}
       <View style={{ marginTop: 8 }}>
@@ -293,6 +384,68 @@ export default function CoachDashboard() {
   );
 }
 
+function ComplianceCardBody({ coach, periodLabel, isRestrictive, daysLeftInPeriod, compliance, periodAccent, pulseAnim, s, router }: {
+  coach: Coach;
+  periodLabel: string;
+  isRestrictive: boolean;
+  daysLeftInPeriod: number | null;
+  compliance: Compliance | null;
+  periodAccent: string;
+  pulseAnim: Animated.Value;
+  s: ReturnType<typeof createStyles>;
+  router: ReturnType<typeof useRouter>;
+}) {
+  return (
+    <>
+      <View style={s.complianceHeader}>
+        <View style={s.complianceHeaderLeft}>
+          <Ionicons name={isRestrictive ? 'shield' : 'shield-checkmark'} size={36} color="#fff" />
+          <View>
+            <View style={s.complianceStatusRow}>
+              <View style={s.pulseWrap}>
+                <Animated.View style={[s.pulseGlow, { opacity: pulseAnim }]} />
+                <View style={s.pulseDot} />
+              </View>
+              <Text style={s.complianceLabel}>COMPLIANCE STATUS · {coach.division}</Text>
+            </View>
+            <Text style={s.periodTitle}>{periodLabel}</Text>
+          </View>
+        </View>
+        {daysLeftInPeriod != null && (
+          <View style={{ alignItems: 'center' }}>
+            <Text style={s.daysLeftValue}>{daysLeftInPeriod}</Text>
+            <Text style={s.daysLeftLabel}>day{daysLeftInPeriod === 1 ? '' : 's'} left</Text>
+          </View>
+        )}
+      </View>
+
+      <Text style={s.complianceBody}>
+        {compliance?.period_description ?? 'Loading compliance data…'}
+      </Text>
+      {compliance?.queue_until && (
+        <Text style={s.queueText}>
+          Next contact opens: <Text style={{ color: '#fff', fontFamily: FontFamily.bodyBold }}>
+            {new Date(compliance.queue_until + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </Text>
+        </Text>
+      )}
+      {!!compliance?.communication_allowed?.length && (
+        <View style={s.commChips}>
+          {compliance.communication_allowed.map(c => (
+            <View key={c} style={s.commChip}>
+              <Text style={s.commChipText}>{c.replace(/_/g, ' ').toUpperCase()}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <Pressable style={s.complianceLinkBtn} onPress={() => router.push('/(coach)/compliance' as any)}>
+        <Text style={[s.complianceLinkText, { color: periodAccent }]}>View Full Calendar</Text>
+        <Ionicons name="arrow-forward" size={13} color={periodAccent} />
+      </Pressable>
+    </>
+  );
+}
+
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { padding: 20, paddingBottom: 48 },
@@ -315,18 +468,46 @@ function createStyles(C: ThemeColors) {
     statValue: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
     statLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
 
-    complianceCard: { backgroundColor: C.surface, borderWidth: 1, borderRadius: 14, padding: 18, marginBottom: 20 },
-    complianceHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    complianceLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 0.5 },
-    periodBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    periodDot: { width: 8, height: 8, borderRadius: 4 },
-    periodText: { fontFamily: FontFamily.bodyBold, fontSize: 12 },
-    complianceBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19 },
-    queueText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 8 },
-    commChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
-    commChip: { borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3 },
-    commChipText: { fontFamily: FontFamily.mono, fontSize: 9, letterSpacing: 0.5 },
-    complianceLink: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.primary, marginTop: 14 },
+    greetCard: { backgroundColor: '#fff', borderRadius: 18, padding: 22, marginBottom: 20, overflow: 'hidden' },
+    greetBgAvatar: { position: 'absolute', top: 0, right: -60, width: 200, height: 200, borderRadius: 100, opacity: 0.12 },
+    greetContent: { position: 'relative' },
+    greetEyebrow: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(0,0,0,0.45)', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' },
+    greetCardTitle: { fontFamily: FontFamily.headline, fontSize: 24, fontWeight: '900', color: '#0a0a0a', marginBottom: 6 },
+    greetCardSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(0,0,0,0.5)', lineHeight: 18 },
+    tierRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+    tierRowLabel: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+    tierPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
+    tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
+    tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: 'rgba(0,0,0,0.5)' },
+    viewProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, alignSelf: 'flex-start' },
+    viewProfileBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#C13584' },
+
+    secondaryRow: { gap: 10, marginBottom: 24 },
+    secondaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#000', borderRadius: 14, padding: 16, minHeight: 72 },
+    secondaryCardTitle: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+    secondaryCardSub: { fontFamily: FontFamily.body, fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+
+    recruitingActivityLabel: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.textMuted },
+    statGrid: { gap: 16, marginBottom: 8 },
+
+    complianceCard: { borderRadius: 20, padding: 22, marginBottom: 20 },
+    complianceHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 14 },
+    complianceHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flexShrink: 1 },
+    complianceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+    pulseWrap: { width: 7, height: 7, alignItems: 'center', justifyContent: 'center' },
+    pulseGlow: { position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: '#facc15' },
+    pulseDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#facc15' },
+    complianceLabel: { fontFamily: FontFamily.bodyBold, fontSize: 10, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },
+    periodTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: '#fff', marginTop: 4 },
+    daysLeftValue: { fontFamily: FontFamily.mono, fontSize: 32, color: '#fff' },
+    daysLeftLabel: { fontFamily: FontFamily.body, fontSize: 10, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
+    complianceBody: { fontFamily: FontFamily.body, fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 19 },
+    queueText: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8 },
+    commChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 14 },
+    commChip: { borderRadius: 100, paddingHorizontal: 11, paddingVertical: 5, backgroundColor: 'rgba(255,255,255,0.16)' },
+    commChipText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff', letterSpacing: 0.5, textTransform: 'uppercase' },
+    complianceLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 100, paddingHorizontal: 18, paddingVertical: 10, marginTop: 20 },
+    complianceLinkText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 12 },
 
     ctaWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 14, padding: 20, marginBottom: 24, overflow: 'hidden' },
     ctaTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: '#fff', marginBottom: 2 },
@@ -334,11 +515,11 @@ function createStyles(C: ThemeColors) {
 
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     sectionTitle: { fontFamily: FontFamily.headlineBold, fontSize: 16, color: C.text },
-    seeAll: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.primary },
+    seeAll: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: '#fff' },
 
     emptyMatches: { backgroundColor: C.surface, borderRadius: 12, padding: 28, alignItems: 'center' },
     emptyMatchesText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim, marginBottom: 10, textAlign: 'center' },
-    emptyMatchesLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
+    emptyMatchesLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     matchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 12, padding: 14 },
     matchAvatar: { width: 40, height: 40, borderRadius: 20 },

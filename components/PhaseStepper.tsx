@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GameplanPhases } from '../hooks/useGameplanPhases';
 import { ThemeColors } from '../constants/Colors';
+import { FontFamily } from '../constants/Fonts';
 import { useColors } from '../context/ThemeContext';
 import { UpgradeSheet } from './UpgradeSheet';
 
@@ -104,10 +105,10 @@ function createStyles(C: ThemeColors) {
     nodeDone: { backgroundColor: C.text, borderColor: C.text },
     nodeCurrent: { backgroundColor: 'transparent', borderWidth: 2.5, borderColor: C.primary },
     nodeLocked: { backgroundColor: 'transparent' },
-    nodeNum: { fontSize: 13, fontWeight: '700', color: C.textDim },
+    nodeNum: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.textDim },
     nodeNumCurrent: { color: C.primary },
-    label: { fontSize: 12, color: C.textDim, marginTop: 6, textAlign: 'center', fontWeight: '500' },
-    labelCurrent: { color: C.text, fontWeight: '800' },
+    label: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 6, textAlign: 'center' },
+    labelCurrent: { fontFamily: FontFamily.bodyExtraBold, color: C.text },
     labelDim: { color: C.textDim },
     connector: { flex: 1, height: 2, backgroundColor: C.border, marginTop: 17, marginHorizontal: -8 },
     connectorDone: { backgroundColor: C.text, opacity: 0.4 },

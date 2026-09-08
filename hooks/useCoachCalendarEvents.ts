@@ -5,9 +5,9 @@ import { useCoachData } from './useCoachData';
 export interface CalendarEvent {
   id: string;
   coach_id: string;
-  athlete_id: string | null;
+  athlete_id: string;
   title: string;
-  event_type: 'game' | 'contact' | 'visit' | 'commitment' | 'other';
+  event_type: 'contact' | 'visit' | 'game' | 'quiet';
   event_date: string;
   notes: string | null;
   created_at: string;
@@ -16,7 +16,7 @@ export interface CalendarEvent {
 export interface UseCoachCalendarEventsResult {
   events: CalendarEvent[];
   loading: boolean;
-  create: (title: string, type: string, date: string, athleteId?: string, notes?: string) => Promise<void>;
+  create: (title: string, type: string, date: string, athleteId: string, notes?: string) => Promise<void>;
   delete: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -46,7 +46,7 @@ export function useCoachCalendarEvents(): UseCoachCalendarEventsResult {
   }, [coach?.id]);
 
   const create = useCallback(
-    async (title: string, type: string, date: string, athleteId?: string, notes?: string) => {
+    async (title: string, type: string, date: string, athleteId: string, notes?: string) => {
       if (!coach?.id) return;
 
       try {
@@ -55,7 +55,7 @@ export function useCoachCalendarEvents(): UseCoachCalendarEventsResult {
           .insert([
             {
               coach_id: coach.id,
-              athlete_id: athleteId ?? null,
+              athlete_id: athleteId,
               title,
               event_type: type,
               event_date: date,

@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, PressableProps, StyleProp, ViewStyle } from 'react-native';
-
-const COLORS: [string, string] = ['#ff0000', '#aa00ff'];
+import { GRADIENT } from '../constants/Colors';
 
 type Props = PressableProps & {
   style?: StyleProp<ViewStyle>;
@@ -21,9 +20,9 @@ export function GradientButton({ children, style, disabled, ...props }: Props) {
       ]}
     >
       <LinearGradient
-        colors={COLORS}
+        colors={GRADIENT}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
       {children}

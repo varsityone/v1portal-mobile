@@ -65,7 +65,13 @@
           "backgroundColor": "#0A0A0A"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "V1Portal uses your photo library to let you upload a profile photo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { signInWithGoogle } from '../../lib/googleAuth';
 import { signInWithApple } from '../../lib/appleAuth';
@@ -21,6 +22,7 @@ import { AuthInput } from '../../components/AuthInput';
 import { AuthButton } from '../../components/AuthButton';
 import { GoogleButton } from '../../components/GoogleButton';
 import { Colors } from '../../constants/Colors';
+import { FontFamily } from '../../constants/Fonts';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -87,19 +89,14 @@ export default function LoginScreen() {
 
         {/* Heading */}
         <View style={styles.heading}>
-          <Text style={styles.title}>Welcome Back.</Text>
-          <Text style={styles.subtitle}>Sign in to your V1Portal® account</Text>
-          <Text style={styles.subscriptionNote}>
-            New to V1Portal?{' '}
-            <Text style={styles.subscriptionLink} onPress={() => router.push('/(auth)/signup')}>
-              Create a free account
-            </Text>
-          </Text>
+          <Text style={styles.title}>Welcome back.</Text>
+          <Text style={styles.subtitle}>Log in to your V1Portal® account</Text>
         </View>
 
         {/* Error */}
         {!!error && (
           <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle-outline" size={14} color="#f87171" />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -126,7 +123,7 @@ export default function LoginScreen() {
 
         {/* Divider */}
         <View style={styles.divider}>
-          <Text style={styles.dividerText}>or sign in with email</Text>
+          <Text style={styles.dividerText}>or log in with email</Text>
         </View>
 
         {/* Fields */}
@@ -162,14 +159,14 @@ export default function LoginScreen() {
             />
           </View>
 
-          <AuthButton label="Sign In →" onPress={handleLogin} loading={loading} />
+          <AuthButton label="Log In →" onPress={handleLogin} loading={loading} />
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>New to V1Portal? </Text>
-          <Pressable onPress={() => router.push('/(auth)/signup')} hitSlop={8}>
-            <Text style={styles.footerLink}>Sign up</Text>
+          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Pressable onPress={() => router.push('/(auth)/signup/role')} hitSlop={8}>
+            <Text style={styles.footerLink}>Sign up free</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -197,29 +194,23 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   title: {
-    fontSize: 40,
-    fontWeight: '900',
+    fontFamily: FontFamily.statNumber,
+    fontSize: 38,
     color: Colors.text,
-    letterSpacing: -1.4,
-    lineHeight: 42,
+    letterSpacing: -1.3,
+    lineHeight: 40,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    fontFamily: FontFamily.body,
     fontWeight: '300',
+    fontSize: 13,
     color: Colors.textMuted,
-    marginBottom: 8,
-  },
-  subscriptionNote: {
-    fontSize: 12,
-    color: Colors.textDim,
-    lineHeight: 18,
-  },
-  subscriptionLink: {
-    color: Colors.primary,
-    fontWeight: '600',
   },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(220,38,38,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(220,38,38,0.25)',
@@ -228,6 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   errorText: {
+    fontFamily: FontFamily.body,
     fontSize: 12,
     color: '#f87171',
   },
@@ -241,16 +233,16 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   fieldLabel: {
+    fontFamily: FontFamily.mono,
     fontSize: 11,
-    fontWeight: '600',
     color: Colors.textDim,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   forgotText: {
+    fontFamily: FontFamily.bodySemi,
     fontSize: 11,
-    color: Colors.primary,
-    fontWeight: '500',
+    color: '#fff',
   },
   appleBtn: {
     width: '100%',
@@ -272,9 +264,9 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   dividerText: {
+    fontFamily: FontFamily.mono,
     fontSize: 11,
     color: Colors.textDim,
-    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
@@ -282,12 +274,13 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
+    fontFamily: FontFamily.body,
     color: Colors.textMuted,
     fontSize: 12,
   },
   footerLink: {
-    color: Colors.primary,
+    fontFamily: FontFamily.bodySemi,
+    color: '#fff',
     fontSize: 12,
-    fontWeight: '500',
   },
 });

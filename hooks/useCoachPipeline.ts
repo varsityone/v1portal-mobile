@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
 
+export type PipelineStatus = 'interested' | 'contacted' | 'visited' | 'offered' | 'committed' | 'signed' | 'declined';
+
 export interface PipelineProspect {
   id: string;
   athlete_id: string;
   coach_id: string;
-  status: 'interested' | 'pursuing' | 'committed' | 'signed';
+  status: PipelineStatus;
+  offer_scholarship_amount: number | null;
   committed_at: string | null;
   signed_at: string | null;
   created_at: string;
@@ -24,7 +27,7 @@ export interface UseCoachPipelineResult {
   prospects: PipelineProspect[];
   loading: boolean;
   add: (athleteId: string) => Promise<void>;
-  updateStatus: (prospectId: string, status: string) => Promise<void>;
+  updateStatus: (prospectId: string, status: PipelineStatus) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -41,7 +44,7 @@ export function useCoachPipeline(): UseCoachPipelineResult {
       const { data } = await supabase
         .from('coach_recruit_pipeline')
         .select(`
-          id, athlete_id, coach_id, status, committed_at, signed_at, created_at,
+          id, athlete_id, coach_id, status, offer_scholarship_amount, committed_at, signed_at, created_at,
           athlete:athletes(id, full_name, position, state, v1_score, profile_photo_url)
         `)
         .eq('coach_id', coach.id)
@@ -73,7 +76,7 @@ export function useCoachPipeline(): UseCoachPipelineResult {
   );
 
   const updateStatus = useCallback(
-    async (prospectId: string, status: string) => {
+    async (prospectId: string, status: PipelineStatus) => {
       try {
         const update: any = { status };
         if (status === 'committed') update.committed_at = new Date().toISOString();

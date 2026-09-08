@@ -27,7 +27,7 @@ export default function AnalyticsScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
         <Text style={s.eyebrow}>INSIGHTS</Text>
-        <Text style={s.title}>Analytics</Text>
+        <Text style={s.title}>Recruiting Analytics</Text>
       </View>
 
       <FilterChips
@@ -44,23 +44,34 @@ export default function AnalyticsScreen() {
         {/* KPI Tiles */}
         <View style={s.kpiRow}>
           <Card style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.viewed}</Text>
-            <Text style={s.kpiLabel}>Viewed</Text>
+            <Text style={[s.kpiValue, { color: '#3b82f6' }]}>{kpis.viewed}</Text>
+            <Text style={s.kpiLabel}>Prospects Viewed</Text>
           </Card>
           <Card style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.liked}</Text>
-            <Text style={s.kpiLabel}>Liked</Text>
+            <Text style={[s.kpiValue, { color: '#ec4899' }]}>{kpis.liked}</Text>
+            <Text style={s.kpiLabel}>Likes</Text>
           </Card>
         </View>
 
         <View style={s.kpiRow}>
           <Card style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.matched}</Text>
-            <Text style={s.kpiLabel}>Matched</Text>
+            <Text style={[s.kpiValue, { color: '#22c55e' }]}>{kpis.matched}</Text>
+            <Text style={s.kpiLabel}>Matches</Text>
           </Card>
           <Card style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.conversionRate}%</Text>
-            <Text style={s.kpiLabel}>Conversion</Text>
+            <Text style={[s.kpiValue, { color: '#a855f7' }]}>{kpis.saved}</Text>
+            <Text style={s.kpiLabel}>Saved</Text>
+          </Card>
+        </View>
+
+        <View style={s.kpiRow}>
+          <Card style={s.kpiCard}>
+            <Text style={[s.kpiValue, { color: '#f59e0b' }]}>{kpis.messaged}</Text>
+            <Text style={s.kpiLabel}>Messaged</Text>
+          </Card>
+          <Card style={s.kpiCard}>
+            <Text style={[s.kpiValue, { color: '#06b6d4' }]}>{kpis.conversionRate}%</Text>
+            <Text style={s.kpiLabel}>Conversion Rate</Text>
           </Card>
         </View>
 
@@ -69,7 +80,7 @@ export default function AnalyticsScreen() {
           <Text style={s.sectionTitle}>Recruiting Funnel</Text>
           <View style={s.funnelBar}>
             <View style={[s.funnelSegment, { flex: kpis.funnelViewed, backgroundColor: '#3b82f6' }]} />
-            <View style={[s.funnelSegment, { flex: kpis.funnelLiked, backgroundColor: '#8b5cf6' }]} />
+            <View style={[s.funnelSegment, { flex: kpis.funnelLiked, backgroundColor: '#ec4899' }]} />
             <View style={[s.funnelSegment, { flex: kpis.funnelMatched, backgroundColor: '#22c55e' }]} />
           </View>
           <View style={s.funnelLabels}>

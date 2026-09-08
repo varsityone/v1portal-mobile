@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { registerForPushNotifications } from '../../lib/notifications';
 import CoachDrawer from '../../components/CoachDrawer';
@@ -56,6 +58,21 @@ export default function CoachDrawerLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <Pressable
+        style={floatStyles.btn}
+        onPress={() => router.push('/(coach)/help' as any)}
+      >
+        <LinearGradient
+          colors={['#ff0000', '#ffbc00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={floatStyles.gradient}
+        >
+          <Ionicons name="help-circle" size={15} color="#fff" />
+          <Text style={floatStyles.label}>Questions</Text>
+        </LinearGradient>
+      </Pressable>
+
       <Drawer
         drawerContent={CoachDrawer}
         screenOptions={{
@@ -83,6 +100,7 @@ export default function CoachDrawerLayout() {
         <Drawer.Screen name="search"                   options={{ title: 'Recruit Search', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="saved"                    options={{ title: 'Saved Prospects', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="recruiting"               options={{ title: 'Recruiting', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="recruits/[id]"            options={{ title: 'Recruit', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="pipeline"                 options={{ title: 'Pipeline', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="messages"                 options={{ title: 'Messages', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="templates"                options={{ title: 'Templates', drawerItemStyle: { display: 'none' } }} />
@@ -93,7 +111,37 @@ export default function CoachDrawerLayout() {
         <Drawer.Screen name="settings"                 options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="notifications-settings"   options={{ title: 'Notifications', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="compliance"               options={{ title: 'Compliance', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="help"                     options={{ title: 'Help', drawerItemStyle: { display: 'none' } }} />
       </Drawer>
     </GestureHandlerRootView>
   );
 }
+
+const floatStyles = StyleSheet.create({
+  btn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+    zIndex: 999,
+    borderRadius: 100,
+    shadowColor: '#ff6000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  gradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingRight: 16,
+    paddingLeft: 12,
+    borderRadius: 100,
+  },
+  label: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+});

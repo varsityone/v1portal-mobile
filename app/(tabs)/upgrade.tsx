@@ -17,22 +17,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
 import { getCurrentOffering, purchasePackage, restorePurchases, hasActiveEntitlement } from '../../lib/purchases';
 import { useAthleteData } from '../../hooks/useAthleteData';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { TIER_GRADIENT, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
-const BENEFITS = [
-  'Unlimited swipes across every division, not just your level',
-  'See every program that matches your V1 Score',
+const FEATURES = [
+  'Full V1 Score breakdown',
+  'Swipe every program (300+), every division',
+  'No cap — unlimited swipes and matches',
   'Message coaches the moment you match',
-  'Reach-program heads-up so you know your odds before you send',
+  '3–6 month recruiting roadmap',
+  'Progress tracking',
 ];
 
 export default function UpgradeScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { refresh } = useAthleteData();
+  const { athlete, assessment, refresh } = useAthleteData();
 
   const [pkg, setPkg] = useState<PurchasesPackage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +58,8 @@ export default function UpgradeScreen() {
   const waitForUnlock = async () => {
     setActivating(true);
     for (let i = 0; i < 6; i++) {
-      const athlete = await refresh();
-      if (athlete?.subscription_status === 'active') {
+      const a = await refresh();
+      if (a?.subscription_status === 'active') {
         setActivating(false);
         router.replace('/(tabs)/match');
         return;
@@ -113,38 +115,77 @@ export default function UpgradeScreen() {
     );
   }
 
+  const score = athlete?.v1_score != null ? Math.round(Number(athlete.v1_score)) : null;
+  const rl = assessment?.recruiting_level;
+  const levelLabel = typeof rl === 'object' && rl !== null
+    ? (rl as any).level ?? (rl as any).projected ?? ''
+    : (rl as string) ?? '';
+  const position = athlete?.position || '';
+  const gradYear = athlete?.graduation_year || '';
+  const firstName = athlete?.full_name?.split(' ')[0] || 'Athlete';
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-      <View style={s.iconWrap}>
-        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        <Ionicons name="heart" size={28} color="#fff" />
-      </View>
+      {/* Header */}
+      <Text style={s.eyebrow}>Unlock Your Recruiting Gameplan</Text>
+      <Text style={s.title}>
+        {score ? `Your V1 Score is ${score}.` : `Hey ${firstName},`}
+      </Text>
+      <Text style={s.titleAccent}>Here's how to use it.</Text>
+      {score && levelLabel ? (
+        <Text style={s.metaLine}>
+          {position && gradYear ? `${position} · Class of ${gradYear} · ` : ''}{levelLabel}
+        </Text>
+      ) : null}
+      <Text style={s.subtitle}>
+        Your score shows where you stand. The plan below shows you what to do next — and puts you in front of the coaches who are looking for someone exactly like you.
+      </Text>
 
-      <Text style={s.title}>Unlock Match+</Text>
-      <Text style={s.subtitle}>Swipe every division, not just your own.</Text>
+      {/* Pricing card */}
+      <View style={[s.card, { backgroundColor: C.surface }]}>
+        <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.badge}>
+          <Text style={s.badgeText}>Full Recruiting System</Text>
+        </LinearGradient>
 
-      <View style={s.benefits}>
-        {BENEFITS.map(b => (
-          <View key={b} style={s.benefitRow}>
-            <Ionicons name="checkmark-circle" size={18} color={C.success} />
-            <Text style={s.benefitText}>{b}</Text>
-          </View>
-        ))}
-      </View>
+        <Text style={[s.planName, { color: C.textDim }]}>Match+</Text>
 
-      {loading ? (
-        <ActivityIndicator color={C.textMuted} style={{ marginVertical: 24 }} />
-      ) : pkg ? (
-        <>
-          <Pressable style={s.ctaWrap} onPress={handlePurchase} disabled={purchasing}>
-            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            {purchasing ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={s.ctaText}>Subscribe — {pkg.product.priceString}/mo</Text>
-            )}
+        {loading ? (
+          <ActivityIndicator color={C.textMuted} style={{ marginVertical: 12 }} />
+        ) : pkg ? (
+          <>
+            <Text style={[s.price, { color: C.text }]}>{pkg.product.priceString}</Text>
+            <Text style={[s.period, { color: C.textDim }]}>per month · cancel anytime</Text>
+          </>
+        ) : (
+          <Text style={[s.body, { marginVertical: 12 }]}>Subscriptions aren't available right now.</Text>
+        )}
+
+        <Text style={[s.description, { color: C.textMuted }]}>
+          Your complete recruiting system — every program, every division, and a real roadmap.
+        </Text>
+
+        {pkg && (
+          <Pressable onPress={handlePurchase} disabled={purchasing}>
+            <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaBtn}>
+              {purchasing ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>Start Match+</Text>}
+            </LinearGradient>
           </Pressable>
+        )}
 
+        <View style={s.featureList}>
+          {FEATURES.map(f => (
+            <View key={f} style={s.featureRow}>
+              <View style={s.featureCheck}>
+                <Ionicons name="checkmark" size={11} color="#a78bfa" />
+              </View>
+              <Text style={[s.featureText, { color: C.textMuted }]}>{f}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {pkg && (
+        <>
           <Text style={s.fineprint}>
             Renews monthly at {pkg.product.priceString} until canceled. Cancel anytime in your device's
             subscription settings. Payment is charged to your {Platform.OS === 'ios' ? 'App Store' : 'Google Play'} account at confirmation.
@@ -164,34 +205,47 @@ export default function UpgradeScreen() {
             </Pressable>
           </View>
         </>
-      ) : (
-        <Text style={s.body}>Subscriptions aren't available right now. Please try again shortly.</Text>
       )}
+
+      <Pressable onPress={() => router.push('/(tabs)' as any)} style={{ marginTop: 24 }}>
+        <Text style={s.backLink}>← Back to dashboard</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    container: { padding: 28, paddingTop: 40, paddingBottom: 56, alignItems: 'center' },
+    container: { padding: 24, paddingTop: 40, paddingBottom: 56, alignItems: 'center' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
-
-    iconWrap: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 18 },
-    title: { fontFamily: FontFamily.headline, fontSize: 30, color: C.text, textAlign: 'center' },
-    subtitle: { fontFamily: FontFamily.body, fontSize: 14, color: C.textMuted, textAlign: 'center', marginTop: 6, marginBottom: 28 },
     body: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center' },
 
-    benefits: { width: '100%', gap: 14, marginBottom: 32 },
-    benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-    benefitText: { flex: 1, fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.text, lineHeight: 20 },
+    eyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 12, textAlign: 'center' },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 28, color: C.text, letterSpacing: -0.8, textAlign: 'center' },
+    titleAccent: { fontFamily: FontFamily.statNumber, fontSize: 28, letterSpacing: -0.8, color: '#C13584', textAlign: 'center' },
+    metaLine: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim, marginTop: 8, textAlign: 'center' },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8, marginBottom: 32, maxWidth: 340 },
 
-    ctaWrap: { width: '100%', borderRadius: 100, paddingVertical: 17, alignItems: 'center', overflow: 'hidden' },
-    ctaText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: '#fff' },
-    fineprint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, textAlign: 'center', lineHeight: 16, marginTop: 14, maxWidth: 320 },
+    card: { width: '100%', maxWidth: 360, borderRadius: 20, borderWidth: 1.5, borderColor: '#C13584', padding: 22, marginBottom: 24 },
+    badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, marginBottom: 14 },
+    badgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 9, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.8 },
+    planName: { fontFamily: FontFamily.bodyBold, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
+    price: { fontFamily: FontFamily.statNumber, fontSize: 34, letterSpacing: -0.9, lineHeight: 38 },
+    period: { fontFamily: FontFamily.body, fontSize: 11, marginBottom: 16 },
+    description: { fontFamily: FontFamily.body, fontSize: 13, lineHeight: 19, marginBottom: 20 },
+    ctaBtn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 20 },
+    ctaText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13, color: '#fff' },
 
+    featureList: { gap: 9 },
+    featureRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    featureCheck: { width: 14, height: 14, borderRadius: 7, backgroundColor: 'rgba(80,26,255,0.15)', alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+    featureText: { flex: 1, fontFamily: FontFamily.body, fontSize: 12, lineHeight: 18 },
+
+    fineprint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, textAlign: 'center', lineHeight: 16, maxWidth: 320 },
     restoreText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted },
     legalRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
     legalLink: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, textDecorationLine: 'underline' },
     legalDot: { color: C.textDim, fontSize: 11 },
+    backLink: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
   });
 }

@@ -26,6 +26,8 @@ export default function MessageThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [athleteName, setAthleteName] = useState('');
+  const [athleteMeta, setAthleteMeta] = useState('');
+  const [athleteId, setAthleteId] = useState('');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -46,13 +48,16 @@ export default function MessageThreadScreen() {
 
         if (!conv) { router.back(); return; }
 
+        setAthleteId(conv.athlete_id);
+
         const { data: athlete } = await supabase
           .from('athletes')
-          .select('full_name')
+          .select('full_name, position, v1_score')
           .eq('id', conv.athlete_id)
           .single();
 
         setAthleteName(athlete?.full_name ?? 'Unknown');
+        setAthleteMeta([athlete?.position, athlete?.v1_score != null ? `V1: ${athlete.v1_score}` : null].filter(Boolean).join(' · '));
 
         const { data: msgs } = await supabase
           .from('coach_athlete_messages')
@@ -77,7 +82,7 @@ export default function MessageThreadScreen() {
   }, [coachLoading, coach?.id, conversationId]);
 
   const handleSend = async () => {
-    if (!text.trim() || !coach?.id || !conversationId || sending) return;
+    if (!text.trim() || !coach?.id || !conversationId || !athleteId || sending) return;
     setSending(true);
     const content = text.trim();
     setText('');
@@ -86,7 +91,7 @@ export default function MessageThreadScreen() {
       const { data: msg } = await supabase.rpc('send_coach_message', {
         p_conversation_id: conversationId as string,
         p_coach_id: coach.id,
-        p_athlete_id: '', // Will be fetched from conversation
+        p_athlete_id: athleteId,
         p_content: content,
       });
 
@@ -113,7 +118,10 @@ export default function MessageThreadScreen() {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={28} color={C.text} />
           </Pressable>
-          <Text style={s.headerTitle}>{athleteName}</Text>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={s.headerTitle}>{athleteName}</Text>
+            {athleteMeta ? <Text style={s.headerMeta}>{athleteMeta}</Text> : null}
+          </View>
           <View style={{ width: 28 }} />
         </View>
         <View style={s.empty}>
@@ -190,6 +198,7 @@ function createStyles(C: ThemeColors) {
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border },
     headerTitle: { fontFamily: FontFamily.bodyBold, fontSize: 16, color: C.text },
+    headerMeta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
     emptyTitle: { fontFamily: FontFamily.bodyBold, fontSize: 15, color: C.text, marginTop: 16, marginBottom: 8 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim, textAlign: 'center' },

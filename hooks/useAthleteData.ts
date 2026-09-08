@@ -40,6 +40,13 @@ export interface Athlete {
   is_admin: boolean | null;
   manual_access: boolean | null;
   assessment_completed: boolean | null;
+  email_notifications: boolean | null;
+  weekly_pulse: boolean | null;
+  score_update_notifications: boolean | null;
+  invite_token: string | null;
+  invite_claimed: boolean | null;
+  invited_athlete_email: string | null;
+  account_role: string | null;
 }
 
 export interface ScoreBreakdown {
@@ -60,6 +67,8 @@ export interface Assessment {
   development_pathway: Record<string, unknown> | null;
   completed_at: string | null;
   created_at: string;
+  responses: Record<string, unknown> | null;
+  recruiting_level: string | Record<string, unknown> | null;
 }
 
 export interface AthleteData {
@@ -87,7 +96,7 @@ export function useAthleteData(): AthleteData {
 
     const { data: ath } = await supabase
       .from('athletes')
-      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info, is_admin, manual_access, assessment_completed')
+      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info, is_admin, manual_access, assessment_completed, email_notifications, weekly_pulse, score_update_notifications, invite_token, invite_claimed, invited_athlete_email, account_role')
       .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
       .maybeSingle();
 
@@ -96,7 +105,7 @@ export function useAthleteData(): AthleteData {
     if (ath) {
       const { data: rows } = await supabase
         .from('assessments')
-        .select('id, v1_score, score_breakdown, gate_results, development_potential, development_pathway, completed_at, created_at, responses')
+        .select('id, v1_score, score_breakdown, gate_results, development_potential, development_pathway, completed_at, created_at, responses, recruiting_level')
         .eq('athlete_id', ath.id)
         .not('v1_score', 'is', null)
         .order('completed_at', { ascending: false, nullsFirst: false })
