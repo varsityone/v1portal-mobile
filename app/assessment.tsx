@@ -38,21 +38,27 @@ export default function AssessmentScreen() {
 
       // The web app uses @supabase/ssr createBrowserClient which stores sessions
       // in cookies (URL-encoded JSON), not localStorage. Inject both for compatibility.
+      //
+      // Chunking must split the RAW string first and URL-encode each piece
+      // independently — never slice an already-encodeURIComponent'd string at a
+      // fixed offset. That can (and reliably does, for a session this size) land
+      // mid-%XX escape sequence; @supabase/ssr's cookie reader silently falls
+      // back to the raw undecoded chunk when decodeURIComponent throws on it,
+      // which corrupts the rejoined session JSON and made every read of this
+      // cookie look like "no session" to the web app.
       setInjectedJs(`
         (function() {
           try {
             var KEY = ${JSON.stringify(COOKIE_KEY)};
             var tokenData = ${JSON.stringify(tokenData)};
-            // Cookie storage for @supabase/ssr
-            var encoded = encodeURIComponent(tokenData);
             var maxAge = 3600;
-            if (encoded.length <= 3600) {
-              document.cookie = KEY + '=' + encoded + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+            var rawChunkSize = 2500;
+            if (tokenData.length <= rawChunkSize) {
+              document.cookie = KEY + '=' + encodeURIComponent(tokenData) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
             } else {
-              // chunk for large sessions
-              var size = 3600;
-              for (var i = 0; i * size < encoded.length; i++) {
-                document.cookie = KEY + '.' + i + '=' + encoded.slice(i * size, (i + 1) * size) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+              for (var i = 0; i * rawChunkSize < tokenData.length; i++) {
+                var piece = tokenData.slice(i * rawChunkSize, (i + 1) * rawChunkSize);
+                document.cookie = KEY + '.' + i + '=' + encodeURIComponent(piece) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
               }
             }
             // localStorage fallback

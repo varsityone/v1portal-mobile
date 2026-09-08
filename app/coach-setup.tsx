@@ -43,19 +43,25 @@ export default function CoachSetupScreen() {
         user: session.user,
       });
 
+      // Chunking must split the RAW string first and URL-encode each piece
+      // independently — slicing an already-encodeURIComponent'd string at a
+      // fixed offset can land mid-%XX escape sequence, which @supabase/ssr's
+      // cookie reader silently leaves undecoded, corrupting the rejoined
+      // session JSON (see app/assessment.tsx for the full writeup — same bug,
+      // same fix, both screens inject the session into this WebView the same way).
       setInjectedJs(`
         (function() {
           try {
             var KEY = ${JSON.stringify(COOKIE_KEY)};
             var tokenData = ${JSON.stringify(tokenData)};
-            var encoded = encodeURIComponent(tokenData);
             var maxAge = 3600;
-            if (encoded.length <= 3600) {
-              document.cookie = KEY + '=' + encoded + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+            var rawChunkSize = 2500;
+            if (tokenData.length <= rawChunkSize) {
+              document.cookie = KEY + '=' + encodeURIComponent(tokenData) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
             } else {
-              var size = 3600;
-              for (var i = 0; i * size < encoded.length; i++) {
-                document.cookie = KEY + '.' + i + '=' + encoded.slice(i * size, (i + 1) * size) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+              for (var i = 0; i * rawChunkSize < tokenData.length; i++) {
+                var piece = tokenData.slice(i * rawChunkSize, (i + 1) * rawChunkSize);
+                document.cookie = KEY + '.' + i + '=' + encodeURIComponent(piece) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
               }
             }
             try { localStorage.setItem(KEY, tokenData); } catch(e) {}
@@ -124,7 +130,14 @@ export default function CoachSetupScreen() {
                 // completion. Once we see that, drop back into the native
                 // app — resolveHomeRoute will now find the real
                 // coach_accounts row and land on the coach dashboard.
-                if (navState.url.includes('/coach') || navState.url.includes('/dashboard')) {
+                //
+                // COACH_SETUP_URL itself ('.../coach/setup') contains the
+                // substring '/coach', so it must be excluded here — otherwise
+                // this fires on the very first navigation event (loading the
+                // setup page itself), bouncing back to native before the
+                // coach ever sees the wizard.
+                const url = navState.url;
+                if ((url.includes('/coach') && !url.includes('/coach/setup')) || url.includes('/dashboard')) {
                   goHome();
                 }
               }}
