@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -35,6 +35,9 @@ export default function DrawerLayout() {
   const router = useRouter();
   const { theme: scheme } = useTheme();
   const C = useColors();
+  const { width: screenWidth } = useWindowDimensions();
+
+  const drawerWidth = Math.min(280, screenWidth * 0.75);
 
   const headerBg    = C.background;
   const headerBorder = scheme === 'light' ? 'rgba(0,0,0,0.08)' : C.border;
@@ -90,7 +93,7 @@ export default function DrawerLayout() {
             shadowOpacity: 0,
           } as any,
           headerTintColor: iconColor,
-          drawerStyle: { backgroundColor: drawerBg, width: 280 },
+          drawerStyle: { backgroundColor: drawerBg, width: drawerWidth },
           drawerType: 'front',
           overlayColor: 'rgba(0,0,0,0.5)',
           sceneStyle: {

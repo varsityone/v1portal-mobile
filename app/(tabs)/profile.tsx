@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,7 +88,8 @@ function EditModal({ data, onSave, onClose }: {
   onClose: () => void;
 }) {
   const C = useColors();
-  const em = useMemo(() => createEmStyles(C), [C]);
+  const { width: screenWidth } = useWindowDimensions();
+  const em = useMemo(() => createEmStyles(C, screenWidth), [C, screenWidth]);
 
   const [fields, setFields] = useState({
     full_name:       data.full_name       ?? '',
@@ -229,7 +231,8 @@ function EditModal({ data, onSave, onClose }: {
 export default function ProfileScreen() {
   const { session } = useAuth();
   const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
+  const { width: screenWidth } = useWindowDimensions();
+  const s = useMemo(() => createStyles(C, screenWidth), [C, screenWidth]);
 
   const [profile,    setProfile]    = useState<ProfileData | null>(null);
   const [breakdown,  setBreakdown]  = useState<Record<string, any>>({});
@@ -622,14 +625,15 @@ export default function ProfileScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-function createEmStyles(C: ThemeColors) {
+function createEmStyles(C: ThemeColors, screenWidth: number) {
+  const padding = screenWidth > 380 ? 20 : 16;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.background },
-    nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.border },
+    nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: padding, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.border },
     navTitle: { fontSize: 16, fontWeight: '700', color: C.text },
     cancel: { fontSize: 15, color: C.textMuted },
     save: { fontSize: 15, fontWeight: '700', color: C.primary },
-    scroll: { flex: 1, paddingHorizontal: 20 },
+    scroll: { flex: 1, paddingHorizontal: padding },
     section: { marginTop: 28 },
     sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: C.textDim, marginBottom: 10 },
     fieldWrap: { marginBottom: 14 },
@@ -638,12 +642,16 @@ function createEmStyles(C: ThemeColors) {
   });
 }
 
-function createStyles(C: ThemeColors) {
+function createStyles(C: ThemeColors, screenWidth: number) {
+  const padding = screenWidth > 380 ? 20 : 16;
+  const heroHeight = screenWidth > 380 ? 340 : 300;
+  const statBoxWidth = (screenWidth - padding * 2 - 10) / 2;
+
   return StyleSheet.create({
     scroll: { flex: 1, backgroundColor: C.background },
     container: { paddingBottom: 60 },
 
-    hero: { height: 340, position: 'relative', overflow: 'hidden' },
+    hero: { height: heroHeight, position: 'relative', overflow: 'hidden' },
     heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', borderBottomWidth: 0 },
     initialsWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     initials: { fontFamily: FontFamily.headline, fontSize: 72, color: 'rgba(255,255,255,0.15)' },
@@ -661,18 +669,18 @@ function createStyles(C: ThemeColors) {
     editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 7, marginTop: 12, alignSelf: 'flex-start' },
     editBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
-    statsRow: { flexDirection: 'row', gap: 10, marginTop: -24, marginHorizontal: 16, position: 'relative', zIndex: 2 },
+    statsRow: { flexDirection: 'row', gap: 10, marginTop: -24, marginHorizontal: padding, position: 'relative', zIndex: 2 },
     statCard: { flex: 1, backgroundColor: C.surface, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
     statCardLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, marginBottom: 6 },
     statCardValue: { fontFamily: FontFamily.headline, fontSize: 20, color: C.text },
 
-    tabBar: { flexDirection: 'row', marginHorizontal: 20, marginTop: 24, gap: 22 },
+    tabBar: { flexDirection: 'row', marginHorizontal: padding, marginTop: 24, gap: 22 },
     tabBtn: { paddingBottom: 10, position: 'relative' },
     tabText: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 0.5 },
     tabActive: { color: C.text },
     tabUnderline: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 2, backgroundColor: '#F6BA00', borderRadius: 1 },
 
-    section: { paddingHorizontal: 20, paddingTop: 20, gap: 16, paddingBottom: 8 },
+    section: { paddingHorizontal: padding, paddingTop: 20, gap: 16, paddingBottom: 8 },
     sectionHeading: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
     card: { backgroundColor: C.surface, borderRadius: 16, padding: 18, gap: 12 },
     cardTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text },
@@ -708,7 +716,7 @@ function createStyles(C: ThemeColors) {
     addFilmText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
 
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    miniStatBox: { width: '47%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
+    miniStatBox: { width: statBoxWidth, backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
     miniStatLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textMuted, textAlign: 'center', marginBottom: 8 },
     miniStatValue: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
   });

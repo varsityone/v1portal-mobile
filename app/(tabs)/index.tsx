@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAthleteData } from '../../hooks/useAthleteData';
@@ -13,7 +13,8 @@ import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function DashboardScreen() {
   const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
+  const { width: screenWidth } = useWindowDimensions();
+  const s = useMemo(() => createStyles(C, screenWidth), [C, screenWidth]);
   const router = useRouter();
   const { athlete, loading } = useAthleteData();
   const [mutualMatches, setMutualMatches] = useState(0);
@@ -88,9 +89,13 @@ export default function DashboardScreen() {
   );
 }
 
-function createStyles(C: ThemeColors) {
+function createStyles(C: ThemeColors, screenWidth: number) {
+  const padding = screenWidth > 380 ? 20 : 16;
+  const scoreValueSize = screenWidth > 380 ? 64 : 48;
+  const statValueSize = screenWidth > 380 ? 44 : 36;
+
   return StyleSheet.create({
-    container: { padding: 20, paddingBottom: 48, backgroundColor: C.background },
+    container: { padding, paddingBottom: 48, backgroundColor: C.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     greetingCard: { marginBottom: 20 },
     label: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 1, marginBottom: 8 },
@@ -101,10 +106,10 @@ function createStyles(C: ThemeColors) {
     scoreCard: { marginBottom: 20 },
     scoreGradient: { padding: 24, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     scoreLabel: { fontFamily: FontFamily.mono, fontSize: 11, color: 'rgba(255,255,255,0.8)', letterSpacing: 1, marginBottom: 12 },
-    scoreValue: { fontFamily: FontFamily.headline, fontSize: 64, fontWeight: '900', color: '#fff', marginBottom: 4 },
+    scoreValue: { fontFamily: FontFamily.headline, fontSize: scoreValueSize, fontWeight: '900', color: '#fff', marginBottom: 4 },
     scoreTier: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: 'rgba(255,255,255,0.9)' },
     statLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 1, marginBottom: 8 },
-    statValue: { fontFamily: FontFamily.headline, fontSize: 44, fontWeight: '900', color: C.text, marginBottom: 8 },
+    statValue: { fontFamily: FontFamily.headline, fontSize: statValueSize, fontWeight: '900', color: C.text, marginBottom: 8 },
     statDesc: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, lineHeight: 18 },
   });
 }
