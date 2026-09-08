@@ -204,37 +204,14 @@ function ScreenAthleteProfile() {
 }
 
 function ScreenAthleteDivisions() {
-  const rows = [
-    { label: 'D1 FBS', pill: 'REACH', pillColor: PINK_RED, count: '4 programs available' },
-    { label: 'D1 FCS', pill: 'REACH', pillColor: PINK_RED, count: '0 programs available' },
-    { label: 'D2', pill: 'YOUR LEVEL', pillColor: '#10b981', count: '0 programs available', highlight: true },
-    { label: 'D3', pill: null, count: '0 programs available' },
-    { label: 'NAIA', pill: null, count: '2 programs available' },
-    { label: 'NJCAA', pill: null, count: '2 programs available' },
-  ];
   return (
     <View style={ns.root}>
       <MockHeader />
-      <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
-        <Text style={ns.pageTitleWhite}>Choose Your Level</Text>
-        <Text style={ns.pageSubGray}>Pick a division to start swiping. You can browse any level.</Text>
-      </View>
-      <View style={{ paddingHorizontal: 10, marginTop: 8, gap: 5 }}>
-        {rows.map(r => (
-          <View key={r.label} style={[ns.divisionRow, r.highlight && ns.divisionRowHighlight]}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text style={ns.divisionLabel}>{r.label}</Text>
-                {r.pill && (
-                  <View style={[ns.tinyPill, { backgroundColor: r.pillColor! }]}><Text style={ns.tinyPillTxt}>{r.pill}</Text></View>
-                )}
-              </View>
-              <Text style={ns.divisionCount}>{r.count}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={12} color="rgba(255,255,255,0.35)" />
-          </View>
-        ))}
-      </View>
+      <Image
+        source={require('../assets/onboarding-athlete-03.png')}
+        style={{ flex: 1, width: '100%' }}
+        resizeMode="cover"
+      />
     </View>
   );
 }
@@ -606,10 +583,6 @@ const ns = StyleSheet.create({
   pageTitleWhite: { fontSize: 15, fontWeight: '900', color: '#fff', marginTop: 2 },
   pageSubGray: { fontSize: 7, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
 
-  divisionRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.045)', borderRadius: 10, padding: 9 },
-  divisionRowHighlight: { backgroundColor: 'rgba(16,185,129,0.12)' },
-  divisionLabel: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  divisionCount: { fontSize: 6, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   tinyPill: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' },
   tinyPillTxt: { fontSize: 5.5, fontWeight: '800', color: '#fff' },
 
