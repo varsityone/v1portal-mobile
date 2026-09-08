@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { resolveHomeRoute } from '../lib/resolveHomeRoute';
-import { Colors } from '../constants/Colors';
+import LoadingScreen from '../components/LoadingScreen';
 
 export default function Index() {
   const { session, loading } = useAuth();
@@ -18,18 +17,5 @@ export default function Index() {
     }
   }, [session, loading]);
 
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator color={Colors.primary} size="large" />
-    </View>
-  );
+  return <LoadingScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { UpgradeSheet } from '../../components/UpgradeSheet';
 import OnboardingTour, { TourMeasurement } from '../../components/OnboardingTour';
+import LoadingScreen from '../../components/LoadingScreen';
 import ScoreAnimator from '../../components/ScoreAnimator';
 import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierIndex } from '../../components/StatCard';
 import Copyright from '../../components/Copyright';
@@ -135,33 +136,46 @@ export default function DashboardScreen() {
     requiredPhase: null,
   });
 
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
   const phaseStatusRef = useRef<View>(null);
   const gameplanRef = useRef<View>(null);
   const scoreRef = useRef<View>(null);
   const programsRef = useRef<View>(null);
-  const [tourOpen, setTourOpen] = useState(false);
-  const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | undefined>>({});
+  const tourRefs = useRef<Record<string, React.RefObject<View | null>>>({
+    'phase-status': phaseStatusRef,
+    'gameplan': gameplanRef,
+    'v1-score': scoreRef,
+    'programs': programsRef,
+  }).current;
 
-  const measureAndOpenTour = useCallback(() => {
-    const refs: [string, React.RefObject<View | null>][] = [
-      ['phase-status', phaseStatusRef],
-      ['gameplan', gameplanRef],
-      ['v1-score', scoreRef],
-      ['programs', programsRef],
-    ];
-    let pending = refs.length;
-    const next: Record<string, TourMeasurement | undefined> = {};
-    refs.forEach(([key, ref]) => {
-      ref.current?.measureInWindow((x, y, width, height) => {
-        next[key] = width > 0 ? { x, y, width, height } : undefined;
-        pending -= 1;
-        if (pending === 0) {
-          setTourTargets(next);
-          setTourOpen(true);
-        }
-      });
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | null | undefined>>({});
+
+  // measureInWindow gives a target's true screen position regardless of
+  // nesting depth or current scroll (even fully off-screen), so we use it
+  // twice per step: once to compute how far to scroll (current window Y
+  // minus a fixed header clearance), then again after the scroll animation
+  // settles to get the highlight box's final on-screen position. Avoids
+  // needing content-relative offsets, which onLayout can't give reliably
+  // for a ref nested below the ScrollView's direct children (e.g. v1-score,
+  // wrapped inside its own statsGrid row).
+  const TOUR_HEADER_CLEARANCE = 76;
+  const handleTourStepChange = useCallback((target: string) => {
+    const ref = tourRefs[target]?.current;
+    if (!ref) return;
+    ref.measureInWindow((x, y) => {
+      const delta = y - TOUR_HEADER_CLEARANCE;
+      if (Math.abs(delta) > 4) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
+      }
+      setTimeout(() => {
+        ref.measureInWindow((x2, y2, width, height) => {
+          setTourTargets(prev => ({ ...prev, [target]: width > 0 ? { x: x2, y: y2, width, height } : null }));
+        });
+      }, 500);
     });
-  }, []);
+  }, [tourRefs]);
 
   const [tourArmed, setTourArmed] = useState(false);
 
@@ -178,18 +192,18 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  // Don't measure targets until the async data that can change their layout
-  // (unread count, top-fit programs, gameplan phases) has actually settled —
-  // measuring on a blind timeout race a slow first load and captures stale
-  // coordinates once that data arrives and reflows the page underneath it.
+  // Don't open the tour until the async data that can change the page's
+  // layout (unread count, top-fit programs, gameplan phases) has actually
+  // settled — opening on a blind timeout races a slow first load.
   useEffect(() => {
     if (!tourArmed || loading || loadingStats) return;
     const t = setTimeout(() => {
-      measureAndOpenTour();
+      setTourTargets({});
+      setTourOpen(true);
       setTourArmed(false);
     }, 250);
     return () => clearTimeout(t);
-  }, [tourArmed, loading, loadingStats, measureAndOpenTour]);
+  }, [tourArmed, loading, loadingStats]);
 
   const closeTour = () => {
     setTourOpen(false);
@@ -237,9 +251,7 @@ export default function DashboardScreen() {
     }
   };
 
-  if (loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
-  }
+  if (loading) return <LoadingScreen />;
 
   if (!athlete) {
     return <View style={s.container}><EmptyState icon="person" title="Complete Setup" body="Finish your profile to get started." /></View>;
@@ -264,7 +276,13 @@ export default function DashboardScreen() {
 
   return (
     <>
-      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+      <ScrollView
+        ref={scrollRef}
+        style={{ flex: 1, backgroundColor: C.background }}
+        contentContainerStyle={s.container}
+        onScroll={e => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
+      >
         <View ref={phaseStatusRef} collapsable={false}>
           <View style={s.greetingCard}>
             <Text style={s.label}>ATHLETE PORTAL DASHBOARD</Text>
@@ -516,7 +534,7 @@ export default function DashboardScreen() {
         phaseName={sheet.phase?.title ?? ''}
       />
 
-      <OnboardingTour isOpen={tourOpen} onClose={closeTour} steps={TOUR_STEPS} targets={tourTargets} />
+      <OnboardingTour isOpen={tourOpen} onClose={closeTour} steps={TOUR_STEPS} targets={tourTargets} onStepChange={handleTourStepChange} />
     </>
   );
 }

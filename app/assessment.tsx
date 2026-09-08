@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/Colors';
+import LoadingScreen from '../components/LoadingScreen';
 
 const ASSESSMENT_URL = 'https://v1portal.com/assessment';
 const COOKIE_KEY = 'sb-swsjuxsbvfdejeuilhzk-auth-token';
@@ -71,11 +71,7 @@ export default function AssessmentScreen() {
   }, []);
 
   if (injectedJs === null) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -103,7 +99,7 @@ export default function AssessmentScreen() {
         <>
           {loading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator color={Colors.primary} size="large" />
+              <LoadingScreen />
             </View>
           )}
           {error ? (

@@ -14,10 +14,18 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   steps: TourStep[];
-  /** Absolute screen-space measurements per step target, from measureInWindow. A
-   *  missing entry means that target isn't on screen for this user/state —
-   *  the step is skipped, matching web's OnboardingTour graceful-skip behavior. */
-  targets: Record<string, TourMeasurement | undefined>;
+  /** Absolute screen-space measurement per step target, from measureInWindow,
+   *  keyed by target name. Three states: undefined = not measured yet for
+   *  this step (still scrolling into view — render nothing, don't skip),
+   *  null = measured and confirmed absent from the page for this user/state
+   *  (skip straight to the next step, matching web's graceful-skip), object
+   *  = ready to render. */
+  targets: Record<string, TourMeasurement | null | undefined>;
+  /** Called whenever the active step's target changes (including the initial
+   *  step on open) so the parent can scroll that section into view and
+   *  re-measure it — matches web's el.scrollIntoView() + getBoundingClientRect()
+   *  on every step, since a target's on-screen position depends on scroll. */
+  onStepChange: (target: string) => void;
 }
 
 const PAD = 8;
@@ -27,25 +35,43 @@ const POPOVER_W = 300;
 // bands framing the highlighted element, since RN has no CSS box-shadow
 // cutout trick) + a card popover with step progress, title, description,
 // and back/next/skip actions.
-export default function OnboardingTour({ isOpen, onClose, steps, targets }: Props) {
+export default function OnboardingTour({ isOpen, onClose, steps, targets, onStepChange }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
   const { width: vw, height: vh } = Dimensions.get('window');
 
-  // Skip past any step whose target isn't present on screen right now.
+  // Reset to step 0 each time the tour is (re)opened.
+  useEffect(() => {
+    if (isOpen) setStepIndex(0);
+  }, [isOpen]);
+
+  // Ask the parent to scroll this step's target into view and (re)measure
+  // it — a target's on-screen position depends on the current scroll offset,
+  // so this must run on every step, not just once when the tour opens.
   useEffect(() => {
     if (!isOpen) return;
     if (stepIndex >= steps.length) { onClose(); return; }
-    if (!targets[steps[stepIndex].target]) {
+    onStepChange(steps[stepIndex].target);
+  }, [isOpen, stepIndex, steps, onStepChange]);
+
+  // Once a step's target comes back confirmed-absent (null, not just "not
+  // measured yet"), skip past it instead of stalling on a step that will
+  // never render — matches web's graceful-skip for e.g. an already-complete
+  // gameplan card.
+  useEffect(() => {
+    if (!isOpen || stepIndex >= steps.length) return;
+    if (targets[steps[stepIndex].target] === null) {
       if (stepIndex < steps.length - 1) setStepIndex(i => i + 1);
       else onClose();
     }
-  }, [isOpen, stepIndex, steps, targets]);
+  }, [isOpen, stepIndex, steps, targets, onClose]);
 
+  const curBox = isOpen && stepIndex < steps.length ? targets[steps[stepIndex].target] : undefined;
   useEffect(() => {
-    if (!isOpen) { fade.setValue(0); return; }
+    if (!isOpen || !curBox) { fade.setValue(0); return; }
+    fade.setValue(0);
     Animated.timing(fade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-  }, [isOpen, stepIndex]);
+  }, [isOpen, stepIndex, curBox]);
 
   if (!isOpen) return null;
 

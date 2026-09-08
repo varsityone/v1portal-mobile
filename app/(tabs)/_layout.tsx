@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { registerForPushNotifications } from '../../lib/notifications';
 import AppDrawer from '../../components/AppDrawer';
+import LoadingScreen from '../../components/LoadingScreen';
 import { useColors } from '../../context/ThemeContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -50,13 +51,7 @@ export default function DrawerLayout() {
     }
   }, [session, loading]);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={C.primary} size="large" />
-      </View>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   if (!session) return null;
 

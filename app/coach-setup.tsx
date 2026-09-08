@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import { WebView } from 'react-native-webview';
 import { supabase } from '../lib/supabase';
 import { resolveHomeRoute } from '../lib/resolveHomeRoute';
 import { Colors } from '../constants/Colors';
+import LoadingScreen from '../components/LoadingScreen';
 
 const COACH_SETUP_URL = 'https://v1portal.com/coach/setup';
 const COOKIE_KEY = 'sb-swsjuxsbvfdejeuilhzk-auth-token';
@@ -78,11 +78,7 @@ export default function CoachSetupScreen() {
   };
 
   if (injectedJs === null) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={Colors.primary} />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -108,7 +104,7 @@ export default function CoachSetupScreen() {
         <>
           {loading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator color={Colors.primary} size="large" />
+              <LoadingScreen />
             </View>
           )}
           {error ? (
