@@ -89,7 +89,7 @@ export default function DrawerLayout() {
         <Drawer.Screen name="settings"         options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="upgrade"          options={{ title: 'Upgrade', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="index"            options={{ title: 'Dashboard', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="gameplan"         options={{ title: 'Gameplan', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="gameplan"         options={{ title: 'Gameplan', drawerItemStyle: { display: 'none' }, headerShown: false }} />
       </Drawer>
     </GestureHandlerRootView>
   );

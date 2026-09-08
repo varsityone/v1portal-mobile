@@ -16,7 +16,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
 import { Phase } from '../../../constants/Phases';
 import { UpgradeSheet } from '../../../components/UpgradeSheet';
-import { ThemeColors } from '../../../constants/Colors';
+import { ThemeColors, FLAME_GRADIENT, SIGNAL_GRADIENT, sliceGradient, phaseTrailSlices } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -27,9 +27,11 @@ interface PhaseCardProps {
   locked: boolean;
   requiredPhase: Phase | null;
   onPress: () => void;
+  nodeColors?: string[];
+  connectorColors?: string[];
 }
 
-function PhaseCard({ phase, status, isLast, locked, requiredPhase, onPress }: PhaseCardProps) {
+function PhaseCard({ phase, status, isLast, locked, requiredPhase, onPress, nodeColors, connectorColors }: PhaseCardProps) {
   const C = useColors();
   const cs = useMemo(() => createCardStyles(C), [C]);
 
@@ -37,19 +39,22 @@ function PhaseCard({ phase, status, isLast, locked, requiredPhase, onPress }: Ph
     <View style={cs.wrapper}>
       <View style={cs.left}>
         {status === 'active' ? (
-          <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cs.badge}>
+          <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cs.badge}>
             <Text style={cs.badgeNum}>{phase.number}</Text>
           </LinearGradient>
+        ) : status === 'done' ? (
+          <LinearGradient colors={(nodeColors ?? SIGNAL_GRADIENT) as unknown as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cs.badge}>
+            <Ionicons name="checkmark" size={14} color={C.white} />
+          </LinearGradient>
         ) : (
-          <View style={[cs.badge, status === 'done' && cs.badgeDone, status === 'upcoming' && cs.badgeUpcoming]}>
-            {status === 'done'
-              ? <Ionicons name="checkmark" size={14} color={C.white} />
-              : <Text style={[cs.badgeNum, cs.badgeNumDim]}>{phase.number}</Text>
-            }
+          <View style={[cs.badge, cs.badgeUpcoming]}>
+            <Text style={[cs.badgeNum, cs.badgeNumDim]}>{phase.number}</Text>
           </View>
         )}
         {!isLast && (
-          <View style={[cs.connector, status === 'done' && cs.connectorDone]} />
+          status === 'done'
+            ? <LinearGradient colors={(connectorColors ?? SIGNAL_GRADIENT) as unknown as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={cs.connector} />
+            : <View style={cs.connector} />
         )}
       </View>
 
@@ -104,13 +109,10 @@ function createCardStyles(C: ThemeColors) {
       width: 32, height: 32, borderRadius: 16,
       alignItems: 'center', justifyContent: 'center',
     },
-    badgeDone: { backgroundColor: C.text },
-    badgeActive: { backgroundColor: C.primary },
     badgeUpcoming: { backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
     badgeNum: { fontFamily: FontFamily.headline, fontSize: 13, color: C.white },
     badgeNumDim: { color: C.textDim },
     connector: { flex: 1, width: 2, backgroundColor: C.border, marginVertical: 4 },
-    connectorDone: { backgroundColor: C.text, opacity: 0.4 },
     card: {
       flex: 1, backgroundColor: C.surface,
       borderRadius: 14, padding: 16, marginBottom: 10,
@@ -120,7 +122,7 @@ function createCardStyles(C: ThemeColors) {
     cardLast: { marginBottom: 0 },
     cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
     cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    phaseNum: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.primary, letterSpacing: 0.4 },
+    phaseNum: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.white, letterSpacing: 0.4 },
     statusBadge: {
       backgroundColor: C.surfaceAlt, borderRadius: 4,
       paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: C.border,
@@ -162,6 +164,7 @@ export default function GameplanScreen() {
   }, [athlete?.id]);
 
   const { phases: PHASES, phaseComplete, phaseLocked, completedCount, getStatus } = useGameplanPhases(athlete, assessment, matchCount);
+  const trail = useMemo(() => phaseTrailSlices(phaseComplete), [phaseComplete]);
 
   const handlePhasePress = (phase: Phase, i: number) => {
     if (phaseLocked[i]) {
@@ -198,17 +201,17 @@ export default function GameplanScreen() {
             <Text style={s.progressCount}>{loading ? '…' : `${completedCount} / ${PHASES.length}`}</Text>
           </View>
           <View style={s.progressTrack}>
-            {PHASES.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  s.progressSegment,
-                  i < PHASES.length - 1 && s.progressSegmentGap,
-                  phaseComplete[i] && s.progressSegmentDone,
-                  !phaseLocked[i] && !phaseComplete[i] && s.progressSegmentActive,
-                ]}
-              />
-            ))}
+            {(() => {
+              const coloredCount = phaseLocked.filter(locked => !locked).length;
+              return PHASES.map((_, i) => {
+                const gapStyle = i < PHASES.length - 1 ? s.progressSegmentGap : undefined;
+                if (!phaseLocked[i]) {
+                  const segColors = sliceGradient(SIGNAL_GRADIENT, i / coloredCount, (i + 1) / coloredCount);
+                  return <LinearGradient key={i} colors={segColors as unknown as [string, string, ...string[]]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressSegment, gapStyle]} />;
+                }
+                return <View key={i} style={[s.progressSegment, gapStyle]} />;
+              });
+            })()}
           </View>
         </View>
 
@@ -222,6 +225,8 @@ export default function GameplanScreen() {
               locked={phaseLocked[i]}
               requiredPhase={i > 0 ? PHASES[i - 1] : null}
               onPress={() => handlePhasePress(phase, i)}
+              nodeColors={trail[i]?.nodeColors}
+              connectorColors={trail[i]?.connectorColors}
             />
           ))}
         </View>
@@ -258,8 +263,6 @@ function createStyles(C: ThemeColors) {
     progressTrack: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden' },
     progressSegment: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 3 },
     progressSegmentGap: { marginRight: 3 },
-    progressSegmentDone: { backgroundColor: C.text },
-    progressSegmentActive: { backgroundColor: C.primary },
 
     phases: { gap: 0 },
   });

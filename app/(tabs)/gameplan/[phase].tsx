@@ -15,12 +15,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
-import { useAthleteData } from '../../../hooks/useAthleteData';
+import { useAthleteData, Athlete } from '../../../hooks/useAthleteData';
 import { useGameplanPhases } from '../../../hooks/useGameplanPhases';
 import { useMatchCount } from '../../../hooks/useMatchCount';
 import { PHASES, TIMELINE_META, Phase } from '../../../constants/Phases';
-import { Colors, GRADIENT, TIER_BARS, scoreNumColor, ThemeColors } from '../../../constants/Colors';
+import { Colors, GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, scoreNumColor, ThemeColors } from '../../../constants/Colors';
+import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
+import { getDashboardStats, DashboardStats } from '../../../lib/dashboardStats';
+import GradientRing from '../../../components/GradientRing';
+import GradientIcon from '../../../components/GradientIcon';
+import ProfileGuidance from '../../../components/ProfileGuidance';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,14 +38,6 @@ interface RecruitingTask {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getActiveTierIndex(score: number): number {
-  if (score >= 80) return 4;
-  if (score >= 75) return 3;
-  if (score >= 60) return 2;
-  if (score >= 50) return 1;
-  return 0;
-}
 
 function getTierInfo(score: number | null) {
   if (score === null) return { level: '—', desc: '', nextScore: null as number | null, nextLevel: '' };
@@ -90,7 +87,7 @@ function PhaseHeader({ phase }: { phase: Phase }) {
   }), [C]);
   return (
     <View style={sh.root}>
-      <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={sh.badge}>
+      <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={sh.badge}>
         <Text style={sh.badgeText}>Phase {phase.number}</Text>
       </LinearGradient>
       <Text style={sh.title}>{phase.title}</Text>
@@ -136,7 +133,7 @@ function EmptyState({
       {cta && onCta && (
         <Pressable onPress={onCta}>
           <LinearGradient
-            colors={['#ff0000', '#aa00ff']}
+            colors={FLAME_GRADIENT}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0.5 }}
             style={s.emptyBtn}
@@ -188,14 +185,16 @@ function Phase1({ data, phase, onBack, gp }: {
     return () => clearInterval(timer);
   }, [score]);
 
-  const activeTier = getActiveTierIndex(displayScore);
   const numColor = score ? (isScoreAnimating ? scoreNumColor(displayScore) : C.text) : C.textDim;
 
+  // Ordered and weighted to match the real V1 Score formula — production
+  // carries the most weight, academic and intangibles the least. Matches
+  // web's redesigned Phase 1 breakdown exactly (app/dashboard/gameplan/[phase]/page.tsx).
   const categories = [
-    { label: 'Athletic',    val: safeNum(assessment?.score_breakdown?.physical) ?? 0 },
-    { label: 'Academic',    val: safeNum(assessment?.score_breakdown?.academic) ?? 0 },
-    { label: 'Production',  val: safeNum(assessment?.score_breakdown?.production) ?? 0 },
-    { label: 'Intangibles', val: safeNum(assessment?.score_breakdown?.intangibles) ?? 0 },
+    { label: 'Production', weight: 45, val: safeNum(assessment?.score_breakdown?.production), from: '#82008F', to: '#C0007A' },
+    { label: 'Physical', weight: 25, val: safeNum(assessment?.score_breakdown?.physical), from: '#C0007A', to: '#EA0C5F' },
+    { label: 'Intangibles', weight: 15, val: safeNum(assessment?.score_breakdown?.intangibles), from: '#FF5341', to: '#FF8820' },
+    { label: 'Academic', weight: 15, val: safeNum(assessment?.score_breakdown?.academic), from: '#FF8820', to: '#F6BA00' },
   ];
   const hasBreakdown = categories.some(c => c.val > 0);
   const showJuco = score !== null && score < 50;
@@ -205,27 +204,20 @@ function Phase1({ data, phase, onBack, gp }: {
       <PhaseHeader phase={phase} />
 
       {score !== null ? (
-          <LinearGradient
-            colors={['#833AB4', '#E1306C', '#FCAF45']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={s.scoreGradientBorder}
-          >
-            <View style={s.scoreCardInner}>
-              <Text style={s.scoreCardLabel}>V1 SCORE</Text>
-              <Text style={[s.bigScore, { color: numColor }]}>{displayScore}</Text>
-              <Text style={s.tierChip}>{tier.level}</Text>
-              <View style={s.tierBarsRow}>
-                {TIER_BARS.map((t, i) => (
-                  <View key={t.label} style={s.tierBarCol}>
-                    <View style={[s.tierBar, { backgroundColor: i <= activeTier ? C.text : C.surfaceAlt }]} />
-                    <Text style={[s.tierBarLabel, { color: i === activeTier ? C.text : C.textDim, fontWeight: i === activeTier ? '800' : '400' }]}>
-                      {t.label}
-                    </Text>
-                  </View>
-                ))}
+        <Card>
+          <SLabel>V1 SCORE</SLabel>
+          <View style={s.gaugeWrap}>
+            <GradientRing size={168} strokeWidth={14} progress={Math.min(displayScore, 100)} colors={SIGNAL_GRADIENT} trackColor={C.border}>
+              <View style={s.gaugeCenterInner}>
+                <Text style={[s.gaugeScore, { color: numColor }]}>{displayScore}</Text>
+                <Text style={s.gaugeLabel}>V1 Score</Text>
+                <LinearGradient colors={['#C0007A', '#FF5341']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.gaugeTier}>
+                  <Text style={s.gaugeTierText}>{tier.level}</Text>
+                </LinearGradient>
               </View>
-            </View>
-          </LinearGradient>
+            </GradientRing>
+          </View>
+        </Card>
       ) : (
         <Card>
           <EmptyState
@@ -244,12 +236,15 @@ function Phase1({ data, phase, onBack, gp }: {
           {hasBreakdown ? (
             <View style={{ gap: 14 }}>
               {categories.map(cat => (
-                <View key={cat.label} style={s.breakRow}>
-                  <Text style={s.breakLabel}>{cat.label}</Text>
-                  <View style={s.breakTrack}>
-                    <View style={[s.breakFill, { width: `${Math.min(cat.val, 100)}%` as any, backgroundColor: '#b2b2b2' }]} />
+                <View key={cat.label} style={s.bdRow}>
+                  <View>
+                    <Text style={s.breakLabel}>{cat.label}</Text>
+                    <Text style={s.bdWeight}>{cat.weight}% weight</Text>
                   </View>
-                  <Text style={s.breakScore}>{cat.val}</Text>
+                  <View style={s.breakTrack}>
+                    <LinearGradient colors={[cat.from, cat.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.breakFill, { width: `${Math.min(cat.val, 100)}%` as any }]} />
+                  </View>
+                  <Text style={s.breakScore}>{cat.val} <Text style={s.breakMax}>/100</Text></Text>
                 </View>
               ))}
             </View>
@@ -373,7 +368,7 @@ function Phase1({ data, phase, onBack, gp }: {
               style={({ pressed }) => [s.retakeBtn, pressed && { opacity: 0.8 }]}
               onPress={() => router.push('/assessment' as any)}
             >
-              <LinearGradient colors={['#ff0000', '#aa00ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Ionicons name="refresh" size={14} color="#fff" />
               <Text style={s.retakeBtnTxt}>Retake</Text>
             </Pressable>
@@ -386,7 +381,7 @@ function Phase1({ data, phase, onBack, gp }: {
           style={({ pressed }) => [s.primaryBtn, s.continueBtn, pressed && { opacity: 0.85 }]}
           onPress={() => router.push('/(tabs)/gameplan/2' as any)}
         >
-          <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 2 →</Text>
         </Pressable>
       )}
@@ -463,13 +458,14 @@ const P2_TRACKED: (keyof P2Fields)[] = [
   'guardian_name', 'guardian_relationship', 'guardian_phone', 'guardian_email',
 ];
 
-function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
+function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
   athlete: Record<string, unknown> | null;
   athleteId: string | undefined;
   phase: Phase;
   onBack: () => void;
   refresh: () => void;
   gp: ReturnType<typeof useGameplanPhases>;
+  v1Score: number | null;
 }) {
   const router = useRouter();
   const C = useColors();
@@ -548,19 +544,20 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
             <Text style={s.completionDesc}>{completed} of {P2_TRACKED.length} key fields complete</Text>
           </View>
           <View style={s.completionTrack}>
-            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.completionFill, { width: `${pct}%` as any }]} />
+            <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.completionFill, { width: `${pct}%` as any }]} />
           </View>
         </Card>
 
         {P2_SECTIONS.map(section => (
           <View key={section.title} style={s.p2SectionWrap}>
             <View style={s.p2SectionHeader}>
-              <Ionicons name={section.icon} size={13} color="#fff" />
+              <GradientIcon name={section.icon} size={26} colors={['#C0007A', '#FF5341']} />
               <Text style={s.p2SectionTitle}>{section.title.toUpperCase()}</Text>
             </View>
             <Card>
               {section.rows.map((row, idx) => {
                 const isBio = row.key === 'bio';
+                const filled = !isBio && !!fields[row.key];
                 return (
                   <View key={row.key} style={[s.p2FieldRow, idx > 0 && s.p2FieldRowBorder]}>
                     <View style={s.p2FieldLabelRow}>
@@ -571,17 +568,22 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
                         </Pressable>
                       )}
                     </View>
-                    <TextInput
-                      style={[s.p2Input, isBio && s.p2InputMulti]}
-                      value={fields[row.key]}
-                      onChangeText={set(row.key)}
-                      placeholder={row.placeholder ?? row.label}
-                      placeholderTextColor={C.textDim}
-                      multiline={isBio}
-                      textAlignVertical={isBio ? 'top' : 'auto'}
-                      keyboardType={row.keyboardType ?? 'default'}
-                      autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
-                    />
+                    <View style={s.p2InputWrap}>
+                      <TextInput
+                        style={[s.p2Input, !isBio && s.p2InputBoxed, isBio && s.p2InputMulti, filled && s.p2InputFilled]}
+                        value={fields[row.key]}
+                        onChangeText={set(row.key)}
+                        placeholder={row.placeholder ?? row.label}
+                        placeholderTextColor={isBio ? C.textDim : '#9a9a9a'}
+                        multiline={isBio}
+                        textAlignVertical={isBio ? 'top' : 'auto'}
+                        keyboardType={row.keyboardType ?? 'default'}
+                        autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
+                      />
+                      {filled && (
+                        <Ionicons name="checkmark-circle" size={16} color={C.success} style={s.p2FieldCheck} />
+                      )}
+                    </View>
                     {row.hint ? <Text style={s.p2Hint}>{row.hint}</Text> : null}
                   </View>
                 );
@@ -592,7 +594,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
 
         <Pressable onPress={handleSave} disabled={saving} style={s.p2SaveWrap}>
           <LinearGradient
-            colors={['#ff0000', '#aa00ff']}
+            colors={FLAME_GRADIENT}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={[s.p2SaveBtn, saving && { opacity: 0.6 }]}
           >
@@ -604,9 +606,11 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp }: {
           style={({ pressed }) => [s.primaryBtn, s.continueBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
           onPress={() => router.push('/(tabs)/gameplan/3' as any)}
         >
-          <LinearGradient colors={['#ff0000', '#ffbc00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+          <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
         </Pressable>
+
+        <ProfileGuidance athlete={athlete as unknown as Athlete | null} v1Score={v1Score} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -622,18 +626,22 @@ function Phase3({ athleteId, phase, onBack, gp }: {
   const s = useMemo(() => createStyles(C), [C]);
   const [matchCount, setMatchCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({ profileViews: 0, programsReviewed: 0, programsLiked: 0 });
 
   useEffect(() => {
     if (!athleteId) { setLoading(false); return; }
-    supabase
-      .from('mutual_matches')
-      .select('id', { count: 'exact', head: true })
-      .eq('athlete_id', athleteId)
-      .eq('status', 'active')
-      .then(({ count }: { count: number | null }) => {
-        setMatchCount(count ?? 0);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from('mutual_matches')
+        .select('id', { count: 'exact', head: true })
+        .eq('athlete_id', athleteId)
+        .eq('status', 'active'),
+      getDashboardStats(supabase, athleteId),
+    ]).then(([{ count }, dashboardStats]) => {
+      setMatchCount(count ?? 0);
+      setStats(dashboardStats);
+      setLoading(false);
+    });
   }, [athleteId]);
 
   return (
@@ -642,25 +650,28 @@ function Phase3({ athleteId, phase, onBack, gp }: {
 
       {loading ? (
         <CenteredLoader />
-      ) : matchCount > 0 ? (
-        <View style={[s.successCard, { alignItems: 'flex-start', gap: 10 }]}>
-          <Ionicons name="heart" size={24} color={C.success} />
-          <Text style={s.successTitle}>{matchCount} Mutual Match{matchCount === 1 ? '' : 'es'}</Text>
-          <Text style={s.successBody}>
-            A coach swiped back — that means real interest. Head in and start the conversation.
-          </Text>
-          <Pressable style={s.primaryBtn} onPress={() => router.push('/(tabs)/match' as any)}>
-            <Text style={s.primaryBtnText}>View My Matches →</Text>
-          </Pressable>
-        </View>
       ) : (
-        <EmptyState
-          icon="heart-outline"
-          title="No matches yet"
-          body="Swipe on programs that fit your level. When a coach swipes back, that's a real mutual match — and messaging opens up."
-          cta="Start Swiping"
-          onCta={() => router.push('/(tabs)/match' as any)}
-        />
+        <>
+          <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.p3Hero}>
+            <Text style={s.p3Eyebrow}>Mutual Matches</Text>
+            <Text style={s.p3Num}>{matchCount}</Text>
+            <Text style={s.p3HeroBody}>
+              {matchCount > 0
+                ? 'A coach matched back — that means real interest. Head in and start the conversation.'
+                : "Swipe on programs that fit your level. When a coach swipes back, that's a real mutual match — and messaging opens up. No cold emails, no guessing who to contact."}
+            </Text>
+            <Pressable style={s.p3HeroBtn} onPress={() => router.push('/(tabs)/match' as any)}>
+              <Text style={s.p3HeroBtnText}>{matchCount > 0 ? 'View My Matches' : 'Start Swiping'}</Text>
+              <Ionicons name="arrow-forward" size={15} color="#c21500" />
+            </Pressable>
+          </LinearGradient>
+
+          <View style={s.statStrip}>
+            <View style={s.statTile}><Text style={s.statNum}>{stats.profileViews}</Text><Text style={s.statLbl}>Profile Views</Text></View>
+            <View style={s.statTile}><Text style={s.statNum}>{stats.programsReviewed}</Text><Text style={s.statLbl}>Programs Reviewed</Text></View>
+            <View style={s.statTile}><Text style={s.statNum}>{stats.programsLiked}</Text><Text style={s.statLbl}>Programs Liked</Text></View>
+          </View>
+        </>
       )}
 
       <View style={{ backgroundColor: C.surface, borderRadius: 14, padding: 20, gap: 12 }}>
@@ -796,7 +807,7 @@ export default function PhaseDetailScreen() {
 
   switch (phaseNumber) {
     case 1: return <Phase1 data={athleteData} phase={phase} onBack={onBack} gp={gp} />;
-    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteId} phase={phase} onBack={onBack} refresh={athleteData.refresh} gp={gp} />;
+    case 2: return <Phase2 athlete={athleteData.athlete as Record<string, unknown> | null} athleteId={athleteId} phase={phase} onBack={onBack} refresh={athleteData.refresh} gp={gp} v1Score={athleteData.assessment?.v1_score ?? null} />;
     case 3: return <Phase3 athleteId={athleteId} phase={phase} onBack={onBack} gp={gp} />;
     case 4: return <Phase4 athleteId={athleteId} phase={phase} onBack={onBack} />;
     default:
@@ -818,24 +829,22 @@ function createStyles(C: ThemeColors) {
 
     dimText: { fontSize: 14, color: C.textDim, lineHeight: 21 },
 
-    // Score card
-    scoreGradientBorder: { borderRadius: 17, padding: 1.5 },
-    scoreCardInner: { backgroundColor: C.scoreCard, borderRadius: 16, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20, alignItems: 'center' },
-    scoreCardLabel: { fontSize: 10, fontWeight: '700', color: C.textDim, letterSpacing: 1.6, marginBottom: 14 },
-    bigScore: { fontSize: 96, fontWeight: '900', letterSpacing: -5, lineHeight: 88, marginBottom: 12 },
-    tierChip: { fontSize: 13, fontWeight: '700', color: C.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 20 },
-    tierBarsRow: { flexDirection: 'row', gap: 6, width: '100%' },
-    tierBarCol: { flex: 1, alignItems: 'center', gap: 5 },
-    tierBar: { width: '100%', height: 3, borderRadius: 2 },
-    tierBarLabel: { fontSize: 9, letterSpacing: 0.2 },
+    // Score gauge
+    gaugeWrap: { alignItems: 'center', paddingVertical: 4 },
+    gaugeCenterInner: { alignItems: 'center', justifyContent: 'center' },
+    gaugeScore: { fontFamily: FontFamily.monoBold, fontSize: 36, lineHeight: 38 },
+    gaugeLabel: { fontFamily: FontFamily.eyebrow, fontSize: 9, color: C.textDim, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 4 },
+    gaugeTier: { marginTop: 8, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4 },
+    gaugeTierText: { fontFamily: FontFamily.eyebrow, fontSize: 9, color: '#fff', letterSpacing: 0.4, textTransform: 'uppercase' },
 
     // Breakdown bars
-    breakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    breakLabel: { width: 90, fontSize: 13, color: C.textMuted },
-    breakTrack: { flex: 1, height: 5, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-    breakFill: { height: '100%', borderRadius: 3 },
-    breakScore: { width: 42, fontSize: 13, fontWeight: '700', color: C.text, textAlign: 'right' },
-    breakMax: { fontSize: 11, fontWeight: '400', color: C.textDim },
+    bdRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    breakLabel: { width: 90, fontSize: 13, color: C.textMuted, fontWeight: '600' },
+    bdWeight: { fontSize: 10, color: C.textDim, marginTop: 1 },
+    breakTrack: { flex: 1, height: 8, backgroundColor: C.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
+    breakFill: { height: '100%', borderRadius: 4 },
+    breakScore: { width: 56, fontFamily: FontFamily.monoBold, fontSize: 13, color: C.text, textAlign: 'right' },
+    breakMax: { fontFamily: FontFamily.mono, fontSize: 10.5, fontWeight: '400', color: C.textDim },
 
     // Gap
     gapRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
@@ -894,14 +903,18 @@ function createStyles(C: ThemeColors) {
 
     // Phase 2 inline form
     p2SectionWrap: { marginBottom: 18 },
-    p2SectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+    p2SectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
     p2SectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.0, color: C.textMuted },
     p2FieldRow: { paddingHorizontal: 16, paddingVertical: 12 },
     p2FieldRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
     p2FieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-    p2Label: { fontSize: 12, fontWeight: '500', color: C.textMuted },
+    p2Label: { fontSize: 12, fontWeight: '500', color: '#b2b2b2' },
+    p2InputWrap: { position: 'relative', justifyContent: 'center' },
     p2Input: { fontSize: 15, color: C.text, paddingVertical: 0 },
+    p2InputBoxed: { backgroundColor: '#fff', color: '#18171a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
     p2InputMulti: { height: 80, textAlignVertical: 'top' as const },
+    p2InputFilled: { paddingRight: 34 },
+    p2FieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
     p2Hint: { fontSize: 11, color: C.textDim, marginTop: 4, lineHeight: 16 },
     p2StarterBtn: { backgroundColor: `${C.primary}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
     p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
@@ -919,9 +932,17 @@ function createStyles(C: ThemeColors) {
     checkEmpty: { fontSize: 12, color: C.textDim },
 
     // Success
-    successCard: { alignItems: 'center', gap: 8, borderColor: `${C.success}44`, backgroundColor: `${C.success}0A` },
-    successTitle: { fontSize: 16, fontWeight: '700', color: C.success },
-    successBody: { fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20 },
+    // Phase 3 hero + stat strip
+    p3Hero: { borderRadius: 20, padding: 24, paddingBottom: 22 },
+    p3Eyebrow: { fontFamily: FontFamily.eyebrow, fontSize: 10, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginBottom: 8 },
+    p3Num: { fontFamily: FontFamily.monoBold, fontSize: 52, color: '#fff', lineHeight: 54, marginBottom: 6 },
+    p3HeroBody: { fontFamily: FontFamily.body, fontSize: 13.5, color: 'rgba(255,255,255,0.92)', lineHeight: 20, marginBottom: 18 },
+    p3HeroBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 100, paddingVertical: 12, paddingHorizontal: 20 },
+    p3HeroBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#c21500' },
+    statStrip: { flexDirection: 'row', gap: 10 },
+    statTile: { flex: 1, backgroundColor: C.surface, borderRadius: 14, padding: 14, alignItems: 'flex-start' },
+    statNum: { fontFamily: FontFamily.monoBold, fontSize: 22, color: C.text },
+    statLbl: { fontFamily: FontFamily.eyebrow, fontSize: 8.5, color: C.textDim, letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 4 },
 
     // Programs
     rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },

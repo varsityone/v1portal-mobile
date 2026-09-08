@@ -32,6 +32,7 @@ import {
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
 import { DMSans_900Black } from '@expo-google-fonts/dm-sans';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { supabase } from '../lib/supabase';
 import { configurePurchases } from '../lib/purchases';
 import { resolveHomeRoute } from '../lib/resolveHomeRoute';
@@ -170,6 +171,7 @@ export default function RootLayout() {
     JetBrainsMono_600SemiBold,
     JetBrainsMono_700Bold,
     DMSans_900Black,
+    SpaceGrotesk_700Bold,
   });
 
   const showBanner = useCallback((title: string, body: string) => {

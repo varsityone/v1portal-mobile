@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, SCORE_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, SCORE_GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import {
@@ -268,6 +268,15 @@ export default function MatchScreen() {
   if (isPremium && !selectedDivision) {
     return (
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
+        <View style={s.scoreChip}>
+          <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
+            <Text style={s.scoreChipBadgeText}>{Math.round(athleteScore)}</Text>
+          </LinearGradient>
+          <Text style={s.scoreChipText}>
+            Your V1 Score puts you at <Text style={s.scoreChipBold}>{DIVISION_LABELS[athleteLevel]}</Text> — pick a division below
+          </Text>
+        </View>
+
         <Text style={s.pickerTitle}>Choose Your Level</Text>
         <Text style={s.pickerSub}>
           Pick a division to start swiping. You can browse any level — programs above your range just come with a heads-up before you send interest.
@@ -276,21 +285,46 @@ export default function MatchScreen() {
           const count = coachCards.filter(c => c.division === div).length;
           const isYourLevel = div === athleteLevel;
           const isReach = DIVISION_ORDER.indexOf(div) < DIVISION_ORDER.indexOf(athleteLevel);
-          return (
-            <Pressable
-              key={div}
-              style={[s.pickerRow, isYourLevel && s.pickerRowActive]}
-              onPress={() => { setSelectedDivision(div); setCurrentIndex(0); }}
-            >
+          const floor = getBandFloorForDivision(div);
+          const rangeText = !floor ? 'Open to any V1 Score' : `Programs typically recruit ${floor}+ V1 Score`;
+
+          const rowContent = (
+            <>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <Text style={s.pickerDivLabel}>{DIVISION_LABELS[div]}</Text>
-                  {isYourLevel && <View style={s.pickerTag}><Text style={s.pickerTagText}>YOUR LEVEL</Text></View>}
-                  {isReach && <View style={[s.pickerTag, s.pickerTagReach]}><Text style={[s.pickerTagText, { color: PINK_RED }]}>REACH</Text></View>}
+                  {isYourLevel && (
+                    <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                      <Text style={s.pickerTagGradText}>YOUR LEVEL</Text>
+                    </LinearGradient>
+                  )}
+                  {isReach && (
+                    <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                      <Text style={s.pickerTagGradText}>REACH</Text>
+                    </LinearGradient>
+                  )}
                 </View>
-                <Text style={s.pickerCount}>{count} program{count === 1 ? '' : 's'} available</Text>
+                <Text style={s.pickerRange}>{rangeText}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={C.textDim} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={s.pickerCount}>{count} program{count === 1 ? '' : 's'}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+              </View>
+            </>
+          );
+
+          return (
+            <Pressable key={div} onPress={() => { setSelectedDivision(div); setCurrentIndex(0); }}>
+              {isYourLevel ? (
+                // Gradient "border" via the padding-box trick: an outer
+                // LinearGradient sized down to a thin ring, with an opaque
+                // inner View inset by that same amount on top of it.
+                <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
+                  <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
+                </LinearGradient>
+              ) : (
+                <View style={s.pickerRow}>{rowContent}</View>
+              )}
             </Pressable>
           );
         })}
@@ -459,15 +493,27 @@ function createStyles(C: ThemeColors) {
     container: { padding: 20, paddingBottom: 40 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background, padding: 32, gap: 6 },
 
+    scoreChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+      backgroundColor: C.surface, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 12, paddingLeft: 6,
+      marginBottom: 18,
+    },
+    scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    scoreChipBadgeText: { fontFamily: FontFamily.monoBold, fontSize: 11, color: '#fff' },
+    scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },
+    scoreChipBold: { fontFamily: FontFamily.bodyBold, color: C.text },
+
     pickerTitle: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text, marginBottom: 8 },
     pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 20 },
     pickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16, padding: 18, marginBottom: 10 },
-    pickerRowActive: { backgroundColor: 'rgba(113,255,126,0.10)' },
+    pickerRowGradientBorder: { borderRadius: 17, padding: 1.5, marginBottom: 10 },
+    pickerRowActiveInner: { marginBottom: 0, borderRadius: 15.5 },
     pickerDivLabel: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
-    pickerCount: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 4 },
-    pickerTag: { backgroundColor: 'rgba(113,255,126,0.16)', borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3 },
-    pickerTagReach: { backgroundColor: 'rgba(234,12,95,0.14)' },
-    pickerTagText: { fontFamily: FontFamily.mono, fontSize: 9, color: C.success, letterSpacing: 0.5 },
+    pickerRange: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 5 },
+    pickerCount: { fontFamily: FontFamily.mono, fontSize: 11.5, color: C.textDim },
+    pickerTagGrad: { borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3 },
+    pickerTagGradText: { fontFamily: FontFamily.mono, fontSize: 9, fontWeight: '700', color: '#fff', letterSpacing: 0.5, textTransform: 'uppercase' },
+    pickerTagText: { fontFamily: FontFamily.mono, fontSize: 9, letterSpacing: 0.5 },
 
     emptyIconWrap: { width: 60, height: 60, borderRadius: 18, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text, textAlign: 'center', marginBottom: 4 },

@@ -7,7 +7,8 @@ import { useAthleteData } from '../hooks/useAthleteData';
 import { useMatchCount } from '../hooks/useMatchCount';
 import { useGameplanPhases } from '../hooks/useGameplanPhases';
 import { PhaseStepper } from './PhaseStepper';
-import { ThemeColors } from '../constants/Colors';
+import GradientRing from './GradientRing';
+import { ThemeColors, SIGNAL_GRADIENT } from '../constants/Colors';
 import { FontFamily } from '../constants/Fonts';
 import { useColors } from '../context/ThemeContext';
 
@@ -36,7 +37,15 @@ export function GameplanNavHeader() {
         <Pressable onPress={() => router.back()} hitSlop={10} style={s.backBtn}>
           <Ionicons name="arrow-back" size={20} color={C.icon} />
         </Pressable>
-        <Text style={s.title}>The Gameplan</Text>
+        <View style={s.titleRow}>
+          <GradientRing size={34} strokeWidth={3.5} progress={gp.progressPct} colors={SIGNAL_GRADIENT} trackColor={C.border}>
+            <Text style={s.ringPct}>{Math.round(gp.progressPct)}<Text style={s.ringPctSign}>%</Text></Text>
+          </GradientRing>
+          <View>
+            <Text style={s.eyebrow}>Roadmap</Text>
+            <Text style={s.title}>The Gameplan</Text>
+          </View>
+        </View>
         <View style={s.backBtn} />
       </View>
       <View style={s.stepperWrap}>
@@ -51,6 +60,10 @@ function createStyles(C: ThemeColors) {
     root: { backgroundColor: C.background, borderBottomWidth: 1, borderBottomColor: C.border },
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingTop: 6 },
     backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    ringPct: { fontFamily: FontFamily.monoBold, fontSize: 10, color: C.text },
+    ringPctSign: { fontSize: 7 },
+    eyebrow: { fontFamily: FontFamily.eyebrow, fontSize: 8.5, color: C.textDim, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 },
     title: { fontFamily: FontFamily.bodyBold, fontSize: 15, color: C.text },
     stepperWrap: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: 12 },
   });

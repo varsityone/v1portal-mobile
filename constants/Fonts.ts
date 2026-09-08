@@ -14,6 +14,8 @@ export const FontFamily = {
   mono:          'JetBrainsMono_600SemiBold',
   monoBold:      'JetBrainsMono_700Bold',
   statNumber:    'DMSans_900Black',
+  // Small uppercase eyebrows/labels — matches web's var(--font-space-grotesk).
+  eyebrow:       'SpaceGrotesk_700Bold',
 } as const;
 
 export const Fonts = {

@@ -10,6 +10,7 @@ export interface GameplanPhases {
   phaseLocked: boolean[];
   activePhaseIdx: number;
   completedCount: number;
+  progressPct: number;
   getStatus: (i: number) => PhaseStatus;
 }
 
@@ -43,6 +44,7 @@ export function useGameplanPhases(
     const curIdx = phaseEffectiveDone.findIndex(c => !c);
     const activePhaseIdx = curIdx === -1 ? PHASES.length - 1 : curIdx;
     const completedCount = phaseEffectiveDone.filter(Boolean).length;
+    const progressPct = (completedCount / PHASES.length) * 100;
 
     const getStatus = (i: number): PhaseStatus => {
       if (phaseComplete[i]) return 'done';
@@ -50,6 +52,6 @@ export function useGameplanPhases(
       return 'upcoming';
     };
 
-    return { phases: PHASES, phaseComplete, phaseLocked, activePhaseIdx, completedCount, getStatus };
+    return { phases: PHASES, phaseComplete, phaseLocked, activePhaseIdx, completedCount, progressPct, getStatus };
   }, [athlete, assessment, matchCount]);
 }
