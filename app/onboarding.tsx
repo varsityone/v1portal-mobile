@@ -73,13 +73,17 @@ function ScreenAthleteDashboard() {
       <View style={ns.whiteCard}>
         <Text style={ns.eyebrow}>ATHLETE PORTAL DASHBOARD</Text>
         <Text style={ns.blackTitle}>Good evening, Kobee.</Text>
-        <Text style={ns.graySub}>You've completed all 3 phases. Stay active.</Text>
+        <Text style={ns.graySub}>You've completed all 3 phases. Stay active and keep pushing.</Text>
         <View style={ns.tierRowWrap}>
+          <Text style={ns.tierLabel}>TIER:</Text>
           <View style={[ns.smallPill, { backgroundColor: '#FF9400' }]}><Text style={ns.smallPillTxt}>Match+</Text></View>
           <View style={[ns.smallPill, { backgroundColor: '#C800A7' }]}><Text style={ns.smallPillTxt}>FCS/D2 Prospect</Text></View>
         </View>
+        <Text style={ns.hsLine}>HS: Division I (D1)</Text>
         <View style={ns.whiteBtn}><Text style={ns.whiteBtnTxt}>View Profile</Text><Ionicons name="arrow-forward" size={10} color="#ff3d1f" /></View>
       </View>
+
+      <Text style={ns.sectionCue}>After you complete the Gameplan:</Text>
 
       <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ns.scoreHero}>
         <Text style={ns.scoreHeroLabel}>V1 SCORE</Text>
@@ -91,8 +95,12 @@ function ScreenAthleteDashboard() {
       <View style={ns.statCardWhite}>
         <Text style={ns.eyebrow}>MUTUAL MATCHES</Text>
         <Text style={ns.statBigNumber}>1</Text>
-        <Text style={ns.statCaption}>Coaches who matched back with you</Text>
+        <Text style={ns.statCaption}>COACHES WHO MATCHED BACK WITH YOU.{'\n'}REAL INTEREST, REAL OPPORTUNITY.</Text>
         <TierLadder2 labels={['Start', 'Build', 'Active', 'Strong', 'Elite']} activeIdx={1} dark />
+      </View>
+
+      <View style={[ns.statCardWhite, { marginTop: 6 }]}>
+        <Text style={ns.eyebrow}>UNREAD MESSAGES</Text>
       </View>
     </View>
   );
@@ -119,10 +127,24 @@ function TierLadder2({ labels, activeIdx, dark }: { labels: string[]; activeIdx:
   );
 }
 
+function ProfileTopNav() {
+  return (
+    <View style={ns.profileNavRow}>
+      <Text style={ns.profileNavBrand}>V1PORTAL <Text style={ns.profileNavDash}>Dashboard</Text></Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <Text style={ns.profileNavEdit}>Edit Profile</Text>
+        <LinearGradient colors={[PINK_RED, '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ns.forCoachesPill}>
+          <Text style={ns.forCoachesTxt}>For Coaches Only</Text>
+        </LinearGradient>
+      </View>
+    </View>
+  );
+}
+
 function ScreenAthleteProfile() {
   return (
     <View style={ns.root}>
-      <MockHeader />
+      <ProfileTopNav />
       <View style={ns.photoWrap}>
         <LinearGradient colors={['#3a3a3f', '#141416']} style={StyleSheet.absoluteFill} />
         <Ionicons name="person" size={44} color="rgba(255,255,255,0.25)" style={{ alignSelf: 'center', marginTop: 28 }} />
@@ -132,15 +154,20 @@ function ScreenAthleteProfile() {
             <Text style={ns.scoreBadgeCap}>V1 SCORE</Text>
           </View>
         </LinearGradient>
+        <Text style={ns.scoreBadgeSub}>FCS/D2 PROSPECT</Text>
       </View>
       <View style={{ paddingHorizontal: 10, paddingTop: 8 }}>
-        <Text style={ns.profileName}>Kobee Bolton</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={ns.profileName}>Kobee Bolton</Text>
+          <Ionicons name="flash" size={9} color={PINK_RED} />
+        </View>
         <Text style={ns.profileMeta}>S · 6'1" · 187 lbs · Class of 2027</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
           <Text style={ns.profileMetaDim}>Long Beach, CA</Text>
           <View style={{ flexDirection: 'row' }}>
-            {[0, 1, 2, 3, 4].map(i => <Ionicons key={i} name="star" size={7} color="#F6BA00" />)}
+            {[0, 1, 2, 3, 4].map(i => <Ionicons key={i} name="star" size={7} color={i < 2 ? '#F6BA00' : 'rgba(255,255,255,0.2)'} />)}
           </View>
+          <Text style={ns.ratingLabel}>V1 RATING</Text>
         </View>
       </View>
       <View style={ns.statTileRow}>
@@ -156,6 +183,22 @@ function ScreenAthleteProfile() {
         <Text style={ns.tabTxt}>Film</Text>
         <Text style={ns.tabTxt}>Stats</Text>
       </View>
+      <View style={{ paddingHorizontal: 10, paddingTop: 8 }}>
+        <Text style={ns.sectionHeadWhite}>About</Text>
+        <Text style={ns.aboutText}>S | Class of 2027 | Long Beach HS | Long Beach, CA{'\n'}6'1" / 187 lbs | 3.75 GPA{'\n'}Engineer | Dominate life is the motto</Text>
+      </View>
+      <View style={{ paddingHorizontal: 10, paddingTop: 8 }}>
+        <Text style={ns.sectionHeadWhite}>Career Stats</Text>
+        <Text style={ns.pageSubGray}>Across 3 varsity seasons</Text>
+        <View style={ns.careerStatsGrid}>
+          {[['Games Played', '25'], ['Tackles', '108'], ['Interceptions', '6'], ['Passes Defended', '50']].map(([l, v]) => (
+            <View key={l} style={ns.careerStatTile}>
+              <Text style={ns.careerStatLabel}>{l}</Text>
+              <Text style={ns.careerStatValue}>{v}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -163,7 +206,9 @@ function ScreenAthleteProfile() {
 function ScreenAthleteDivisions() {
   const rows = [
     { label: 'D1 FBS', pill: 'REACH', pillColor: PINK_RED, count: '4 programs available' },
-    { label: 'D2', pill: 'YOUR LEVEL', pillColor: '#10b981', count: '12 programs available', highlight: true },
+    { label: 'D1 FCS', pill: 'REACH', pillColor: PINK_RED, count: '0 programs available' },
+    { label: 'D2', pill: 'YOUR LEVEL', pillColor: '#10b981', count: '0 programs available', highlight: true },
+    { label: 'D3', pill: null, count: '0 programs available' },
     { label: 'NAIA', pill: null, count: '2 programs available' },
     { label: 'NJCAA', pill: null, count: '2 programs available' },
   ];
@@ -172,9 +217,9 @@ function ScreenAthleteDivisions() {
       <MockHeader />
       <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
         <Text style={ns.pageTitleWhite}>Choose Your Level</Text>
-        <Text style={ns.pageSubGray}>Pick a division to start swiping.</Text>
+        <Text style={ns.pageSubGray}>Pick a division to start swiping. You can browse any level.</Text>
       </View>
-      <View style={{ paddingHorizontal: 10, marginTop: 10, gap: 6 }}>
+      <View style={{ paddingHorizontal: 10, marginTop: 8, gap: 5 }}>
         {rows.map(r => (
           <View key={r.label} style={[ns.divisionRow, r.highlight && ns.divisionRowHighlight]}>
             <View style={{ flex: 1 }}>
@@ -201,9 +246,13 @@ function ScreenAthleteSwipe() {
       <View style={{ paddingHorizontal: 12, paddingTop: 8 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={ns.pageTitleWhite}>Programs For You</Text>
-          <Ionicons name="options-outline" size={13} color="rgba(255,255,255,0.6)" />
+          <View style={ns.filterBtn}><Ionicons name="options" size={11} color="#fff" /></View>
         </View>
-        <View style={ns.swipeProgressTrack}><LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: '25%', height: '100%', borderRadius: 3 }} /></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+          <View style={ns.swipeProgressTrack2}><LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ width: '25%', height: '100%', borderRadius: 3 }} /></View>
+          <Text style={ns.progressCount}>1 / 4</Text>
+          <View style={ns.divisionTagPill}><Text style={ns.divisionTagTxt}>D1_FBS</Text></View>
+        </View>
         <View style={[ns.tinyPill, { backgroundColor: '#10b981', alignSelf: 'flex-start', marginTop: 6, flexDirection: 'row', gap: 3, alignItems: 'center' }]}>
           <Ionicons name="checkmark" size={8} color="#fff" /><Text style={ns.tinyPillTxt}>Verified</Text>
         </View>
@@ -217,12 +266,13 @@ function ScreenAthleteSwipe() {
               <View key={t} style={ns.tagPill}><Text style={ns.tagPillTxt}>{t}</Text></View>
             ))}
           </View>
+          <Text style={ns.swipeBio}>Built our secondary from scratch the last 4 years. Need athletes who can cover and tackle.</Text>
         </View>
       </LinearGradient>
       <View style={ns.swipeActionRow}>
         <View style={ns.circleBtnDark}><Ionicons name="close" size={16} color="#fff" /></View>
         <LinearGradient colors={CTA_GRADIENT} style={ns.circleBtnBig}><Ionicons name="add" size={20} color="#fff" /></LinearGradient>
-        <View style={ns.circleBtnDark}><Ionicons name="chatbubble-outline" size={13} color="#fff" /></View>
+        <View style={ns.circleBtnDark}><Ionicons name="chatbubble" size={13} color="#fff" /></View>
       </View>
     </View>
   );
@@ -241,17 +291,15 @@ function ScreenAthleteRoadmap() {
       </View>
       <View style={{ paddingHorizontal: 12, marginTop: 8 }}>
         {[
-          { n: 1, label: 'Know Your Value', done: true },
-          { n: 2, label: 'Build Your Profile', done: true },
+          { n: 1, label: 'Know Your Value' },
+          { n: 2, label: 'Build Your Profile' },
           { n: 3, label: 'Find Your Matches', active: true },
         ].map((p, i, arr) => (
           <View key={p.n} style={{ flexDirection: 'row', gap: 8 }}>
             <View style={{ alignItems: 'center' }}>
-              {p.done ? (
-                <View style={ns.timelineDot}><Ionicons name="checkmark" size={9} color="#000" /></View>
-              ) : (
-                <View style={[ns.timelineDot, ns.timelineDotActive]}><Text style={{ fontSize: 8, fontWeight: '800', color: '#833AB4' }}>{p.n}</Text></View>
-              )}
+              <View style={[ns.timelineDot, p.active && ns.timelineDotRing]}>
+                <Ionicons name="checkmark" size={9} color="#000" />
+              </View>
               {i < arr.length - 1 && <View style={ns.timelineLine} />}
             </View>
             <Text style={[ns.timelineLabel, p.active && { color: '#fff', fontWeight: '800' }]}>{p.label}</Text>
@@ -262,11 +310,12 @@ function ScreenAthleteRoadmap() {
         <Text style={ns.tinyPillTxt}>Phase 3</Text>
       </View>
       <Text style={[ns.pageTitleWhite, { fontSize: 14, marginHorizontal: 12, marginTop: 4 }]}>Find Your Matches</Text>
+      <Text style={[ns.pageSubGray, { marginHorizontal: 12, marginTop: 3 }]}>Swipe through programs that fit your level, match with coaches who are actually interested, and message them directly.</Text>
       <View style={ns.darkStatCard}>
         <Text style={ns.eyebrowDark}>MUTUAL MATCHES</Text>
         <Text style={ns.statBigNumberWhite}>1</Text>
-        <Text style={ns.statCaptionDark}>A coach matched back — that's real interest.</Text>
-        <View style={ns.pinkCtaBtn}><Text style={ns.pinkCtaTxt}>View My Matches →</Text></View>
+        <Text style={ns.statCaptionDark}>A coach matched back — that means real interest. Head in and start the conversation.</Text>
+        <Text style={ns.pinkLinkTxt}>View My Matches →</Text>
       </View>
     </View>
   );
@@ -494,7 +543,9 @@ const ns = StyleSheet.create({
   eyebrowDark: { fontSize: 6.5, fontWeight: '700', color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' },
   blackTitle: { fontSize: 13, fontWeight: '900', color: '#0a0a0a', marginTop: 2 },
   graySub: { fontSize: 7, color: 'rgba(0,0,0,0.5)', marginTop: 2 },
-  tierRowWrap: { flexDirection: 'row', gap: 4, marginTop: 6 },
+  tierRowWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  tierLabel: { fontSize: 6, fontWeight: '700', color: 'rgba(0,0,0,0.4)' },
+  hsLine: { fontSize: 6.5, color: 'rgba(0,0,0,0.5)', marginTop: 4 },
   smallPill: { paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 10 },
   smallPillTxt: { fontSize: 6, fontWeight: '800', color: '#fff' },
   whiteBtn: {
@@ -502,6 +553,7 @@ const ns = StyleSheet.create({
     borderRadius: 100, paddingVertical: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
   },
   whiteBtnTxt: { fontSize: 7.5, fontWeight: '800', color: '#ff3d1f' },
+  sectionCue: { fontSize: 7, color: 'rgba(255,255,255,0.45)', marginHorizontal: 8, marginBottom: 4 },
 
   scoreHero: { marginHorizontal: 8, marginBottom: 6, borderRadius: 12, padding: 11, alignItems: 'center' },
   scoreHeroLabel: { fontSize: 7, fontWeight: '700', color: '#fff', letterSpacing: 1 },
@@ -514,19 +566,28 @@ const ns = StyleSheet.create({
 
   statCardWhite: { backgroundColor: '#fff', borderRadius: 12, marginHorizontal: 8, padding: 10, alignItems: 'center' },
   statBigNumber: { fontSize: 24, fontWeight: '900', color: '#0a0a0a', lineHeight: 28 },
-  statCaption: { fontSize: 6.5, fontWeight: '700', color: 'rgba(0,0,0,0.45)', textAlign: 'center', marginTop: 2 },
+  statCaption: { fontSize: 6.5, fontWeight: '700', color: 'rgba(0,0,0,0.45)', textAlign: 'center', marginTop: 2, lineHeight: 9 },
   statBigNumberWhite: { fontSize: 22, fontWeight: '900', color: '#fff', lineHeight: 26 },
   statCaptionDark: { fontSize: 6.5, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 3, marginBottom: 8 },
+
+  profileNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 14, paddingBottom: 8 },
+  profileNavBrand: { fontSize: 7.5, fontWeight: '900', color: '#fff', letterSpacing: 0.3 },
+  profileNavDash: { fontSize: 7, fontWeight: '500', color: 'rgba(255,255,255,0.5)' },
+  profileNavEdit: { fontSize: 6, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
+  forCoachesPill: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8 },
+  forCoachesTxt: { fontSize: 5, fontWeight: '800', color: '#fff' },
 
   photoWrap: { height: SCREEN_H * 0.28, marginHorizontal: 0, position: 'relative', overflow: 'visible' },
   scoreBadgeOuter: { position: 'absolute', bottom: -14, right: 12, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   scoreBadgeInner: { width: 33, height: 33, borderRadius: 17, backgroundColor: '#0c0c10', alignItems: 'center', justifyContent: 'center' },
   scoreBadgeNum: { fontSize: 10, fontWeight: '900', color: '#fff', lineHeight: 11 },
   scoreBadgeCap: { fontSize: 3.6, color: 'rgba(255,255,255,0.5)' },
+  scoreBadgeSub: { position: 'absolute', bottom: -24, right: 8, fontSize: 4.3, fontWeight: '700', color: 'rgba(255,255,255,0.45)' },
 
   profileName: { fontSize: 12, fontWeight: '900', color: '#fff' },
   profileMeta: { fontSize: 7, color: 'rgba(255,255,255,0.65)', marginTop: 1 },
   profileMetaDim: { fontSize: 6.5, color: 'rgba(255,255,255,0.45)' },
+  ratingLabel: { fontSize: 5, fontWeight: '700', color: 'rgba(255,255,255,0.35)', marginLeft: 2, letterSpacing: 0.3 },
   statTileRow: { flexDirection: 'row', gap: 4, paddingHorizontal: 8, marginTop: 8 },
   statTile: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 6, alignItems: 'center' },
   statTileLabel: { fontSize: 5.5, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' },
@@ -535,6 +596,12 @@ const ns = StyleSheet.create({
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#F6BA00', paddingBottom: 5 },
   tabActiveTxt: { fontSize: 7.5, fontWeight: '800', color: '#fff' },
   tabTxt: { fontSize: 7.5, color: 'rgba(255,255,255,0.4)', paddingBottom: 5 },
+
+  aboutText: { fontSize: 6.3, color: 'rgba(255,255,255,0.6)', marginTop: 4, lineHeight: 9.5 },
+  careerStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
+  careerStatTile: { width: '48%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 6, alignItems: 'center' },
+  careerStatLabel: { fontSize: 5, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', textAlign: 'center' },
+  careerStatValue: { fontSize: 11, fontWeight: '800', color: '#fff', marginTop: 2 },
 
   pageTitleWhite: { fontSize: 15, fontWeight: '900', color: '#fff', marginTop: 2 },
   pageSubGray: { fontSize: 7, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
@@ -546,11 +613,16 @@ const ns = StyleSheet.create({
   tinyPill: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' },
   tinyPillTxt: { fontSize: 5.5, fontWeight: '800', color: '#fff' },
 
-  swipeProgressTrack: { height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginTop: 6 },
+  filterBtn: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+  swipeProgressTrack2: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  progressCount: { fontSize: 6, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+  divisionTagPill: { paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
+  divisionTagTxt: { fontSize: 5, fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
   swipeCardBg: { flex: 1, marginTop: 8, marginHorizontal: 8, borderRadius: 12, justifyContent: 'flex-end', overflow: 'hidden' },
   swipeCardBottom: { padding: 10 },
   swipeCoachName: { fontSize: 12, fontWeight: '900', color: '#fff' },
   swipeCoachSub: { fontSize: 7, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  swipeBio: { fontSize: 6.3, color: 'rgba(255,255,255,0.55)', marginTop: 5, lineHeight: 9.5 },
   tagPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
   tagPillTxt: { fontSize: 5.5, fontWeight: '700', color: '#fff' },
   swipeActionRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 14, paddingVertical: 10 },
@@ -558,13 +630,12 @@ const ns = StyleSheet.create({
   circleBtnBig: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 
   timelineDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  timelineDotActive: { backgroundColor: '#1d1f23', borderWidth: 2, borderColor: '#833AB4' },
+  timelineDotRing: { borderWidth: 2, borderColor: '#833AB4' },
   timelineLine: { width: 1.5, flex: 1, minHeight: 12, backgroundColor: 'rgba(255,255,255,0.15)' },
   timelineLabel: { fontSize: 8, color: 'rgba(255,255,255,0.5)', marginTop: 1, marginBottom: 8 },
 
   darkStatCard: { backgroundColor: '#121212', borderRadius: 12, marginHorizontal: 12, marginTop: 8, padding: 10, alignItems: 'center' },
-  pinkCtaBtn: { backgroundColor: PINK_RED, borderRadius: 100, paddingVertical: 7, paddingHorizontal: 16 },
-  pinkCtaTxt: { fontSize: 7.5, fontWeight: '800', color: '#fff' },
+  pinkLinkTxt: { fontSize: 7.5, fontWeight: '800', color: PINK_RED, textDecorationLine: 'underline' },
 
   findPlayersCard: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 8, marginBottom: 6, borderRadius: 12, padding: 10 },
   findPlayersTitle: { fontSize: 10.5, fontWeight: '900', color: '#fff' },
@@ -784,7 +855,7 @@ function SlideItem({ item, onFinish, onLogin, ctaLabel }: { item: Slide; onFinis
         />
         <View style={s.textBlock}>
           <Text style={[s.title, s.ctaTitle]}>{item.title}</Text>
-          <Text style={s.body}>{item.body}</Text>
+          <Text style={[s.body, s.ctaBody]}>{item.body}</Text>
         </View>
         <Pressable onPress={onFinish}>
           <LinearGradient
@@ -822,9 +893,7 @@ function SlideItem({ item, onFinish, onLogin, ctaLabel }: { item: Slide; onFinis
 
       {/* Icon + caption */}
       <View style={s.captionWrap}>
-        <View style={s.iconCircle}>
-          <Ionicons name={item.icon ?? 'star'} size={18} color="#fff" />
-        </View>
+        <Ionicons name={item.icon ?? 'star'} size={34} color="#fff" />
         <Text style={s.caption}>{item.caption}</Text>
       </View>
     </View>
@@ -947,10 +1016,10 @@ const s = StyleSheet.create({
 
   slide: {
     flex: 1,
-    paddingTop: H * 0.055,
+    paddingTop: H * 0.032,
     paddingHorizontal: 24,
     alignItems: 'center',
-    gap: 14,
+    gap: 8,
   },
   num: {
     alignSelf: 'flex-start',
@@ -974,16 +1043,6 @@ const s = StyleSheet.create({
   },
 
   captionWrap: { alignItems: 'center', gap: 6 },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
   caption: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.45)',
@@ -1024,6 +1083,9 @@ const s = StyleSheet.create({
   ctaTitle: {
     textAlign: 'center',
     fontSize: 30,
+  },
+  ctaBody: {
+    textAlign: 'center',
   },
   ctaBtn: {
     borderRadius: 100,

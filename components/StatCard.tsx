@@ -76,7 +76,7 @@ const s = StyleSheet.create({
   value: {
     fontFamily: FontFamily.statNumber,
     fontSize: 72,
-    lineHeight: 68,
+    lineHeight: 82,
     color: '#000',
     letterSpacing: -3,
     marginBottom: 12,

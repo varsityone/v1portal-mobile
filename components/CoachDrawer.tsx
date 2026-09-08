@@ -209,6 +209,13 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
         </Pressable>
       </View>
 
+      {/* Signal tag — matches web's shell-signal-tag (gradient dot + "COACH PORTAL"),
+          rendered above the user row, matching web's shell-drawer-header order */}
+      <View style={d.signalTag}>
+        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.signalDot} />
+        <Text style={[d.signalText, { color: scheme === 'light' ? C.textMuted : '#ffffff' }]}>Coach Portal</Text>
+      </View>
+
       {/* Coach avatar + name + tier badge — matches web's shell-drawer-header exactly */}
       <View style={d.profileHeader}>
         {coach?.profile_photo_url ? (
@@ -243,12 +250,6 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
           ) : null}
         </View>
       )}
-
-      {/* Signal tag — matches web's shell-signal-tag (gradient dot + "COACH PORTAL") */}
-      <View style={d.signalTag}>
-        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.signalDot} />
-        <Text style={[d.signalText, { color: scheme === 'light' ? C.textMuted : '#ffffff' }]}>Coach Portal</Text>
-      </View>
 
       {/* Scrollable nav */}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={d.scrollContent} showsVerticalScrollIndicator={false}>

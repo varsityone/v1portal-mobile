@@ -128,7 +128,7 @@ const s = StyleSheet.create({
   scoreValue: {
     fontFamily: FontFamily.statNumber,
     fontSize: 88,
-    lineHeight: 88,
+    lineHeight: 100,
     letterSpacing: -5,
   },
   levelText: {

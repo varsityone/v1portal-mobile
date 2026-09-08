@@ -201,6 +201,13 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
         </Pressable>
       </View>
 
+      {/* Signal tag — matches web's shell-signal-tag (gradient dot + "ATHLETE PORTAL"),
+          rendered above the user row, matching web's shell-drawer-header order */}
+      <View style={d.signalTag}>
+        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.signalDot} />
+        <Text style={[d.signalText, { color: scheme === 'light' ? C.textMuted : '#ffffff' }]}>Athlete Portal</Text>
+      </View>
+
       {/* User avatar + name + tier badge — matches web's shell-drawer-header exactly */}
       <View style={d.profileHeader}>
         {athlete?.profile_photo_url ? (
@@ -216,12 +223,6 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
             <Text style={d.tierBadgeText}>{tierName}</Text>
           </View>
         </View>
-      </View>
-
-      {/* Signal tag — matches web's shell-signal-tag (gradient dot + "ATHLETE PORTAL") */}
-      <View style={d.signalTag}>
-        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={d.signalDot} />
-        <Text style={[d.signalText, { color: scheme === 'light' ? C.textMuted : '#ffffff' }]}>Athlete Portal</Text>
       </View>
 
       {/* Scrollable nav */}
