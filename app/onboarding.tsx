@@ -694,31 +694,31 @@ type Slide = {
 
 const ATHLETE_SLIDES: Slide[] = [
   {
-    id: '1', num: '01', Screen: ScreenAthleteDashboard, icon: 'analytics-outline',
+    id: '1', num: '01', Screen: ScreenAthleteDashboard, icon: 'analytics',
     title: 'Stop Guessing\nYour Recruiting\nLevel',
     body: 'Get your V1 Score and see exactly where you fit in college football.',
     caption: 'Know your value before\ncontacting coaches.',
   },
   {
-    id: '2', num: '02', Screen: ScreenAthleteProfile, icon: 'person-outline',
+    id: '2', num: '02', Screen: ScreenAthleteProfile, icon: 'person',
     title: 'Create A Profile\nCoaches Can\nEvaluate',
     body: 'Upload film, measurables, academics, and stats in one place.',
     caption: 'Everything coaches\nneed at a glance.',
   },
   {
-    id: '3', num: '03', Screen: ScreenAthleteDivisions, icon: 'school-outline',
+    id: '3', num: '03', Screen: ScreenAthleteDivisions, icon: 'school',
     title: 'Discover Schools\nThat Match Your\nLevel',
     body: 'No more guessing which programs are realistic.',
     caption: 'Focus on opportunities\nthat fit your profile.',
   },
   {
-    id: '4', num: '04', Screen: ScreenAthleteSwipe, icon: 'chatbubbles-outline',
+    id: '4', num: '04', Screen: ScreenAthleteSwipe, icon: 'chatbubbles',
     title: 'Match With Coaches\nWho Are Actually\nInterested',
     body: 'No cold emails, no guessing who to contact. Messaging only opens once a coach matches back with you.',
     caption: 'Real interest,\nnot guesswork.',
   },
   {
-    id: '5', num: '05', Screen: ScreenAthleteRoadmap, icon: 'map-outline',
+    id: '5', num: '05', Screen: ScreenAthleteRoadmap, icon: 'map',
     title: 'Your Recruiting\nRoadmap',
     body: 'Complete each phase and get matched with programs that fit your level.',
     caption: 'One platform. One\npath forward.',
@@ -733,31 +733,31 @@ const ATHLETE_SLIDES: Slide[] = [
 
 const COACH_SLIDES: Slide[] = [
   {
-    id: '1', num: '01', Screen: ScreenCoachDashboard, icon: 'grid-outline',
+    id: '1', num: '01', Screen: ScreenCoachDashboard, icon: 'grid',
     title: 'See Your Recruiting\nClass At A\nGlance',
     body: 'Track matches, messages, and recruiting activity from one dashboard.',
     caption: "Know your program's\npipeline at a glance.",
   },
   {
-    id: '2', num: '02', Screen: ScreenCoachProfile, icon: 'shield-checkmark-outline',
+    id: '2', num: '02', Screen: ScreenCoachProfile, icon: 'shield-checkmark',
     title: 'Build A Program\nProfile Athletes\nCan Trust',
     body: 'Share your needs, culture, and contact-period status up front.',
     caption: 'Everything recruits need\nto know before reaching out.',
   },
   {
-    id: '3', num: '03', Screen: ScreenCoachSearch, icon: 'search-outline',
+    id: '3', num: '03', Screen: ScreenCoachSearch, icon: 'search',
     title: 'Search Recruits\nThat Fit Your\nProgram',
     body: 'Filter by position, V1 Score range, state, and grad year.',
     caption: "No more scrolling film\nthat doesn't fit your needs.",
   },
   {
-    id: '4', num: '04', Screen: ScreenCoachRoster, icon: 'add-circle-outline',
+    id: '4', num: '04', Screen: ScreenCoachRoster, icon: 'add-circle',
     title: 'Match With Athletes\nWho Are Actually\nInterested',
     body: 'Messaging opens only once an athlete matches back with you.',
     caption: 'Real interest,\nnot cold outreach.',
   },
   {
-    id: '5', num: '05', Screen: ScreenCoachPipeline, icon: 'swap-horizontal-outline',
+    id: '5', num: '05', Screen: ScreenCoachPipeline, icon: 'swap-horizontal',
     title: 'Track Every Recruit,\nStart To\nSigned',
     body: 'Move prospects through Interested, Contacted, Visited, and Signed.',
     caption: 'One board for your\nwhole recruiting class.',
@@ -823,7 +823,7 @@ function SlideItem({ item, onFinish, onLogin, ctaLabel }: { item: Slide; onFinis
       {/* Icon + caption */}
       <View style={s.captionWrap}>
         <View style={s.iconCircle}>
-          <Ionicons name={item.icon ?? 'star-outline'} size={18} color="#833AB4" />
+          <Ionicons name={item.icon ?? 'star'} size={18} color="#fff" />
         </View>
         <Text style={s.caption}>{item.caption}</Text>
       </View>
@@ -956,7 +956,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     fontSize: 11,
     fontWeight: '700',
-    color: '#833AB4',
+    color: '#fff',
     letterSpacing: 1,
   },
   textBlock: { alignSelf: 'stretch', gap: 6 },
@@ -978,11 +978,11 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(131,58,180,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(131,58,180,0.3)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   caption: {
     fontSize: 12,
@@ -999,7 +999,7 @@ const s = StyleSheet.create({
   },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
   dot: { height: 3, borderRadius: 2 },
-  dotActive: { width: 20, backgroundColor: '#833AB4' },
+  dotActive: { width: 20, backgroundColor: '#fff' },
   dotInactive: { width: 5, backgroundColor: 'rgba(255,255,255,0.2)' },
 
   btnRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
