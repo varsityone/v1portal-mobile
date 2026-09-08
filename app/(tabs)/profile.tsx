@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { GRADIENT, SCORE_GRADIENT, ThemeColors } from '../../constants/Colors';
@@ -249,87 +250,93 @@ export default function ProfileScreen() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [topFitPrograms, setTopFitPrograms] = useState<TopFitProgram[]>([]);
 
-  useEffect(() => {
+  const loadProfileData = useCallback(async () => {
     const userId = session?.user?.id;
     if (!userId) return;
 
-    async function load() {
-      setLoading(true);
+    setLoading(true);
 
-      let athleteRow: ProfileData | null = null;
-      const { data: byUser } = await supabase
+    let athleteRow: ProfileData | null = null;
+    const { data: byUser } = await supabase
+      .from('athletes')
+      .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
+      .eq('user_id', userId)
+      .maybeSingle();
+    athleteRow = byUser as ProfileData | null;
+
+    if (!athleteRow) {
+      const { data: byLinked } = await supabase
         .from('athletes')
         .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
-        .eq('user_id', userId)
+        .eq('linked_user_id', userId)
         .maybeSingle();
-      athleteRow = byUser as ProfileData | null;
-
-      if (!athleteRow) {
-        const { data: byLinked } = await supabase
-          .from('athletes')
-          .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
-          .eq('linked_user_id', userId)
-          .maybeSingle();
-        athleteRow = byLinked as ProfileData | null;
-      }
-
-      if (!athleteRow) { setLoading(false); return; }
-      setProfile(athleteRow);
-
-      const { data: assessRow } = await supabase
-        .from('assessments')
-        .select('v1_score, score_breakdown, responses')
-        .eq('athlete_id', athleteRow.id)
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (assessRow) {
-        const rawBd = (assessRow as any).score_breakdown;
-        const bd = typeof rawBd === 'string' ? (() => { try { return JSON.parse(rawBd); } catch { return {}; } })() : (rawBd ?? {});
-        setBreakdown(bd);
-
-        const rawR = (assessRow as any).responses;
-        const r: Record<string, any> = typeof rawR === 'string'
-          ? (() => { try { return JSON.parse(rawR); } catch { return {}; } })()
-          : (rawR ?? {});
-
-        const ss: Record<string, any> = {};
-        const STAT_KEYS: [string, string][] = [
-          ['passing_yards','Passing Yards'], ['passing_tds','Passing TDs'],
-          ['rushing_yards','Rushing Yards'], ['rushing_tds','Rushing TDs'],
-          ['receptions','Receptions'], ['receiving_yards','Receiving Yards'], ['receiving_tds','Receiving TDs'],
-          ['total_tackles','Tackles'], ['sacks','Sacks'], ['interceptions','Interceptions'],
-          ['passes_defended','Passes Defended'], ['games_started','Games Started'],
-        ];
-        STAT_KEYS.forEach(([key, label]) => {
-          const v = r[key];
-          if (v !== null && v !== undefined && v !== '') ss[label] = v;
-        });
-        setSeasonStats(ss);
-        setAssessRes(r);
-      }
-
-      if (athleteRow.profile_slug) {
-        try {
-          const res = await fetch(`${API_BASE}/api/profile/${athleteRow.profile_slug}`);
-          if (res.ok) {
-            const data = await res.json();
-            setStarRatingNum(data.starRatingNum ?? 0);
-            setProfileComplete(!!data.profileComplete);
-            setTopFitPrograms(data.topFitPrograms ?? []);
-          }
-        } catch {
-          // Falls back to no star rating / no fit list — the core profile still works.
-        }
-      }
-
-      setLoading(false);
+      athleteRow = byLinked as ProfileData | null;
     }
 
-    load();
+    if (!athleteRow) { setLoading(false); return; }
+    setProfile(athleteRow);
+
+    const { data: assessRow } = await supabase
+      .from('assessments')
+      .select('v1_score, score_breakdown, responses')
+      .eq('athlete_id', athleteRow.id)
+      .eq('status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (assessRow) {
+      const rawBd = (assessRow as any).score_breakdown;
+      const bd = typeof rawBd === 'string' ? (() => { try { return JSON.parse(rawBd); } catch { return {}; } })() : (rawBd ?? {});
+      setBreakdown(bd);
+
+      const rawR = (assessRow as any).responses;
+      const r: Record<string, any> = typeof rawR === 'string'
+        ? (() => { try { return JSON.parse(rawR); } catch { return {}; } })()
+        : (rawR ?? {});
+
+      const ss: Record<string, any> = {};
+      const STAT_KEYS: [string, string][] = [
+        ['passing_yards','Passing Yards'], ['passing_tds','Passing TDs'],
+        ['rushing_yards','Rushing Yards'], ['rushing_tds','Rushing TDs'],
+        ['receptions','Receptions'], ['receiving_yards','Receiving Yards'], ['receiving_tds','Receiving TDs'],
+        ['total_tackles','Tackles'], ['sacks','Sacks'], ['interceptions','Interceptions'],
+        ['passes_defended','Passes Defended'], ['games_started','Games Started'],
+      ];
+      STAT_KEYS.forEach(([key, label]) => {
+        const v = r[key];
+        if (v !== null && v !== undefined && v !== '') ss[label] = v;
+      });
+      setSeasonStats(ss);
+      setAssessRes(r);
+    }
+
+    if (athleteRow.profile_slug) {
+      try {
+        const res = await fetch(`${API_BASE}/api/profile/${athleteRow.profile_slug}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStarRatingNum(data.starRatingNum ?? 0);
+          setProfileComplete(!!data.profileComplete);
+          setTopFitPrograms(data.topFitPrograms ?? []);
+        }
+      } catch {
+        // Falls back to no star rating / no fit list — the core profile still works.
+      }
+    }
+
+    setLoading(false);
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    loadProfileData();
+  }, [loadProfileData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileData();
+    }, [loadProfileData])
+  );
 
   const handleSave = async (updates: Partial<ProfileData>) => {
     if (!profile?.id) return;
