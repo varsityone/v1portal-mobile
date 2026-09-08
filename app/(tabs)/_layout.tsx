@@ -1,14 +1,13 @@
 import { useEffect } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { registerForPushNotifications } from '../../lib/notifications';
 import AppDrawer from '../../components/AppDrawer';
 import LoadingScreen from '../../components/LoadingScreen';
+import HelpAttractButton from '../../components/HelpAttractButton';
 import { useColors } from '../../context/ThemeContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -57,19 +56,7 @@ export default function DrawerLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Pressable
-        style={floatStyles.btn}
-        onPress={() => router.push('/help' as any)}
-      >
-        <LinearGradient
-          colors={['#ff0000', '#ffbc00']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={floatStyles.gradient}
-        >
-          <Ionicons name="help-circle-outline" size={22} color="#fff" />
-        </LinearGradient>
-      </Pressable>
+      <HelpAttractButton onPress={() => router.push('/help' as any)} />
 
       <Drawer
         drawerContent={AppDrawer}
@@ -108,31 +95,3 @@ export default function DrawerLayout() {
   );
 }
 
-// Matches web's actual DOM (element.style, confirmed via inspector):
-// position:fixed; right:-12px; bottom:110px; width/height:48px;
-// border-radius:8px 0 0 8px; background:linear-gradient(130deg, red, #ffbc00);
-// box-shadow: -2px 4px 12px rgba(0,0,0,0.2). Rounded on the left edge only —
-// a tab, not a circle.
-const floatStyles = StyleSheet.create({
-  btn: {
-    position: 'absolute',
-    bottom: 110,
-    right: -12,
-    width: 48,
-    height: 48,
-    zIndex: 999,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  gradient: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
-  },
-});
