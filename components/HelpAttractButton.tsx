@@ -9,28 +9,36 @@ import { Ionicons } from '@expo/vector-icons';
 // "attract" nudge is the only way a mobile user ever sees it slide fully
 // into view. Every 3 minutes, animate out to right:0, hold 2.2s, animate
 // back — same transition curve and rest/active positions as web's CSS.
-const REST_RIGHT = -34;
-const ACTIVE_RIGHT = 0;
+//
+// Driven via transform: translateX rather than the `right` layout property.
+// `right` can only animate JS-side (useNativeDriver can't touch layout
+// props), and JS-driven layout animation is unreliable under RN's Fabric
+// architecture — the Animated.Value updates but the re-layout doesn't
+// always follow. translateX is paint-only and fully native-driver
+// compatible, which is the correct, robust way to slide a fixed-position
+// element like this.
+const REST_OFFSET = 34;
+const ACTIVE_OFFSET = 0;
 const TRANSITION_MS = 220;
 const ATTRACT_HOLD_MS = 2200;
 const ATTRACT_INTERVAL_MS = 3 * 60 * 1000;
 
 export default function HelpAttractButton({ onPress }: { onPress: () => void }) {
-  const right = useRef(new Animated.Value(REST_RIGHT)).current;
+  const translateX = useRef(new Animated.Value(REST_OFFSET)).current;
 
   useEffect(() => {
     const easing = Easing.bezier(0.4, 0, 0.2, 1);
     const interval = setInterval(() => {
-      Animated.timing(right, { toValue: ACTIVE_RIGHT, duration: TRANSITION_MS, easing, useNativeDriver: false }).start();
+      Animated.timing(translateX, { toValue: ACTIVE_OFFSET, duration: TRANSITION_MS, easing, useNativeDriver: true }).start();
       setTimeout(() => {
-        Animated.timing(right, { toValue: REST_RIGHT, duration: TRANSITION_MS, easing, useNativeDriver: false }).start();
+        Animated.timing(translateX, { toValue: REST_OFFSET, duration: TRANSITION_MS, easing, useNativeDriver: true }).start();
       }, ATTRACT_HOLD_MS);
     }, ATTRACT_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [right]);
+  }, [translateX]);
 
   return (
-    <Animated.View style={[s.btn, { right }]}>
+    <Animated.View style={[s.btn, { transform: [{ translateX }] }]}>
       <Pressable onPress={onPress} style={s.pressable}>
         <LinearGradient
           colors={['#ff0000', '#ffbc00']}
@@ -48,6 +56,7 @@ export default function HelpAttractButton({ onPress }: { onPress: () => void }) 
 const s = StyleSheet.create({
   btn: {
     position: 'absolute',
+    right: 0,
     bottom: 110,
     width: 48,
     height: 48,
