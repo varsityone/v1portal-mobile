@@ -83,14 +83,14 @@ export default function MessagesInboxScreen() {
 
       {!ncaaBannerDismissed && needsNcaaRegistration(athlete) && (
         <View style={s.ncaaBanner}>
-          <Ionicons name="warning" size={16} color="#EA0C5F" style={{ marginTop: 1, flexShrink: 0 }} />
+          <Ionicons name="warning" size={20} color="#fff" style={{ marginTop: 1, flexShrink: 0 }} />
           <Text style={s.ncaaBannerText}>
-            <Text style={s.ncaaBannerBold}>NCAA Eligibility ID needed.</Text> Coaches will ask before things get serious — register at{' '}
+            <Text style={s.ncaaBannerBold}>NCAA Eligibility ID needed.</Text> Coaches will ask before things get serious. Register at{' '}
             <Text style={s.ncaaBannerLink} onPress={() => Linking.openURL('https://web3.ncaa.org/ecwr3/')}>eligibilitycenter.org</Text>
             {' '}and add it to your profile.
           </Text>
           <Pressable onPress={() => setNcaaBannerDismissed(true)} hitSlop={8} style={{ flexShrink: 0 }}>
-            <Ionicons name="close" size={16} color={C.textDim} />
+            <Ionicons name="close" size={18} color="#fff" />
           </Pressable>
         </View>
       )}
@@ -126,9 +126,7 @@ export default function MessagesInboxScreen() {
 
       {conversations.length === 0 ? (
         <View style={s.emptyCard}>
-          <View style={s.emptyIcon}>
-            <Ionicons name="chatbubbles-outline" size={24} color="#71ff7e" />
-          </View>
+          <Ionicons name="chatbubbles" size={44} color="#fff" style={{ marginBottom: 16 }} />
           <Text style={s.emptyTitle}>No messages yet</Text>
           <Text style={s.emptyBody}>Coaches will message you here once they express interest</Text>
         </View>
@@ -231,10 +229,10 @@ function createStyles(C: ThemeColors) {
     title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text, marginBottom: 8 },
     subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginBottom: 24 },
 
-    ncaaBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: 'rgba(234,12,95,0.1)', borderWidth: 1, borderColor: 'rgba(234,12,95,0.3)', borderRadius: 14, padding: 16, marginBottom: 20 },
-    ncaaBannerText: { flex: 1, fontFamily: FontFamily.body, fontSize: 13, lineHeight: 19, color: C.textMuted },
-    ncaaBannerBold: { fontFamily: FontFamily.bodyBold, color: C.text },
-    ncaaBannerLink: { fontFamily: FontFamily.bodyBold, color: '#EA0C5F' },
+    ncaaBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: '#EA0C5F', borderRadius: 14, padding: 16, marginBottom: 20 },
+    ncaaBannerText: { flex: 1, fontFamily: FontFamily.body, fontSize: 12.5, lineHeight: 19, color: '#fff' },
+    ncaaBannerBold: { fontFamily: FontFamily.bodyBold, color: '#fff' },
+    ncaaBannerLink: { fontFamily: FontFamily.bodyBold, color: '#fff', textDecorationLine: 'underline' },
 
     searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surfaceAlt, borderRadius: 100, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 12 },
     searchInput: { flex: 1, fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.text, padding: 0 },
@@ -250,7 +248,6 @@ function createStyles(C: ThemeColors) {
     filterCountTextActive: { color: C.text },
 
     emptyCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 16, paddingVertical: 48, paddingHorizontal: 32, alignItems: 'center' },
-    emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(113,255,126,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
     emptyTitle: { fontFamily: FontFamily.bodyBold, fontSize: 16, color: C.text, marginBottom: 8 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
 

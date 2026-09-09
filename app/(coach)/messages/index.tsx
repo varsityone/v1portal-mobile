@@ -44,9 +44,7 @@ export default function MessagesInboxScreen() {
 
       {conversations.length === 0 ? (
         <View style={s.emptyCard}>
-          <View style={s.emptyIcon}>
-            <Ionicons name="chatbubble-ellipses-outline" size={22} color="#a78bfa" />
-          </View>
+          <Ionicons name="chatbubble-ellipses" size={44} color="#fff" style={{ marginBottom: 16 }} />
           <Text style={s.emptyTitle}>No messages yet</Text>
           <Text style={s.emptyBody}>Start reaching out to prospects to begin conversations</Text>
           <Pressable onPress={() => router.push('/(coach)/search' as any)}>
@@ -107,7 +105,6 @@ function createStyles(C: ThemeColors) {
     title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text },
 
     emptyCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingVertical: 56, paddingHorizontal: 32, alignItems: 'center' },
-    emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(168,85,247,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 8 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 20 },
     emptyBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },

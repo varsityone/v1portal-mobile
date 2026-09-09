@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  Linking,
   Modal,
   Pressable,
   SafeAreaView,
@@ -41,6 +42,8 @@ interface CoachCard {
   bio: string | null;
   profile_photo_url: string | null;
   min_score: number | null;
+  profile_slug: string | null;
+  twitter: string | null;
 }
 
 function isProfileComplete(athlete: any): boolean {
@@ -125,7 +128,7 @@ export default function MatchScreen() {
 
       let q = supabase
         .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score')
+        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score, profile_slug, twitter')
         .eq('verified', true)
         .limit(200);
       if (swipedIds.length > 0) q = q.not('id', 'in', `(${swipedIds.join(',')})`);
@@ -242,7 +245,7 @@ export default function MatchScreen() {
     try {
       const { data: divisionCoaches } = await supabase
         .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score')
+        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score, profile_slug, twitter')
         .eq('verified', true)
         .eq('division', activeDivision);
       const divisionCards = divisionCoaches ?? [];
@@ -512,21 +515,43 @@ export default function MatchScreen() {
           <Text style={s.cardCoach}>
             {current?.position_coached}{current?.full_name ? ` · Coach ${current.full_name.split(' ').pop()}` : ''}
           </Text>
-          {((current?.position_needs?.length ?? 0) > 0 || current?.min_score != null) && (
-            <View style={s.tagRow}>
-              {(current?.position_needs ?? []).slice(0, 3).map(pos => (
-                <View key={pos} style={s.posTag}>
-                  <Text style={s.posTagText}>{pos}</Text>
-                </View>
-              ))}
-              {current?.min_score != null && (
-                <View style={s.minScoreTag}>
-                  <Text style={s.minScoreTagText}>MIN V1 {current.min_score}</Text>
-                </View>
-              )}
-            </View>
-          )}
+          {(() => {
+            const displayMinScore = current?.min_score ?? (current?.division ? getBandFloorForDivision(current.division as Division) : null);
+            const isTypical = current?.min_score == null;
+            return ((current?.position_needs?.length ?? 0) > 0 || displayMinScore != null) && (
+              <View style={s.tagRow}>
+                {(current?.position_needs ?? []).slice(0, 3).map(pos => (
+                  <View key={pos} style={s.posTag}>
+                    <Text style={s.posTagText}>{pos}</Text>
+                  </View>
+                ))}
+                {displayMinScore != null && (
+                  <View style={s.minScoreTag}>
+                    <Text style={s.minScoreTagText}>{isTypical ? `TYPICAL V1 ${displayMinScore}` : `MIN V1 ${displayMinScore}`}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
           {current?.bio ? <Text style={s.cardBio} numberOfLines={3}>{current.bio}</Text> : null}
+          {current?.twitter && (
+            <Pressable
+              onPress={() => Linking.openURL(`https://x.com/${(current.twitter as string).replace(/^@/, '')}`)}
+              style={s.twitterRow}
+            >
+              <Ionicons name="logo-twitter" size={14} color="rgba(255,255,255,0.7)" />
+              <Text style={s.twitterRowText}>@{(current.twitter as string).replace(/^@/, '')}</Text>
+            </Pressable>
+          )}
+          {current?.profile_slug && (
+            <Pressable
+              onPress={() => Linking.openURL(`${API_BASE}/coach/${current.profile_slug}`)}
+              style={s.viewProfileBtn}
+            >
+              <Text style={s.viewProfileBtnText}>View Full Profile</Text>
+              <Ionicons name="open-outline" size={14} color="#fff" />
+            </Pressable>
+          )}
 
           <View style={s.actionRow}>
             <Pressable style={s.passBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
@@ -820,6 +845,10 @@ function createStyles(C: ThemeColors) {
     minScoreTag: { backgroundColor: 'rgba(113,255,126,0.16)', borderRadius: 100, paddingVertical: 5, paddingHorizontal: 11 },
     minScoreTagText: { fontFamily: FontFamily.monoBold, fontSize: 10, color: C.success, letterSpacing: 0.4 },
     cardBio: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 14 },
+    twitterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, alignSelf: 'flex-start' },
+    twitterRowText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+    viewProfileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingVertical: 10, marginBottom: 14 },
+    viewProfileBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
     actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 6 },
     passBtn: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
     likeBtnWrap: { width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
