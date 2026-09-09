@@ -16,7 +16,7 @@ import { supabase } from '../../../lib/supabase';
 import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, SCORE_GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import {
@@ -501,25 +501,28 @@ export default function MatchScreen() {
           </Text>
           {current?.bio ? <Text style={s.cardBio} numberOfLines={3}>{current.bio}</Text> : null}
 
-          {isAlreadyMatched ? (
-            <Pressable
-              style={s.messageBtn}
-              onPress={() => router.push(existingMatchId ? (`/(tabs)/match/${existingMatchId}` as any) : ('/(tabs)/match' as any))}
-            >
-              <Ionicons name="chatbubble" size={16} color="#fff" />
-              <Text style={s.messageBtnText}>Message</Text>
+          <View style={s.actionRow}>
+            <Pressable style={s.passBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
+              <Ionicons name="close" size={22} color="#fff" />
             </Pressable>
-          ) : (
-            <View style={s.actionRow}>
-              <Pressable style={s.passBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
-                <Ionicons name="close" size={26} color="#fff" />
-              </Pressable>
-              <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
-                <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                <Ionicons name="heart" size={24} color="#fff" />
-              </Pressable>
-            </View>
-          )}
+            <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
+              <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <Ionicons name="add" size={26} color="#fff" />
+            </Pressable>
+            <Pressable
+              style={[s.messageBtnCircle, isAlreadyMatched && s.messageBtnCircleMatched]}
+              onPress={() => {
+                if (isAlreadyMatched) {
+                  router.push(existingMatchId ? (`/(tabs)/match/${existingMatchId}` as any) : ('/(tabs)/match' as any));
+                } else {
+                  handleSwipe('like');
+                }
+              }}
+              disabled={swiping}
+            >
+              <Ionicons name="chatbubble" size={18} color={isAlreadyMatched ? C.success : '#fff'} />
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -784,10 +787,10 @@ function createStyles(C: ThemeColors) {
     cardSchool: { fontFamily: FontFamily.headline, fontSize: 28, color: '#fff' },
     cardCoach: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8 },
     cardBio: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 14 },
-    actionRow: { flexDirection: 'row', gap: 16, marginTop: 6 },
-    passBtn: { width: 58, height: 58, borderRadius: 29, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-    likeBtnWrap: { flex: 1, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-    messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.success, borderRadius: 100, paddingVertical: 15, marginTop: 6 },
-    messageBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
+    actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 6 },
+    passBtn: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    likeBtnWrap: { width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    messageBtnCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    messageBtnCircleMatched: { backgroundColor: 'rgba(113,255,126,0.16)' },
   });
 }
