@@ -32,6 +32,10 @@ const BREAKDOWN_BARS = [
 const TABS = ['Overview', 'Film', 'Stats'] as const;
 type Tab = typeof TABS[number];
 
+function formatStatLabel(key: string): string {
+  return key.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+}
+
 function getRecruitingLevel(score: number | null): string {
   if (!score) return '';
   if (score >= 80) return 'FBS Prospect';
@@ -237,14 +241,22 @@ export default function ProfileScreen() {
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState<Tab>('Overview');
   const [editing,    setEditing]    = useState(false);
-  const [assessRes,  setAssessRes]  = useState<Record<string, any>>({});
 
-  // Computed display-only fields (star rating, completeness badge, fit list) —
-  // sourced from the same API web's own public profile uses, rather than
-  // reimplementing the fit-score/star-rating logic a second time here.
+  // Computed/derived display fields — all sourced from the same public
+  // /api/profile/[slug] endpoint web's own public profile uses (career stats,
+  // recruiting level, combine-stat athlete-table-then-assessment fallbacks,
+  // etc.), rather than reimplementing that logic a second time here.
   const [starRatingNum, setStarRatingNum] = useState(0);
   const [profileComplete, setProfileComplete] = useState(false);
   const [topFitPrograms, setTopFitPrograms] = useState<TopFitProgram[]>([]);
+  const [recruitingLevel, setRecruitingLevel] = useState<string | null>(null);
+  const [careerStats, setCareerStats] = useState<Record<string, any>>({});
+  const [varsityYears, setVarsityYears] = useState<string | number | null>(null);
+  const [combineStatsApi, setCombineStatsApi] = useState<{
+    fortyYard: string | number | null; shuttle: string | number | null;
+    vertical: string | number | null; threeCone: string | number | null; broadJump: string | number | null;
+  }>({ fortyYard: null, shuttle: null, vertical: null, threeCone: null, broadJump: null });
+  const [hasYoutubeLinkApi, setHasYoutubeLinkApi] = useState(false);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -273,41 +285,6 @@ export default function ProfileScreen() {
       if (!athleteRow) { setLoading(false); return; }
       setProfile(athleteRow);
 
-      const { data: assessRow } = await supabase
-        .from('assessments')
-        .select('v1_score, score_breakdown, responses')
-        .eq('athlete_id', athleteRow.id)
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (assessRow) {
-        const rawBd = (assessRow as any).score_breakdown;
-        const bd = typeof rawBd === 'string' ? (() => { try { return JSON.parse(rawBd); } catch { return {}; } })() : (rawBd ?? {});
-        setBreakdown(bd);
-
-        const rawR = (assessRow as any).responses;
-        const r: Record<string, any> = typeof rawR === 'string'
-          ? (() => { try { return JSON.parse(rawR); } catch { return {}; } })()
-          : (rawR ?? {});
-
-        const ss: Record<string, any> = {};
-        const STAT_KEYS: [string, string][] = [
-          ['passing_yards','Passing Yards'], ['passing_tds','Passing TDs'],
-          ['rushing_yards','Rushing Yards'], ['rushing_tds','Rushing TDs'],
-          ['receptions','Receptions'], ['receiving_yards','Receiving Yards'], ['receiving_tds','Receiving TDs'],
-          ['total_tackles','Tackles'], ['sacks','Sacks'], ['interceptions','Interceptions'],
-          ['passes_defended','Passes Defended'], ['games_started','Games Started'],
-        ];
-        STAT_KEYS.forEach(([key, label]) => {
-          const v = r[key];
-          if (v !== null && v !== undefined && v !== '') ss[label] = v;
-        });
-        setSeasonStats(ss);
-        setAssessRes(r);
-      }
-
       if (athleteRow.profile_slug) {
         try {
           const res = await fetch(`${API_BASE}/api/profile/${athleteRow.profile_slug}`);
@@ -316,9 +293,22 @@ export default function ProfileScreen() {
             setStarRatingNum(data.starRatingNum ?? 0);
             setProfileComplete(!!data.profileComplete);
             setTopFitPrograms(data.topFitPrograms ?? []);
+            setRecruitingLevel(data.recruitingLevel ?? null);
+            setBreakdown(data.scoreBreakdown ?? {});
+            setSeasonStats(data.seasonStats ?? {});
+            setCareerStats(data.careerStats ?? {});
+            setVarsityYears(data.varsityYears ?? null);
+            setCombineStatsApi({
+              fortyYard: data.fortyYard ?? null,
+              shuttle: data.shuttle ?? null,
+              vertical: data.vertical ?? null,
+              threeCone: data.threeCone ?? null,
+              broadJump: data.broadJump ?? null,
+            });
+            setHasYoutubeLinkApi(!!data.youtubeLink);
           }
         } catch {
-          // Falls back to no star rating / no fit list — the core profile still works.
+          // Falls back to the raw athlete-table fields below — the core profile still works.
         }
       }
 
@@ -345,7 +335,7 @@ export default function ProfileScreen() {
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const score = profile?.v1_score ? Math.round(Number(profile.v1_score)) : null;
-  const level = getRecruitingLevel(score);
+  const level = recruitingLevel ?? getRecruitingLevel(score);
   const name  = profile?.full_name || 'Athlete';
   const nameParts = name.trim().split(' ').filter(Boolean);
   const initials = nameParts.length >= 2
@@ -354,15 +344,18 @@ export default function ProfileScreen() {
 
   const hasHudl = !!profile?.hudl_video_link;
   const hudlHref = profile?.hudl_video_link ?? null;
+  const hasYoutubeLink = hasYoutubeLinkApi || !!profile?.youtube_link;
   const ytId = profile?.youtube_link
     ? (profile.youtube_link.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1] ?? null)
     : null;
 
-  const fortyYard   = profile?.forty_yard   || assessRes.forty_time   || null;
-  const vertical    = profile?.vertical_jump || assessRes.vertical     || null;
-  const proShuttle  = profile?.pro_shuttle   || assessRes.shuttle      || null;
-  const threeCone   = profile?.three_cone    || assessRes.three_cone   || null;
-  const broadJump   = profile?.broad_jump    || assessRes.broad_jump   || null;
+  const fortyYard   = profile?.forty_yard    || combineStatsApi.fortyYard  || null;
+  const vertical    = profile?.vertical_jump || combineStatsApi.vertical   || null;
+  const proShuttle  = profile?.pro_shuttle   || combineStatsApi.shuttle    || null;
+  const threeCone   = profile?.three_cone    || combineStatsApi.threeCone  || null;
+  const broadJump   = profile?.broad_jump    || combineStatsApi.broadJump  || null;
+
+  const careerStatsEntries = Object.entries(careerStats).filter(([k]) => k !== 'seasonsTracked');
 
   const metaParts = [profile?.position, profile?.height, profile?.weight ? `${profile.weight} lbs` : null, profile?.graduation_year ? `Class of ${profile.graduation_year}` : null].filter(Boolean);
   const locationText = [profile?.city, profile?.state].filter(Boolean).join(', ');
@@ -387,15 +380,29 @@ export default function ProfileScreen() {
           )}
           <View style={s.heroScrim} />
 
+          <View style={s.heroTopRow}>
+            <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
+              <Ionicons name="create-outline" size={13} color="#fff" />
+              <Text style={s.editBtnText}>Edit Profile</Text>
+            </Pressable>
+            <Pressable style={s.coachOnlyBtn} onPress={() => Linking.openURL(`${API_BASE}/signup?role=coach`)}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <Text style={s.coachOnlyBtnText}>For Coaches Only</Text>
+            </Pressable>
+          </View>
+
           {score !== null && (
-            <View style={s.scoreRing}>
-              <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreRingGradient}>
-                <View style={s.scoreRingInner}>
-                  <Text style={s.scoreNum}>{score}</Text>
-                  <Text style={s.scoreLabel}>V1 SCORE</Text>
-                </View>
-              </LinearGradient>
-            </View>
+            <>
+              <View style={s.scoreRing}>
+                <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreRingGradient}>
+                  <View style={s.scoreRingInner}>
+                    <Text style={s.scoreNum}>{score}</Text>
+                    <Text style={s.scoreLabel}>V1 SCORE</Text>
+                  </View>
+                </LinearGradient>
+              </View>
+              {level && <Text style={s.scoreLevel} numberOfLines={1} adjustsFontSizeToFit>{level}</Text>}
+            </>
           )}
 
           <View style={s.heroInfo}>
@@ -410,18 +417,17 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 }}>
                 {locationText ? <Text style={s.heroLocation}>{locationText}</Text> : null}
                 {starRatingNum > 0 && (
-                  <View style={{ flexDirection: 'row', gap: 2 }}>
-                    {[0, 1, 2, 3, 4].map(i => (
-                      <Ionicons key={i} name="star" size={11} color={i < starRatingNum ? '#F6BA00' : 'rgba(255,255,255,0.25)'} />
-                    ))}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', gap: 2 }}>
+                      {[0, 1, 2, 3, 4].map(i => (
+                        <Ionicons key={i} name="star" size={11} color={i < starRatingNum ? '#F6BA00' : 'rgba(255,255,255,0.25)'} />
+                      ))}
+                    </View>
+                    <Text style={s.v1RatingText}>V1 RATING</Text>
                   </View>
                 )}
               </View>
             )}
-            <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
-              <Ionicons name="create-outline" size={13} color="#fff" />
-              <Text style={s.editBtnText}>Edit Profile</Text>
-            </Pressable>
           </View>
         </View>
 
@@ -456,6 +462,23 @@ export default function ProfileScreen() {
                 <Text style={s.bio}>{profile.bio}</Text>
               </View>
             ) : null}
+
+            {careerStatsEntries.length > 0 && (
+              <View style={s.card}>
+                <Text style={s.cardTitle}>Career Stats</Text>
+                <Text style={s.cardSubtitle}>
+                  Across {careerStats.seasonsTracked} varsity season{careerStats.seasonsTracked === 1 ? '' : 's'}
+                </Text>
+                <View style={s.whiteStatsGrid}>
+                  {careerStatsEntries.map(([k, v]) => (
+                    <View key={k} style={s.whiteStatBox}>
+                      <Text style={s.whiteStatLabel}>{formatStatLabel(k)}</Text>
+                      <Text style={s.whiteStatValue}>{String(v)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {Object.keys(breakdown).length > 0 && (
               <View style={s.card}>
@@ -554,8 +577,20 @@ export default function ProfileScreen() {
                   <Text style={s.ytText}>Open on YouTube</Text>
                 </Pressable>
               </View>
+            ) : hasYoutubeLink ? (
+              <Pressable style={s.filmCard} onPress={() => profile?.youtube_link && Linking.openURL(profile.youtube_link)}>
+                <View style={s.filmPlayCircle}>
+                  <Ionicons name="play" size={24} color="rgba(255,255,255,0.7)" />
+                </View>
+                <Text style={s.filmCardTitle}>Watch on YouTube</Text>
+                <Text style={s.filmCardSub}>Tap to view film</Text>
+                <View style={s.filmLinkBtn}>
+                  <Ionicons name="open-outline" size={13} color="#fff" />
+                  <Text style={s.filmLinkText}>View on YouTube</Text>
+                </View>
+              </Pressable>
             ) : null}
-            {!hasHudl && !ytId && (
+            {!hasHudl && !ytId && !hasYoutubeLink && (
               <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
                 <Ionicons name="film-outline" size={32} color={C.icon} />
                 <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
@@ -572,13 +607,20 @@ export default function ProfileScreen() {
         {/* ── Stats ── */}
         {tab === 'Stats' && (
           <View style={s.section}>
-            <Text style={s.sectionHeading}>Season Stats</Text>
+            {varsityYears != null && (
+              <View style={s.varsityPill}>
+                <Text style={s.varsityPillLabel}>Varsity Seasons Played</Text>
+                <Text style={s.varsityPillValue}>{varsityYears}</Text>
+              </View>
+            )}
+
+            <Text style={s.sectionHeading}>This Season</Text>
             {Object.keys(seasonStats).length > 0 ? (
-              <View style={s.statsGrid}>
-                {Object.entries(seasonStats).map(([label, val]) => (
-                  <View key={label} style={s.miniStatBox}>
-                    <Text style={s.miniStatLabel}>{label}</Text>
-                    <Text style={s.miniStatValue}>{String(val)}</Text>
+              <View style={s.whiteStatsGrid}>
+                {Object.entries(seasonStats).map(([k, val]) => (
+                  <View key={k} style={s.whiteStatBox}>
+                    <Text style={s.whiteStatLabel}>{formatStatLabel(k)}</Text>
+                    <Text style={s.whiteStatValue}>{String(val)}</Text>
                   </View>
                 ))}
               </View>
@@ -590,10 +632,27 @@ export default function ProfileScreen() {
               </View>
             )}
 
+            {careerStatsEntries.length > 0 && (
+              <>
+                <Text style={[s.sectionHeading, { marginTop: 8 }]}>Career Totals</Text>
+                <Text style={s.cardSubtitle}>
+                  Across {careerStats.seasonsTracked} varsity season{careerStats.seasonsTracked === 1 ? '' : 's'}
+                </Text>
+                <View style={s.whiteStatsGrid}>
+                  {careerStatsEntries.map(([k, v]) => (
+                    <View key={k} style={s.whiteStatBox}>
+                      <Text style={s.whiteStatLabel}>{formatStatLabel(k)}</Text>
+                      <Text style={s.whiteStatValue}>{String(v)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
             {(fortyYard || vertical || proShuttle || threeCone || broadJump) && (
               <>
                 <Text style={[s.sectionHeading, { marginTop: 8 }]}>Athletic Testing</Text>
-                <View style={s.statsGrid}>
+                <View style={s.whiteStatsGrid}>
                   {[
                     { label: '40-Yard',     value: fortyYard,   unit: 's' },
                     { label: 'Vertical',    value: vertical,    unit: '"' },
@@ -601,9 +660,9 @@ export default function ProfileScreen() {
                     { label: '3-Cone',      value: threeCone,   unit: 's' },
                     { label: 'Broad Jump',  value: broadJump,   unit: '"' },
                   ].filter(r => r.value).map(r => (
-                    <View key={r.label} style={s.miniStatBox}>
-                      <Text style={s.miniStatLabel}>{r.label}</Text>
-                      <Text style={s.miniStatValue}>{r.value}{r.unit}</Text>
+                    <View key={r.label} style={s.whiteStatBox}>
+                      <Text style={s.whiteStatLabel}>{r.label.toUpperCase()}</Text>
+                      <Text style={s.whiteStatValue}>{r.value}{r.unit}</Text>
                     </View>
                   ))}
                 </View>
@@ -643,22 +702,35 @@ function createStyles(C: ThemeColors) {
     scroll: { flex: 1, backgroundColor: C.background },
     container: { paddingBottom: 60 },
 
-    hero: { height: 340, position: 'relative', overflow: 'hidden' },
+    hero: { height: 380, position: 'relative', overflow: 'hidden' },
     heroScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'transparent', borderBottomWidth: 0 },
     initialsWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     initials: { fontFamily: FontFamily.headline, fontSize: 72, color: 'rgba(255,255,255,0.15)' },
 
-    scoreRing: { position: 'absolute', top: 56, right: 18, width: 76, height: 76, borderRadius: 38 },
+    scoreRing: { position: 'absolute', top: 64, right: 18, width: 76, height: 76, borderRadius: 38 },
     scoreRingGradient: { flex: 1, borderRadius: 38, padding: 3 },
     scoreRingInner: { flex: 1, borderRadius: 35, backgroundColor: '#0c0d0e', alignItems: 'center', justifyContent: 'center' },
     scoreNum: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
     scoreLabel: { fontFamily: FontFamily.mono, fontSize: 7, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+    scoreLevel: {
+      position: 'absolute', top: 146, right: -12, width: 100,
+      fontFamily: FontFamily.mono, fontSize: 7.5, fontWeight: '700', color: '#fff',
+      textAlign: 'center', letterSpacing: 0.2, textTransform: 'uppercase',
+    },
 
-    heroInfo: { position: 'absolute', left: 18, right: 18, bottom: 18 },
+    heroTopRow: {
+      position: 'absolute', top: 14, left: 18, right: 18, zIndex: 3,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    },
+    coachOnlyBtn: { borderRadius: 100, paddingHorizontal: 14, paddingVertical: 7, overflow: 'hidden' },
+    coachOnlyBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
+
+    heroInfo: { position: 'absolute', left: 18, right: 18, bottom: 34 },
     heroName: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
     heroMeta: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 6 },
     heroLocation: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.65)' },
-    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 7, marginTop: 12, alignSelf: 'flex-start' },
+    v1RatingText: { fontFamily: FontFamily.mono, fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.4 },
+    editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 7 },
     editBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
     statsRow: { flexDirection: 'row', gap: 10, marginTop: -24, marginHorizontal: 16, position: 'relative', zIndex: 2 },
@@ -676,7 +748,13 @@ function createStyles(C: ThemeColors) {
     sectionHeading: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
     card: { backgroundColor: C.surface, borderRadius: 16, padding: 18, gap: 12 },
     cardTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text },
+    cardSubtitle: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: -8 },
     bio: { fontFamily: FontFamily.body, fontSize: 14, lineHeight: 21, color: C.textMuted },
+
+    whiteStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    whiteStatBox: { width: '47%', backgroundColor: '#fff', borderRadius: 10, padding: 12, alignItems: 'center' },
+    whiteStatLabel: { fontFamily: FontFamily.mono, fontSize: 9, fontWeight: '700', color: '#6b6b6b', textAlign: 'center', marginBottom: 6 },
+    whiteStatValue: { fontFamily: FontFamily.headline, fontSize: 20, color: '#232323' },
 
     barLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
     barLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
@@ -707,9 +785,8 @@ function createStyles(C: ThemeColors) {
     addFilmBtn: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary + '20' },
     addFilmText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.primary },
 
-    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    miniStatBox: { width: '47%', backgroundColor: C.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
-    miniStatLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textMuted, textAlign: 'center', marginBottom: 8 },
-    miniStatValue: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
+    varsityPill: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', backgroundColor: '#fff', borderRadius: 100, paddingHorizontal: 16, paddingVertical: 10 },
+    varsityPillLabel: { fontFamily: FontFamily.mono, fontSize: 11, fontWeight: '700', color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: 0.4 },
+    varsityPillValue: { fontFamily: FontFamily.headline, fontSize: 16, color: '#232323' },
   });
 }
