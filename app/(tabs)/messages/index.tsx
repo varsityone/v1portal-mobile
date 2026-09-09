@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAthleteInbox } from '../../../hooks/useAthleteInbox';
+import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
 import { ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
@@ -17,8 +18,9 @@ export default function MessagesInboxScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { loading: athleteLoading } = useAthleteData();
+  const { athlete, loading: athleteLoading } = useAthleteData();
   const { conversations, loading, refresh } = useAthleteInbox();
+  const [ncaaBannerDismissed, setNcaaBannerDismissed] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +36,20 @@ export default function MessagesInboxScreen() {
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <Text style={s.title}>Messages</Text>
       <Text style={s.subtitle}>Conversations with coaches who want to recruit you</Text>
+
+      {!ncaaBannerDismissed && needsNcaaRegistration(athlete) && (
+        <View style={s.ncaaBanner}>
+          <Ionicons name="warning" size={16} color="#EA0C5F" style={{ marginTop: 1, flexShrink: 0 }} />
+          <Text style={s.ncaaBannerText}>
+            <Text style={s.ncaaBannerBold}>NCAA Eligibility ID needed.</Text> Coaches will ask before things get serious — register at{' '}
+            <Text style={s.ncaaBannerLink} onPress={() => Linking.openURL('https://web3.ncaa.org/ecwr3/')}>eligibilitycenter.org</Text>
+            {' '}and add it to your profile.
+          </Text>
+          <Pressable onPress={() => setNcaaBannerDismissed(true)} hitSlop={8} style={{ flexShrink: 0 }}>
+            <Ionicons name="close" size={16} color={C.textDim} />
+          </Pressable>
+        </View>
+      )}
 
       {conversations.length === 0 ? (
         <View style={s.emptyCard}>
@@ -89,6 +105,11 @@ function createStyles(C: ThemeColors) {
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     title: { fontFamily: FontFamily.statNumber, fontSize: 26, color: C.text, marginBottom: 8 },
     subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginBottom: 32 },
+
+    ncaaBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: 'rgba(234,12,95,0.1)', borderWidth: 1, borderColor: 'rgba(234,12,95,0.3)', borderRadius: 14, padding: 16, marginBottom: 24 },
+    ncaaBannerText: { flex: 1, fontFamily: FontFamily.body, fontSize: 13, lineHeight: 19, color: C.textMuted },
+    ncaaBannerBold: { fontFamily: FontFamily.bodyBold, color: C.text },
+    ncaaBannerLink: { fontFamily: FontFamily.bodyBold, color: '#EA0C5F' },
 
     emptyCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 16, paddingVertical: 48, paddingHorizontal: 32, alignItems: 'center' },
     emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(113,255,126,0.08)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

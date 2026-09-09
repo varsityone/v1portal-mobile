@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
+import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAuth } from '../../../hooks/useAuth';
 import { GRADIENT, SCORE_GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, ThemeColors } from '../../../constants/Colors';
@@ -235,6 +236,12 @@ export default function MatchScreen() {
         <Ionicons name="heart" size={64} color="#fff" />
         <Text style={s.matchCelebrationTitle}>It's a Match!</Text>
         <Text style={s.matchCelebrationBody}>{matchNotif.name} is interested too. Start the conversation.</Text>
+        {needsNcaaRegistration(athlete) && (
+          <View style={s.ncaaChip}>
+            <Ionicons name="warning" size={14} color="#fff" style={{ flexShrink: 0 }} />
+            <Text style={s.ncaaChipText}>You haven't registered your NCAA Eligibility ID yet — coaches will ask.</Text>
+          </View>
+        )}
         <Pressable
           style={s.matchCelebrationBtn}
           onPress={() => { router.push(`/(tabs)/match/${matchNotif.id}` as any); setMatchNotif(null); }}
@@ -526,6 +533,8 @@ function createStyles(C: ThemeColors) {
     matchCelebration: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
     matchCelebrationTitle: { fontFamily: FontFamily.headline, fontSize: 34, color: '#fff', marginTop: 10 },
     matchCelebrationBody: { fontFamily: FontFamily.body, fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginBottom: 10 },
+    ncaaChip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingVertical: 9, paddingHorizontal: 16, maxWidth: 320, marginBottom: 10 },
+    ncaaChipText: { flex: 1, fontFamily: FontFamily.bodyExtraBold, fontSize: 12, color: '#fff', lineHeight: 16 },
     matchCelebrationBtn: { backgroundColor: '#fff', borderRadius: 100, paddingVertical: 15, paddingHorizontal: 30 },
     matchCelebrationBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#0a0a0a' },
     matchCelebrationDismiss: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.7)' },

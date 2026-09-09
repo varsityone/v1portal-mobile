@@ -433,7 +433,7 @@ const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>[
     { label: 'GPA', key: 'gpa', keyboardType: 'decimal-pad' },
     { label: 'SAT Score', key: 'sat_score', keyboardType: 'numeric' },
     { label: 'ACT Score', key: 'act_score', keyboardType: 'numeric' },
-    { label: 'NCAA Eligibility ID', key: 'ncaa_id', hint: 'Register at eligibilitycenter.org' },
+    { label: 'NCAA Eligibility ID', key: 'ncaa_id', hint: "Not registered yet? Type \"Not Yet\" — you can update it when you register at eligibilitycenter.org" },
   ]},
   { title: 'Location', icon: 'location', rows: [
     { label: 'High School', key: 'high_school' },
@@ -474,6 +474,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
   const [fields, setFields] = useState<P2Fields>(P2_EMPTY);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [attemptedContinue, setAttemptedContinue] = useState(false);
 
   useEffect(() => {
     if (!athlete) return;
@@ -558,10 +559,11 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
               {section.rows.map((row, idx) => {
                 const isBio = row.key === 'bio';
                 const filled = !isBio && !!fields[row.key];
+                const missing = attemptedContinue && P2_TRACKED.includes(row.key) && !fields[row.key];
                 return (
                   <View key={row.key} style={[s.p2FieldRow, idx > 0 && s.p2FieldRowBorder]}>
                     <View style={s.p2FieldLabelRow}>
-                      <Text style={s.p2Label}>{row.label}</Text>
+                      <Text style={[s.p2Label, missing && s.p2LabelMissing]}>{row.label}</Text>
                       {isBio && (
                         <Pressable onPress={buildStarterBio} style={s.p2StarterBtn}>
                           <Text style={s.p2StarterBtnText}>✦ Starter Bio</Text>
@@ -570,7 +572,7 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
                     </View>
                     <View style={s.p2InputWrap}>
                       <TextInput
-                        style={[s.p2Input, !isBio && s.p2InputBoxed, isBio && s.p2InputMulti, filled && s.p2InputFilled]}
+                        style={[s.p2Input, !isBio && s.p2InputBoxed, isBio && s.p2InputMulti, filled && s.p2InputFilled, missing && s.p2InputMissing]}
                         value={fields[row.key]}
                         onChangeText={set(row.key)}
                         placeholder={row.placeholder ?? row.label}
@@ -604,11 +606,17 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
 
         <Pressable
           style={({ pressed }) => [s.primaryBtn, s.continueBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
-          onPress={() => router.push('/(tabs)/gameplan/3' as any)}
+          onPress={() => {
+            if (completed < P2_TRACKED.length) { setAttemptedContinue(true); return; }
+            router.push('/(tabs)/gameplan/3' as any);
+          }}
         >
           <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
         </Pressable>
+        {attemptedContinue && completed < P2_TRACKED.length && (
+          <Text style={s.p2BlockedMsg}>Fill in the highlighted fields above to unlock Phase 3.</Text>
+        )}
 
         <ProfileGuidance athlete={athlete as unknown as Athlete | null} v1Score={v1Score} />
       </ScrollView>
@@ -909,13 +917,16 @@ function createStyles(C: ThemeColors) {
     p2FieldRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
     p2FieldLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
     p2Label: { fontSize: 12, fontWeight: '500', color: '#b2b2b2' },
+    p2LabelMissing: { color: '#ef4444' },
     p2InputWrap: { position: 'relative', justifyContent: 'center' },
     p2Input: { fontSize: 15, color: C.text, paddingVertical: 0 },
     p2InputBoxed: { backgroundColor: '#fff', color: '#18171a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
     p2InputMulti: { height: 80, textAlignVertical: 'top' as const },
     p2InputFilled: { paddingRight: 34 },
+    p2InputMissing: { borderWidth: 1.5, borderColor: '#ef4444' },
     p2FieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
     p2Hint: { fontSize: 11, color: C.textDim, marginTop: 4, lineHeight: 16 },
+    p2BlockedMsg: { fontSize: 12.5, fontWeight: '600', color: '#ef4444', textAlign: 'center', marginTop: 10, marginBottom: 2 },
     p2StarterBtn: { backgroundColor: `${C.primary}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
     p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
     p2SaveWrap: { marginBottom: 12 },
