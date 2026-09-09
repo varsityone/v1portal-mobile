@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
 import { useAthleteData } from '../../../hooks/useAthleteData';
@@ -62,6 +63,7 @@ export default function MatchScreen() {
   const { session } = useAuth();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [coachCards, setCoachCards] = useState<CoachCard[]>([]);
@@ -464,21 +466,10 @@ export default function MatchScreen() {
     );
   }
 
-  // ── Card deck — fills the whole device screen (header hidden above) ──
+  // ── Card deck — fills the whole device screen edge-to-edge, including
+  // behind the status bar and home indicator (header hidden above) ──
   return (
-    <SafeAreaView style={s.deckRoot}>
-      {swipeErrorNotif && (
-        <View style={s.errorToast}>
-          <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
-        </View>
-      )}
-      {isPremium && (
-        <Pressable style={s.backRow} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}>
-          <Ionicons name="chevron-back" size={16} color={C.textMuted} />
-          <Text style={s.backText}>{activeDivision ? DIVISION_LABELS[activeDivision] : ''}</Text>
-        </Pressable>
-      )}
-
+    <View style={s.deckRoot}>
       <View style={s.card}>
         {current?.profile_photo_url ? (
           <Image source={{ uri: current.profile_photo_url }} style={StyleSheet.absoluteFill} />
@@ -487,7 +478,22 @@ export default function MatchScreen() {
         )}
         <View style={s.cardScrim} />
 
-        <View style={s.cardTop}>
+        {swipeErrorNotif && (
+          <View style={[s.errorToast, { top: insets.top + 12 }]}>
+            <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
+          </View>
+        )}
+
+        <View style={[s.cardTop, { paddingTop: insets.top + 18 }]}>
+          {isPremium && (
+            <Pressable
+              style={s.backChevron}
+              onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}
+              hitSlop={8}
+            >
+              <Ionicons name="chevron-back" size={18} color="#fff" />
+            </Pressable>
+          )}
           <View style={s.progressTrack}>
             <View style={[s.progressFill, { width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }]} />
           </View>
@@ -495,12 +501,12 @@ export default function MatchScreen() {
         </View>
 
         {/* Every card an athlete sees is already verified (query-guaranteed) */}
-        <View style={s.verifiedBadge}>
+        <View style={[s.verifiedBadge, { top: insets.top + 56 }]}>
           <Ionicons name="checkmark" size={13} color={C.success} />
           <Text style={s.verifiedBadgeText}>Verified</Text>
         </View>
 
-        <View style={s.cardBottom}>
+        <View style={[s.cardBottom, { paddingBottom: insets.bottom + 22 }]}>
           <Text style={s.cardDivision}>{current?.division}</Text>
           <Text style={s.cardSchool}>{current?.school_name ?? 'Unknown Program'}</Text>
           <Text style={s.cardCoach}>
@@ -557,7 +563,7 @@ export default function MatchScreen() {
         history={filteredHistory}
         C={C}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -793,17 +799,16 @@ function createStyles(C: ThemeColors) {
     // (the drawer header is hidden while it's showing) instead of floating
     // as an inset card the way it used to.
     deckRoot: { flex: 1, backgroundColor: C.background },
-    errorToast: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
+    errorToast: { position: 'absolute', left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
     errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
-    backRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 16, paddingBottom: 10 },
-    backText: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textMuted, letterSpacing: 0.5 },
+    backChevron: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
     cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
     cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
     progressFill: { height: '100%', backgroundColor: '#fff', borderRadius: 100 },
     cardCounter: { fontFamily: FontFamily.mono, fontSize: 12, color: '#fff' },
-    verifiedBadge: { position: 'absolute', top: 58, left: 18, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(10,10,12,0.55)', borderRadius: 100, paddingVertical: 6, paddingHorizontal: 11 },
+    verifiedBadge: { position: 'absolute', left: 18, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(10,10,12,0.55)', borderRadius: 100, paddingVertical: 6, paddingHorizontal: 11 },
     verifiedBadgeText: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.success },
     cardBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 22, gap: 4 },
     cardDivision: { fontFamily: FontFamily.mono, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },

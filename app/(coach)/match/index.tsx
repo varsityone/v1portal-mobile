@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useAuth } from '../../../hooks/useAuth';
@@ -40,6 +41,7 @@ export default function CoachMatchScreen() {
   const { session } = useAuth();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [deck, setDeck] = useState<AthleteCard[]>([]);
@@ -252,14 +254,10 @@ export default function CoachMatchScreen() {
     );
   }
 
-  // ── Card deck ──
+  // ── Card deck — fills the whole device screen edge-to-edge, including
+  // behind the status bar and home indicator ──
   return (
-    <SafeAreaView style={s.deckRoot}>
-      {swipeErrorNotif && (
-        <View style={s.errorToast}>
-          <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
-        </View>
-      )}
+    <View style={s.deckRoot}>
       <View style={s.card}>
         {current?.profile_photo_url ? (
           <Image source={{ uri: current.profile_photo_url }} style={StyleSheet.absoluteFill} />
@@ -268,14 +266,20 @@ export default function CoachMatchScreen() {
         )}
         <View style={s.cardScrim} />
 
-        <View style={s.cardTop}>
+        {swipeErrorNotif && (
+          <View style={[s.errorToast, { top: insets.top + 12 }]}>
+            <Text style={s.errorToastText}>{swipeErrorNotif}</Text>
+          </View>
+        )}
+
+        <View style={[s.cardTop, { paddingTop: insets.top + 18 }]}>
           <View style={s.progressTrack}>
             <View style={[s.progressFill, { width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }]} />
           </View>
           <Text style={s.cardCounter}>{Math.min(currentIndex + 1, totalCards)} / {totalCards}</Text>
         </View>
 
-        <View style={s.cardBottom}>
+        <View style={[s.cardBottom, { paddingBottom: insets.bottom + 22 }]}>
           {current?.v1_score != null && (
             <View style={s.scoreChip}>
               <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -312,7 +316,7 @@ export default function CoachMatchScreen() {
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -358,7 +362,7 @@ function createStyles(C: ThemeColors) {
     matchCelebrationDismiss: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
 
     deckRoot: { flex: 1, backgroundColor: C.background },
-    errorToast: { position: 'absolute', top: 60, left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
+    errorToast: { position: 'absolute', left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
     errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
     cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
