@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useCoachInbox } from '../../../hooks/useCoachInbox';
 import { ThemeColors } from '../../../constants/Colors';
@@ -16,6 +17,11 @@ export default function MessagesInboxScreen() {
   const s = useMemo(() => createStyles(C), [C]);
   const { coach, loading: coachLoading } = useCoachData();
   const { conversations, loading } = useCoachInbox();
+
+  useEffect(() => {
+    if (!coach?.id) return;
+    supabase.from('coach_accounts').update({ last_active_at: new Date().toISOString() }).eq('id', coach.id);
+  }, [coach?.id]);
 
   if (coachLoading || loading) {
     return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
@@ -14,6 +14,10 @@ interface Message {
   sender_type: 'coach' | 'athlete';
   content: string;
   created_at: string;
+  message_type?: 'text' | 'image' | 'voice';
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_duration?: number | null;
 }
 
 export default function MessageThreadScreen() {
@@ -39,6 +43,7 @@ export default function MessageThreadScreen() {
       setLoading(true);
       try {
         const coachId = coach.id!;
+        supabase.from('coach_accounts').update({ last_active_at: new Date().toISOString() }).eq('id', coachId);
         const { data: conv } = await supabase
           .from('coach_athlete_conversations')
           .select('id, coach_id, athlete_id')
@@ -61,16 +66,13 @@ export default function MessageThreadScreen() {
 
         const { data: msgs } = await supabase
           .from('coach_athlete_messages')
-          .select('id, sender_type, content, created_at')
+          .select('id, sender_type, content, created_at, message_type, attachment_url, attachment_name, attachment_duration')
           .eq('conversation_id', conversationId as string)
           .order('created_at', { ascending: true });
 
         setMessages((msgs as Message[]) ?? []);
 
-        await supabase
-          .from('coach_athlete_conversations')
-          .update({ coach_unread_count: 0 })
-          .eq('id', conversationId as string);
+        await supabase.rpc('mark_conversation_read', { p_conversation_id: conversationId as string, p_reader_type: 'coach' });
       } catch (e) {
         console.error('Load thread error:', e);
       } finally {
@@ -161,16 +163,30 @@ export default function MessageThreadScreen() {
         data={messages}
         keyExtractor={m => m.id}
         contentContainerStyle={s.messages}
-        renderItem={({ item }) => (
-          <View style={[s.messageBubble, item.sender_type === 'coach' ? s.bubbleRight : s.bubbleLeft]}>
-            <Text style={[s.messageText, item.sender_type === 'coach' ? s.messageTextRight : s.messageTextLeft]}>
-              {item.content}
-            </Text>
-            <Text style={[s.messageTime, item.sender_type === 'coach' ? s.messageTimeRight : s.messageTimeLeft]}>
-              {new Date(item.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-            </Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const isRight = item.sender_type === 'coach';
+          const textStyle = isRight ? s.messageTextRight : s.messageTextLeft;
+          return (
+            <View style={[s.messageBubble, isRight ? s.bubbleRight : s.bubbleLeft]}>
+              {item.message_type === 'image' ? (
+                <Pressable onPress={() => item.attachment_url && Linking.openURL(item.attachment_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="image" size={15} color={isRight ? '#fff' : C.text} />
+                  <Text style={textStyle}>{item.attachment_name || 'Photo'}</Text>
+                </Pressable>
+              ) : item.message_type === 'voice' ? (
+                <Pressable onPress={() => item.attachment_url && Linking.openURL(item.attachment_url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="mic" size={15} color={isRight ? '#fff' : C.text} />
+                  <Text style={textStyle}>Voice message{item.attachment_duration ? ` · ${Math.floor(item.attachment_duration)}s` : ''}</Text>
+                </Pressable>
+              ) : (
+                <Text style={[s.messageText, textStyle]}>{item.content}</Text>
+              )}
+              <Text style={[s.messageTime, isRight ? s.messageTimeRight : s.messageTimeLeft]}>
+                {new Date(item.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              </Text>
+            </View>
+          );
+        }}
         scrollEnabled
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
       />

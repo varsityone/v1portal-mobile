@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAthleteInbox, AthleteConversationRow } from '../../../hooks/useAthleteInbox';
 import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
@@ -43,6 +44,11 @@ export default function MessagesInboxScreen() {
       refresh();
     }, [refresh])
   );
+
+  useEffect(() => {
+    if (!athlete?.id) return;
+    supabase.from('athletes').update({ last_active_at: new Date().toISOString() }).eq('id', athlete.id);
+  }, [athlete?.id]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

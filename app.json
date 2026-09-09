@@ -71,6 +71,12 @@
         {
           "photosPermission": "V1Portal uses your photo library to let you upload a profile photo."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "V1Portal uses your microphone to record voice messages to coaches."
+        }
       ]
     ],
     "experiments": {
