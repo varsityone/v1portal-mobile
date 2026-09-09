@@ -18,7 +18,7 @@ import { useAthleteData } from '../../hooks/useAthleteData';
 import { isAthletePremium } from '../../lib/subscription';
 import { GradientButton } from '../../components/GradientButton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { Colors, ThemeColors } from '../../constants/Colors';
+import { Colors, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -363,7 +363,7 @@ export default function CalendarScreen() {
   };
 
   if (athleteLoading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!isPremium) {

@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, useAudioPlayer, useAudioPlayerStatus, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
-import { FLAME_GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -237,7 +237,7 @@ export default function AthleteMessageThreadScreen() {
   };
 
   if (athleteLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const online = isOnline(coachLastActive);

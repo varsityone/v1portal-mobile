@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { GRADIENT, SCORE_GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, SCORE_GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={C.primary} size="large" />
+        <ActivityIndicator color={PINK_RED} size="large" />
       </View>
     );
   }

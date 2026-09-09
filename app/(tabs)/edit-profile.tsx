@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { supabase } from '../../lib/supabase';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -487,7 +487,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={C.primary} size="large" />
+        <ActivityIndicator color={PINK_RED} size="large" />
       </View>
     );
   }
@@ -508,7 +508,7 @@ export default function EditProfileScreen() {
       </View>
 
       {/* ── Gradient accent bar ── */}
-      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.accentBar} />
+      <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.accentBar} />
 
       <ScrollView
         style={s.scroll}
@@ -533,7 +533,7 @@ export default function EditProfileScreen() {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
-                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: C.primary }}
+                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100, backgroundColor: PINK_RED }}
               >
                 <Text style={{ fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' }}>{copied ? 'Copied!' : 'Copy Link'}</Text>
               </Pressable>
@@ -590,8 +590,8 @@ export default function EditProfileScreen() {
                     onPress={() => setTestScoresNotTaken(v => !v)}
                     style={{
                       width: 44, height: 24, borderRadius: 100,
-                      backgroundColor: testScoresNotTaken ? C.primary : C.surfaceAlt,
-                      borderWidth: 1, borderColor: testScoresNotTaken ? C.primary : C.border,
+                      backgroundColor: testScoresNotTaken ? PINK_RED : C.surfaceAlt,
+                      borderWidth: 1, borderColor: testScoresNotTaken ? PINK_RED : C.border,
                       justifyContent: 'center',
                     }}
                   >
@@ -737,8 +737,8 @@ export default function EditProfileScreen() {
             onPress={() => setIsPublic(v => !v)}
             style={{
               width: 44, height: 24, borderRadius: 100,
-              backgroundColor: isPublic ? C.primary : C.surface,
-              borderWidth: 1, borderColor: isPublic ? C.primary : C.border,
+              backgroundColor: isPublic ? PINK_RED : C.surface,
+              borderWidth: 1, borderColor: isPublic ? PINK_RED : C.border,
               justifyContent: 'center', position: 'relative',
             }}
           >
@@ -754,7 +754,7 @@ export default function EditProfileScreen() {
         {/* ── Save CTA ── */}
         <Pressable onPress={handleSave} disabled={saving} style={s.saveBtnWrap}>
           <LinearGradient
-            colors={['#ff0000', '#aa00ff']}
+            colors={FLAME_GRADIENT}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[s.saveBtn, saving && { opacity: 0.6 }]}
@@ -784,7 +784,7 @@ function createStyles(C: ThemeColors) {
       borderRadius: 100, alignItems: 'center', justifyContent: 'center',
     },
     headerCenter: { alignItems: 'center' },
-    eyebrow: { fontFamily: FontFamily.bodyBold, fontSize: 10, letterSpacing: 1.4, color: C.primary, marginBottom: 2 },
+    eyebrow: { fontFamily: FontFamily.bodyBold, fontSize: 10, letterSpacing: 1.4, color: PINK_RED, marginBottom: 2 },
     headerTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
 
     accentBar: { height: 3, marginHorizontal: 20, borderRadius: 100, marginBottom: 20 },
@@ -799,7 +799,7 @@ function createStyles(C: ThemeColors) {
 
     chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt },
-    chipActive: { backgroundColor: C.primary, borderColor: C.primary },
+    chipActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
     chipTextActive: { color: '#fff' },
 
@@ -818,10 +818,10 @@ function createStyles(C: ThemeColors) {
     hint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
 
     starterBioBtn: {
-      backgroundColor: `${C.primary}22`, borderRadius: 100,
+      backgroundColor: `${PINK_RED}22`, borderRadius: 100,
       paddingHorizontal: 10, paddingVertical: 3,
     },
-    starterBioBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.primary },
+    starterBioBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: PINK_RED },
 
     saveBtnWrap: { marginTop: 8 },
     saveBtn: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

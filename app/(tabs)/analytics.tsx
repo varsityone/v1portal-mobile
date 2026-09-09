@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { isAthletePremium } from '../../lib/subscription';
-import { ThemeColors } from '../../constants/Colors';
+import { PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { DIVISION_ORDER, DIVISION_LABELS, Division } from '../../constants/RecruitingLevels';
@@ -323,7 +323,7 @@ export default function AnalyticsScreen() {
   if (dataLoading) {
     return (
       <View style={[s.center, { flex: 1 }]}>
-        <ActivityIndicator color={C.primary} size="large" />
+        <ActivityIndicator color={PINK_RED} size="large" />
       </View>
     );
   }
@@ -371,7 +371,7 @@ export default function AnalyticsScreen() {
           </>
         ) : (
           <View style={s.chartPlaceholder}>
-            <ActivityIndicator color={C.primary} />
+            <ActivityIndicator color={PINK_RED} />
           </View>
         )}
       </View>
@@ -494,7 +494,7 @@ export default function AnalyticsScreen() {
         </>
           ) : (
             <View style={s.center}>
-              <ActivityIndicator color={C.primary} />
+              <ActivityIndicator color={PINK_RED} />
             </View>
           )}
         </>

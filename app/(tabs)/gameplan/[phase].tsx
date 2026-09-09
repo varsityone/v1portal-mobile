@@ -19,7 +19,7 @@ import { useAthleteData, Athlete } from '../../../hooks/useAthleteData';
 import { useGameplanPhases } from '../../../hooks/useGameplanPhases';
 import { useMatchCount } from '../../../hooks/useMatchCount';
 import { PHASES, TIMELINE_META, Phase } from '../../../constants/Phases';
-import { Colors, GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, scoreNumColor, ThemeColors } from '../../../constants/Colors';
+import { Colors, GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, scoreNumColor, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { getDashboardStats, DashboardStats } from '../../../lib/dashboardStats';
@@ -150,7 +150,7 @@ function CenteredLoader() {
   const C = useColors();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background }}>
-      <ActivityIndicator color={C.primary} size="large" />
+      <ActivityIndicator color={PINK_RED} size="large" />
     </View>
   );
 }

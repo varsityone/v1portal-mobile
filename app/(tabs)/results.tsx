@@ -6,7 +6,7 @@ import { useAthleteData } from '../../hooks/useAthleteData';
 import { useAthleteScoreHistory } from '../../hooks/useAthleteScoreHistory';
 import { isAthletePremium } from '../../lib/subscription';
 import { supabase } from '../../lib/supabase';
-import { ThemeColors } from '../../constants/Colors';
+import { PINK_RED, ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import ScoreAnimator from '../../components/ScoreAnimator';
@@ -54,7 +54,7 @@ export default function ResultsScreen() {
   }, [athlete?.v1_score]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!athlete || !assessment) {

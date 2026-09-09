@@ -67,7 +67,7 @@ export default function MessagesInboxScreen() {
   const waitingCount = conversations.filter(c => c.last_message_from === 'coach').length;
 
   if (athleteLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const FILTERS: { key: FilterKey; label: string; count: number }[] = [
