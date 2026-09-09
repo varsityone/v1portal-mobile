@@ -282,7 +282,7 @@ export default function MatchScreen() {
   if (!athlete?.assessment_completed) {
     return (
       <LockScreen
-        icon="clipboard-outline"
+        icon="clipboard"
         title="Take Your Assessment"
         body="Your V1 Score isn't ready yet. Complete your assessment to unlock program matching."
         cta="Take Your Assessment"
@@ -293,7 +293,7 @@ export default function MatchScreen() {
   if (!isProfileComplete(athlete)) {
     return (
       <LockScreen
-        icon="person-outline"
+        icon="person"
         title="Finish Your Profile"
         body="Your profile is missing required fields so coaches can find you."
         cta="Complete Your Profile"
@@ -546,15 +546,15 @@ function LockScreen({ icon, title, body, cta, onPress }: {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={s.center}>
-      <View style={s.emptyIconWrap}><Ionicons name={icon} size={28} color={C.textMuted} /></View>
+    <SafeAreaView style={s.center}>
+      <Ionicons name={icon} size={56} color="#fff" style={{ marginBottom: 4 }} />
       <Text style={s.emptyTitle}>{title}</Text>
       <Text style={s.emptyBody}>{body}</Text>
       <Pressable style={s.emptyBtnGradientWrap} onPress={onPress}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <Text style={s.emptyBtnGradientText}>{cta}</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
