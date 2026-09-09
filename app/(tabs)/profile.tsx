@@ -409,7 +409,7 @@ export default function ProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
               <Text style={s.heroName}>{name}</Text>
               {profileComplete && (
-                <Image source={require('../../assets/logo-mark.png')} style={{ width: 16, height: 20 }} resizeMode="contain" />
+                <Image source={require('../../assets/varsityone-logo-mark-full-palette.png')} style={{ width: 16, height: 20 }} resizeMode="contain" />
               )}
             </View>
             {metaParts.length > 0 && <Text style={s.heroMeta}>{metaParts.join(' · ')}</Text>}
@@ -713,7 +713,7 @@ function createStyles(C: ThemeColors) {
     scoreNum: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
     scoreLabel: { fontFamily: FontFamily.mono, fontSize: 7, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
     scoreLevel: {
-      position: 'absolute', top: 146, right: -12, width: 100,
+      position: 'absolute', top: 146, right: 6, width: 100,
       fontFamily: FontFamily.mono, fontSize: 7.5, fontWeight: '700', color: '#fff',
       textAlign: 'center', letterSpacing: 0.2, textTransform: 'uppercase',
     },
