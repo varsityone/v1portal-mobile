@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,12 +11,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, SCORE_GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, SCORE_GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import {
@@ -70,12 +71,43 @@ export default function MatchScreen() {
   const [matchNotif, setMatchNotif] = useState<{ id: string; name: string } | null>(null);
   const [pendingReach, setPendingReach] = useState<{ division: Division; typicalScore: number } | null>(null);
   const [swipeErrorNotif, setSwipeErrorNotif] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [swipeHistory, setSwipeHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'like' | 'pass'>('all');
 
   useEffect(() => {
     if (!swipeErrorNotif) return;
     const t = setTimeout(() => setSwipeErrorNotif(null), 4000);
     return () => clearTimeout(t);
   }, [swipeErrorNotif]);
+
+  // Load swipe history when the history drawer opens
+  useEffect(() => {
+    if (!historyOpen || !athlete?.id) return;
+    let cancelled = false;
+    (async () => {
+      setHistoryLoading(true);
+      try {
+        const { data } = await supabase
+          .from('swipes')
+          .select('id, direction, created_at, coach_id, coach_accounts(full_name, school_name, division, profile_photo_url)')
+          .eq('athlete_id', athlete.id)
+          .eq('swiped_by', 'athlete')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (!cancelled) setSwipeHistory(data ?? []);
+      } catch (err) {
+        console.error('Failed to load swipe history:', err);
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [historyOpen, athlete?.id]);
+
+  const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || swipe.direction === historyFilter);
 
   useEffect(() => {
     if (athleteLoading || !athlete?.id) return;
@@ -194,6 +226,48 @@ export default function MatchScreen() {
       }
     }
     recordSwipe(direction, current.id);
+  };
+
+  // "Retry this level" — clears the athlete's own swipes for the active
+  // division so the same set of programs reappears in the deck. Never
+  // touches the coach's side of a swipe or an existing mutual_matches row,
+  // so an already-matched program stays matched even if it comes back
+  // through here.
+  const handleRetryLevel = async () => {
+    if (!athlete || !activeDivision || retrying) return;
+    setRetrying(true);
+    try {
+      const { data: divisionCoaches } = await supabase
+        .from('coach_accounts')
+        .select('id, full_name, school_name, division, position_coached, bio, profile_photo_url, min_score')
+        .eq('verified', true)
+        .eq('division', activeDivision);
+      const divisionCards = divisionCoaches ?? [];
+      if (divisionCards.length === 0) { setRetrying(false); return; }
+
+      const { data: swipedRows } = await supabase
+        .from('swipes')
+        .select('coach_id')
+        .eq('athlete_id', athlete.id)
+        .eq('swiped_by', 'athlete')
+        .in('coach_id', divisionCards.map(c => c.id));
+
+      await Promise.all((swipedRows ?? []).map(({ coach_id }) =>
+        fetch(`${API_BASE}/api/match/swipe`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ athlete_id: athlete.id, coach_id, swiped_by: 'athlete' }),
+        })
+      ));
+
+      setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...divisionCards]);
+      setCurrentIndex(0);
+    } finally {
+      setRetrying(false);
+    }
   };
 
   if (athleteLoading || loading) {
@@ -342,32 +416,49 @@ export default function MatchScreen() {
   // ── Empty state — fills the screen, same as the deck (header hidden) ──
   if (currentIndex >= totalCards) {
     return (
-      <SafeAreaView style={s.center}>
-        <View style={s.emptyIconWrap}>
-          <Ionicons name="heart-outline" size={28} color={C.textMuted} />
+      <SafeAreaView style={s.deckRoot}>
+        <View style={s.emptyWrap}>
+          <View style={s.emptyCard}>
+            <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <Feather name="target" size={40} color="#fff" />
+            {isPremium ? (
+              <>
+                <Text style={s.emptyCardTitle}>You're caught up</Text>
+                <Text style={s.emptyCardBody}>
+                  You've seen every {activeDivision ? DIVISION_LABELS[activeDivision] : ''} program available right now. New programs open up their board every week — check back soon.
+                </Text>
+                <View style={s.emptyCardBtnRow}>
+                  <Pressable style={s.emptyCardBtnWhite} onPress={handleRetryLevel} disabled={retrying}>
+                    <Text style={s.emptyCardBtnWhiteText}>{retrying ? 'Resetting…' : 'Retry this level'}</Text>
+                  </Pressable>
+                  <Pressable style={s.emptyCardBtnGhost} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}>
+                    <Text style={s.emptyCardBtnGhostText}>Try another level</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={s.emptyCardTitle}>You've seen your free picks</Text>
+                <Text style={s.emptyCardBody}>
+                  Match+ unlocks every {activeDivision ? DIVISION_LABELS[activeDivision] : ''} program plus every other division — no cap on swipes.
+                </Text>
+                <Pressable style={s.emptyCardBtnWhite} onPress={() => router.push('/(tabs)/upgrade' as any)}>
+                  <Text style={s.emptyCardBtnWhiteText}>Upgrade to Match+</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
         </View>
-        {isPremium ? (
-          <>
-            <Text style={s.emptyTitle}>You're caught up</Text>
-            <Text style={s.emptyBody}>
-              You've seen every {activeDivision ? DIVISION_LABELS[activeDivision] : ''} program available right now. Check back soon.
-            </Text>
-            <Pressable style={s.emptyBtn} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}>
-              <Text style={s.emptyBtnText}>Try Another Level</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={s.emptyTitle}>You've seen your free picks</Text>
-            <Text style={s.emptyBody}>
-              Match+ unlocks every {activeDivision ? DIVISION_LABELS[activeDivision] : ''} program plus every other division — no cap on swipes.
-            </Text>
-            <Pressable style={s.emptyBtnGradientWrap} onPress={() => router.push('/(tabs)/upgrade' as any)}>
-              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Text style={s.emptyBtnGradientText}>Upgrade to Match+</Text>
-            </Pressable>
-          </>
-        )}
+        <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
+        <SwipeHistoryDrawer
+          visible={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          loading={historyLoading}
+          filter={historyFilter}
+          onFilterChange={setHistoryFilter}
+          history={filteredHistory}
+          C={C}
+        />
       </SafeAreaView>
     );
   }
@@ -431,6 +522,17 @@ export default function MatchScreen() {
           )}
         </View>
       </View>
+
+      <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
+      <SwipeHistoryDrawer
+        visible={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        loading={historyLoading}
+        filter={historyFilter}
+        onFilterChange={setHistoryFilter}
+        history={filteredHistory}
+        C={C}
+      />
     </SafeAreaView>
   );
 }
@@ -492,6 +594,120 @@ function RealityCheck({
   );
 }
 
+// Docked tab, right edge, midway down — opens Swipe History. Rendered
+// alongside both the card deck and its "you're caught up" empty state.
+function SwipeHistoryTab({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable style={historyTabStyles.tab} onPress={onPress} hitSlop={8}>
+      <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Ionicons name="chevron-back" size={16} color="#fff" />
+    </Pressable>
+  );
+}
+
+const historyTabStyles = StyleSheet.create({
+  tab: {
+    position: 'absolute', right: 0, top: '50%', marginTop: -60.5,
+    width: 22, height: 121,
+    borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16,
+    elevation: 12,
+  },
+});
+
+function SwipeHistoryDrawer({
+  visible, onClose, loading, filter, onFilterChange, history, C,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  loading: boolean;
+  filter: 'all' | 'like' | 'pass';
+  onFilterChange: (f: 'all' | 'like' | 'pass') => void;
+  history: any[];
+  C: ThemeColors;
+}) {
+  const s = useMemo(() => historyStyles(C), [C]);
+  const FILTERS: { key: 'all' | 'like' | 'pass'; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'like', label: 'Liked' },
+    { key: 'pass', label: 'Passed' },
+  ];
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={s.backdrop} onPress={onClose} />
+      <SafeAreaView style={s.drawer}>
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Swipe History</Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={20} color={C.textMuted} />
+          </Pressable>
+        </View>
+        <View style={s.filters}>
+          {FILTERS.map(({ key, label }) => {
+            const active = filter === key;
+            const activeBg = key === 'like' ? 'rgba(113,255,126,0.2)' : key === 'pass' ? 'rgba(234,12,95,0.2)' : C.text;
+            const activeColor = key === 'like' ? BRAND_GREEN : key === 'pass' ? PINK_RED : C.background;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => onFilterChange(key)}
+                style={[s.filterBtn, { backgroundColor: active ? activeBg : 'rgba(255,255,255,0.05)' }]}
+              >
+                <Text style={[s.filterText, { color: active ? activeColor : C.text }]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <ScrollView style={{ flex: 1 }}>
+          {loading ? (
+            <View style={s.centerMsg}><Text style={s.centerMsgText}>Loading history...</Text></View>
+          ) : history.length === 0 ? (
+            <View style={s.centerMsg}><Text style={s.centerMsgText}>No swipes yet</Text></View>
+          ) : (
+            history.map(swipe => {
+              const coach = swipe.coach_accounts;
+              const date = new Date(swipe.created_at);
+              const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+              return (
+                <View key={swipe.id} style={s.row}>
+                  {coach?.profile_photo_url ? (
+                    <Image source={{ uri: coach.profile_photo_url }} style={s.avatar} />
+                  ) : (
+                    <View style={[s.avatar, { backgroundColor: C.surfaceAlt }]} />
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.name} numberOfLines={1}>{coach?.school_name ?? 'Unknown'}</Text>
+                    <Text style={s.meta}>{swipe.direction === 'like' ? '❤️ Liked' : '✕ Passed'} · {dateStr}</Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+function historyStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+    drawer: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '72%', backgroundColor: C.background, borderLeftWidth: 1, borderLeftColor: C.border },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: C.border },
+    headerTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+    filters: { flexDirection: 'row', gap: 8, padding: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexWrap: 'wrap' },
+    filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    filterText: { fontFamily: FontFamily.bodySemi, fontSize: 12 },
+    centerMsg: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+    centerMsgText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+    avatar: { width: 44, height: 44, borderRadius: 8 },
+    name: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
+    meta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
+  });
+}
+
 // ── Styles ──
 
 function createStyles(C: ThemeColors) {
@@ -529,6 +745,16 @@ function createStyles(C: ThemeColors) {
     emptyBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
     emptyBtnGradientWrap: { borderRadius: 100, paddingVertical: 15, paddingHorizontal: 30, overflow: 'hidden' },
     emptyBtnGradientText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
+
+    emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+    emptyCard: { width: '100%', maxWidth: 400, borderRadius: 28, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16, overflow: 'hidden' },
+    emptyCardTitle: { fontFamily: FontFamily.headline, fontWeight: '900', fontSize: 22, color: '#fff', textAlign: 'center' },
+    emptyCardBody: { fontFamily: FontFamily.body, fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.85)', textAlign: 'center', maxWidth: 260 },
+    emptyCardBtnRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 6 },
+    emptyCardBtnWhite: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 100, backgroundColor: '#fff' },
+    emptyCardBtnWhiteText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13, color: '#111' },
+    emptyCardBtnGhost: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+    emptyCardBtnGhostText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     matchCelebration: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
     matchCelebrationTitle: { fontFamily: FontFamily.headline, fontSize: 34, color: '#fff', marginTop: 10 },
