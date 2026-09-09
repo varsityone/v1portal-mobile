@@ -85,28 +85,14 @@ export default function AthleteMessageThreadScreen() {
     setText('');
 
     try {
-      const { data: msg, error } = await supabase
-        .from('coach_athlete_messages')
-        .insert({
-          conversation_id: conversationId as string,
-          coach_id: coachId,
-          athlete_id: athlete.id,
-          sender_type: 'athlete',
-          content,
-        })
-        .select('id, sender_type, content, created_at')
-        .single();
+      const { data: msg, error } = await supabase.rpc('send_athlete_message', {
+        p_conversation_id: conversationId as string,
+        p_coach_id: coachId,
+        p_athlete_id: athlete.id,
+        p_content: content,
+      });
 
       if (error) throw error;
-
-      await supabase
-        .from('coach_athlete_conversations')
-        .update({
-          last_message_at: new Date().toISOString(),
-          last_message_from: 'athlete',
-          coach_unread_count: 0,
-        })
-        .eq('id', conversationId as string);
 
       if (msg) {
         setMessages(m => [...m, msg as Message]);
