@@ -553,6 +553,7 @@ export default function EditProfileScreen() {
                 .filter(row => !(testScoresNotTaken && (row.key === 'sat_score' || row.key === 'act_score')))
                 .map((row, idx) => {
                 const isBio = row.key === 'bio';
+                const filled = !isBio && !!fields[row.key as keyof Fields];
                 return (
                   <View key={row.key} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
                     <View style={s.fieldLabelRow}>
@@ -563,17 +564,22 @@ export default function EditProfileScreen() {
                         </Pressable>
                       )}
                     </View>
-                    <TextInput
-                      style={[s.input, isBio && s.inputMulti]}
-                      value={fields[row.key as keyof Fields]}
-                      onChangeText={set(row.key as keyof Fields)}
-                      placeholder={row.placeholder ?? row.label}
-                      placeholderTextColor={C.textDim}
-                      multiline={isBio}
-                      textAlignVertical={isBio ? 'top' : 'auto'}
-                      keyboardType={row.keyboardType ?? 'default'}
-                      autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
-                    />
+                    <View style={s.inputWrap}>
+                      <TextInput
+                        style={[s.input, !isBio && s.inputBoxed, isBio && s.inputMulti, filled && s.inputFilled]}
+                        value={fields[row.key as keyof Fields]}
+                        onChangeText={set(row.key as keyof Fields)}
+                        placeholder={row.placeholder ?? row.label}
+                        placeholderTextColor={isBio ? C.textDim : '#9a9a9a'}
+                        multiline={isBio}
+                        textAlignVertical={isBio ? 'top' : 'auto'}
+                        keyboardType={row.keyboardType ?? 'default'}
+                        autoCapitalize={row.keyboardType === 'email-address' || row.keyboardType === 'url' ? 'none' : 'sentences'}
+                      />
+                      {filled && (
+                        <Ionicons name="checkmark-circle" size={16} color={C.success} style={s.fieldCheck} />
+                      )}
+                    </View>
                     {row.hint && (
                       <Text style={s.hint}>{row.hint}</Text>
                     )}
@@ -652,19 +658,27 @@ export default function EditProfileScreen() {
             <>
               <Text style={s.sectionSub}>Production from your most recent varsity season. Made a mistake during your assessment? Fix it here.</Text>
               <View style={s.card}>
-                {getCurrentSeasonStatFields(fields.position).map((f, idx) => (
-                  <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
-                    <Text style={s.label}>{f.label}</Text>
-                    <TextInput
-                      style={s.input}
-                      value={statResponses[f.id] ?? ''}
-                      onChangeText={setStat(f.id)}
-                      placeholder={f.placeholder}
-                      placeholderTextColor={C.textDim}
-                      keyboardType={f.keyboardType}
-                    />
-                  </View>
-                ))}
+                {getCurrentSeasonStatFields(fields.position).map((f, idx) => {
+                  const filled = !!statResponses[f.id];
+                  return (
+                    <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                      <Text style={s.label}>{f.label}</Text>
+                      <View style={s.inputWrap}>
+                        <TextInput
+                          style={[s.input, s.inputBoxed, filled && s.inputFilled]}
+                          value={statResponses[f.id] ?? ''}
+                          onChangeText={setStat(f.id)}
+                          placeholder={f.placeholder}
+                          placeholderTextColor="#9a9a9a"
+                          keyboardType={f.keyboardType}
+                        />
+                        {filled && (
+                          <Ionicons name="checkmark-circle" size={16} color={C.success} style={s.fieldCheck} />
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             </>
           ) : (
@@ -684,19 +698,27 @@ export default function EditProfileScreen() {
               <Text style={s.sectionTitle}>{GRADE_LABELS[g].toUpperCase()} SEASON STATS</Text>
             </View>
             <View style={s.card}>
-              {getPriorSeasonStatFields(fields.position, g).map((f, idx) => (
-                <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
-                  <Text style={s.label}>{f.label}</Text>
-                  <TextInput
-                    style={s.input}
-                    value={statResponses[f.id] ?? ''}
-                    onChangeText={setStat(f.id)}
-                    placeholder={f.placeholder}
-                    placeholderTextColor={C.textDim}
-                    keyboardType={f.keyboardType}
-                  />
-                </View>
-              ))}
+              {getPriorSeasonStatFields(fields.position, g).map((f, idx) => {
+                const filled = !!statResponses[f.id];
+                return (
+                  <View key={f.id} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                    <Text style={s.label}>{f.label}</Text>
+                    <View style={s.inputWrap}>
+                      <TextInput
+                        style={[s.input, s.inputBoxed, filled && s.inputFilled]}
+                        value={statResponses[f.id] ?? ''}
+                        onChangeText={setStat(f.id)}
+                        placeholder={f.placeholder}
+                        placeholderTextColor="#9a9a9a"
+                        keyboardType={f.keyboardType}
+                      />
+                      {filled && (
+                        <Ionicons name="checkmark-circle" size={16} color={C.success} style={s.fieldCheck} />
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           </View>
         ))}
@@ -810,10 +832,14 @@ function createStyles(C: ThemeColors) {
       flexDirection: 'row', alignItems: 'center',
       justifyContent: 'space-between', marginBottom: 6,
     },
-    label: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+    label: { fontFamily: FontFamily.body, fontSize: 12, fontWeight: '500', color: '#b2b2b2' },
 
+    inputWrap: { position: 'relative', justifyContent: 'center' },
     input: { fontFamily: FontFamily.body, fontSize: 15, color: C.text, paddingVertical: 0 },
+    inputBoxed: { backgroundColor: '#fff', color: '#18171a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
     inputMulti: { height: 80, textAlignVertical: 'top' },
+    inputFilled: { paddingRight: 34 },
+    fieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
 
     hint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
 

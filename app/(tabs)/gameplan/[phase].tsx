@@ -907,7 +907,7 @@ function createStyles(C: ThemeColors) {
     completionPct: { fontSize: 38, fontWeight: '900', color: C.text, letterSpacing: -2 },
     completionDesc: { fontSize: 13, color: C.textMuted },
     completionTrack: { height: 5, backgroundColor: C.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
-    completionFill: { height: '100%', backgroundColor: C.primary, borderRadius: 3 },
+    completionFill: { height: '100%', backgroundColor: PINK_RED, borderRadius: 3 },
 
     // Phase 2 inline form
     p2SectionWrap: { marginBottom: 18 },
@@ -927,8 +927,8 @@ function createStyles(C: ThemeColors) {
     p2FieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
     p2Hint: { fontSize: 11, color: C.textDim, marginTop: 4, lineHeight: 16 },
     p2BlockedMsg: { fontSize: 12.5, fontWeight: '600', color: '#ef4444', textAlign: 'center', marginTop: 10, marginBottom: 2 },
-    p2StarterBtn: { backgroundColor: `${C.primary}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
-    p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: C.primary },
+    p2StarterBtn: { backgroundColor: `${PINK_RED}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
+    p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: PINK_RED },
     p2SaveWrap: { marginBottom: 12 },
     p2SaveBtn: { height: 52, borderRadius: 14, alignItems: 'center' as const, justifyContent: 'center' as const },
     p2SaveBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
