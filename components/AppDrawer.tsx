@@ -100,10 +100,10 @@ function IconInstagram({ color }: { color: string }) {
 }
 
 const SOCIAL = [
-  { label: 'X',         url: 'https://x.com/thev1portal',               Icon: IconX         },
-  { label: 'LinkedIn',  url: 'https://linkedin.com/company/v1portal',    Icon: IconLinkedIn  },
+  { label: 'X',         url: 'https://x.com/v1portal',               Icon: IconX         },
+  { label: 'LinkedIn',  url: 'https://www.linkedin.com/company/varsityone/',    Icon: IconLinkedIn  },
   { label: 'Facebook',  url: 'https://facebook.com/v1portal',            Icon: IconFacebook  },
-  { label: 'Instagram', url: 'https://instagram.com/v1.portal',          Icon: IconInstagram },
+  { label: 'Instagram', url: 'https://instagram.com/enterv1portal',          Icon: IconInstagram },
 ];
 
 // ─── Theme ────────────────────────────────────────────────────────────────────

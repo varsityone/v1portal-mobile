@@ -109,9 +109,9 @@ function IconYouTube({ color }: { color: string }) {
 }
 
 const SOCIAL = [
-  { label: 'X',         url: 'https://x.com/thev1portal',            Icon: IconX         },
-  { label: 'LinkedIn',  url: 'https://linkedin.com/company/v1portal', Icon: IconLinkedIn  },
-  { label: 'Instagram', url: 'https://instagram.com/v1.portal',       Icon: IconInstagram },
+  { label: 'X',         url: 'https://x.com/v1portal',            Icon: IconX         },
+  { label: 'LinkedIn',  url: 'https://www.linkedin.com/company/varsityone/', Icon: IconLinkedIn  },
+  { label: 'Instagram', url: 'https://instagram.com/enterv1portal',       Icon: IconInstagram },
   { label: 'YouTube',   url: 'https://youtube.com/@v1portal',         Icon: IconYouTube   },
 ];
 
