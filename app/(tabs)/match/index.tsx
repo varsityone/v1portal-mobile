@@ -36,6 +36,7 @@ interface CoachCard {
   school_name: string | null;
   division: string;
   position_coached: string | null;
+  position_needs: string[] | null;
   bio: string | null;
   profile_photo_url: string | null;
   min_score: number | null;
@@ -122,7 +123,7 @@ export default function MatchScreen() {
 
       let q = supabase
         .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, bio, profile_photo_url, min_score')
+        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score')
         .eq('verified', true)
         .limit(200);
       if (swipedIds.length > 0) q = q.not('id', 'in', `(${swipedIds.join(',')})`);
@@ -239,7 +240,7 @@ export default function MatchScreen() {
     try {
       const { data: divisionCoaches } = await supabase
         .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, bio, profile_photo_url, min_score')
+        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score')
         .eq('verified', true)
         .eq('division', activeDivision);
       const divisionCards = divisionCoaches ?? [];
@@ -493,12 +494,32 @@ export default function MatchScreen() {
           <Text style={s.cardCounter}>{Math.min(currentIndex + 1, totalCards)} / {totalCards}</Text>
         </View>
 
+        {/* Every card an athlete sees is already verified (query-guaranteed) */}
+        <View style={s.verifiedBadge}>
+          <Ionicons name="checkmark" size={13} color={C.success} />
+          <Text style={s.verifiedBadgeText}>Verified</Text>
+        </View>
+
         <View style={s.cardBottom}>
           <Text style={s.cardDivision}>{current?.division}</Text>
           <Text style={s.cardSchool}>{current?.school_name ?? 'Unknown Program'}</Text>
           <Text style={s.cardCoach}>
             {current?.position_coached}{current?.full_name ? ` · Coach ${current.full_name.split(' ').pop()}` : ''}
           </Text>
+          {((current?.position_needs?.length ?? 0) > 0 || current?.min_score != null) && (
+            <View style={s.tagRow}>
+              {(current?.position_needs ?? []).slice(0, 3).map(pos => (
+                <View key={pos} style={s.posTag}>
+                  <Text style={s.posTagText}>{pos}</Text>
+                </View>
+              ))}
+              {current?.min_score != null && (
+                <View style={s.minScoreTag}>
+                  <Text style={s.minScoreTagText}>MIN V1 {current.min_score}</Text>
+                </View>
+              )}
+            </View>
+          )}
           {current?.bio ? <Text style={s.cardBio} numberOfLines={3}>{current.bio}</Text> : null}
 
           <View style={s.actionRow}>
@@ -782,10 +803,17 @@ function createStyles(C: ThemeColors) {
     progressTrack: { flex: 1, height: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
     progressFill: { height: '100%', backgroundColor: '#fff', borderRadius: 100 },
     cardCounter: { fontFamily: FontFamily.mono, fontSize: 12, color: '#fff' },
+    verifiedBadge: { position: 'absolute', top: 58, left: 18, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(10,10,12,0.55)', borderRadius: 100, paddingVertical: 6, paddingHorizontal: 11 },
+    verifiedBadgeText: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: C.success },
     cardBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 22, gap: 4 },
     cardDivision: { fontFamily: FontFamily.mono, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: 1 },
     cardSchool: { fontFamily: FontFamily.headline, fontSize: 28, color: '#fff' },
     cardCoach: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8 },
+    tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+    posTag: { backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 100, paddingVertical: 5, paddingHorizontal: 11 },
+    posTagText: { fontFamily: FontFamily.mono, fontSize: 10, color: '#fff', letterSpacing: 0.4 },
+    minScoreTag: { backgroundColor: 'rgba(113,255,126,0.16)', borderRadius: 100, paddingVertical: 5, paddingHorizontal: 11 },
+    minScoreTagText: { fontFamily: FontFamily.monoBold, fontSize: 10, color: C.success, letterSpacing: 0.4 },
     cardBio: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 14 },
     actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 6 },
     passBtn: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
