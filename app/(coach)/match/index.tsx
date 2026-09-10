@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   Linking,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -17,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, SIGNAL_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { DIVISION_MIN_SCORE_DEFAULT, Division } from '../../../constants/RecruitingLevels';
@@ -73,6 +74,36 @@ export default function CoachMatchScreen() {
   const [swipeErrorNotif, setSwipeErrorNotif] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerAnim = useRef(new Animated.Value(0)).current;
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [swipeHistory, setSwipeHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'like' | 'pass'>('all');
+
+  // Load swipe history when the history drawer opens
+  useEffect(() => {
+    if (!historyOpen || !coach?.id) return;
+    let cancelled = false;
+    (async () => {
+      setHistoryLoading(true);
+      try {
+        const { data } = await supabase
+          .from('swipes')
+          .select('id, direction, created_at, athlete_id, athletes(full_name, position, profile_photo_url)')
+          .eq('coach_id', coach.id)
+          .eq('swiped_by', 'coach')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (!cancelled) setSwipeHistory(data ?? []);
+      } catch (err) {
+        console.error('Failed to load swipe history:', err);
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [historyOpen, coach?.id]);
+
+  const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || swipe.direction === historyFilter);
 
   const toggleDrawer = (open: boolean) => {
     setDrawerOpen(open);
@@ -277,13 +308,25 @@ export default function CoachMatchScreen() {
   // ── Empty state ──
   if (currentIndex >= totalCards) {
     return (
-      <SafeAreaView style={s.center}>
-        <View style={s.emptyIconWrap}>
-          <Ionicons name="heart-outline" size={28} color={C.textMuted} />
-        </View>
-        <Text style={s.emptyTitle}>You're caught up</Text>
-        <Text style={s.emptyBody}>You've seen every athlete matching your program right now. Check back soon.</Text>
-      </SafeAreaView>
+      <>
+        <SafeAreaView style={s.center}>
+          <View style={s.emptyIconWrap}>
+            <Ionicons name="heart-outline" size={28} color={C.textMuted} />
+          </View>
+          <Text style={s.emptyTitle}>You're caught up</Text>
+          <Text style={s.emptyBody}>You've seen every athlete matching your program right now. Check back soon.</Text>
+        </SafeAreaView>
+        <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
+        <SwipeHistoryDrawer
+          visible={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          loading={historyLoading}
+          filter={historyFilter}
+          onFilterChange={setHistoryFilter}
+          history={filteredHistory}
+          C={C}
+        />
+      </>
     );
   }
 
@@ -318,10 +361,13 @@ export default function CoachMatchScreen() {
 
         <View style={[s.cardTop, { paddingTop: insets.top + 18 }]}>
           <View style={s.topRow}>
-            <Text style={s.topTitle}>Players For You</Text>
-            <View style={s.sliderBtn}>
+            <Pressable style={s.menuBtn} onPress={() => (navigation as any).openDrawer?.()} hitSlop={8}>
+              <Ionicons name="menu" size={22} color="#fff" />
+            </Pressable>
+            <Text style={[s.topTitle, { flex: 1 }]} numberOfLines={1}>Players For You</Text>
+            <Pressable style={s.sliderBtn}>
               <Ionicons name="options-outline" size={18} color="#fff" />
-            </View>
+            </Pressable>
           </View>
           <View style={s.progressRow}>
             <View style={s.progressTrack}>
@@ -413,6 +459,16 @@ export default function CoachMatchScreen() {
           </ScrollView>
         </Animated.View>
       </View>
+      <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
+      <SwipeHistoryDrawer
+        visible={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        loading={historyLoading}
+        filter={historyFilter}
+        onFilterChange={setHistoryFilter}
+        history={filteredHistory}
+        C={C}
+      />
     </View>
   );
 }
@@ -424,6 +480,120 @@ function StatTile({ label, value, s }: { label: string; value: string; s: Return
       <Text style={s.statValue} numberOfLines={2}>{value}</Text>
     </View>
   );
+}
+
+// Docked tab, right edge, midway down — opens Swipe History. Mirrors the
+// athlete side's app/(tabs)/match/index.tsx SwipeHistoryTab exactly.
+function SwipeHistoryTab({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable style={historyTabStyles.tab} onPress={onPress} hitSlop={8}>
+      <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Ionicons name="chevron-back" size={16} color="#fff" />
+    </Pressable>
+  );
+}
+
+const historyTabStyles = StyleSheet.create({
+  tab: {
+    position: 'absolute', right: 0, top: '50%', marginTop: -60.5,
+    width: 22, height: 121,
+    borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16,
+    elevation: 12,
+  },
+});
+
+function SwipeHistoryDrawer({
+  visible, onClose, loading, filter, onFilterChange, history, C,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  loading: boolean;
+  filter: 'all' | 'like' | 'pass';
+  onFilterChange: (f: 'all' | 'like' | 'pass') => void;
+  history: any[];
+  C: ThemeColors;
+}) {
+  const s = useMemo(() => historyStyles(C), [C]);
+  const FILTERS: { key: 'all' | 'like' | 'pass'; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'like', label: 'Liked' },
+    { key: 'pass', label: 'Passed' },
+  ];
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={s.backdrop} onPress={onClose} />
+      <SafeAreaView style={s.drawer}>
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Swipe History</Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={20} color={C.textMuted} />
+          </Pressable>
+        </View>
+        <View style={s.filters}>
+          {FILTERS.map(({ key, label }) => {
+            const active = filter === key;
+            const activeBg = key === 'like' ? 'rgba(113,255,126,0.2)' : key === 'pass' ? 'rgba(234,12,95,0.2)' : C.text;
+            const activeColor = key === 'like' ? BRAND_GREEN : key === 'pass' ? PINK_RED : C.background;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => onFilterChange(key)}
+                style={[s.filterBtn, { backgroundColor: active ? activeBg : 'rgba(255,255,255,0.05)' }]}
+              >
+                <Text style={[s.filterText, { color: active ? activeColor : C.text }]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <ScrollView style={{ flex: 1 }}>
+          {loading ? (
+            <View style={s.centerMsg}><Text style={s.centerMsgText}>Loading history...</Text></View>
+          ) : history.length === 0 ? (
+            <View style={s.centerMsg}><Text style={s.centerMsgText}>No swipes yet</Text></View>
+          ) : (
+            history.map(swipe => {
+              const athlete = swipe.athletes;
+              const date = new Date(swipe.created_at);
+              const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+              return (
+                <View key={swipe.id} style={s.row}>
+                  {athlete?.profile_photo_url ? (
+                    <Image source={{ uri: athlete.profile_photo_url }} style={s.avatar} />
+                  ) : (
+                    <View style={[s.avatar, { backgroundColor: C.surfaceAlt }]} />
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.name} numberOfLines={1}>{athlete?.full_name ?? 'Unknown'}{athlete?.position ? ` · ${athlete.position}` : ''}</Text>
+                    <Text style={s.meta}>{swipe.direction === 'like' ? '❤️ Liked' : '✕ Passed'} · {dateStr}</Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+function historyStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+    drawer: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '72%', backgroundColor: C.background, borderLeftWidth: 1, borderLeftColor: C.border },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: C.border },
+    headerTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+    filters: { flexDirection: 'row', gap: 8, padding: 16, borderBottomWidth: 1, borderBottomColor: C.border, flexWrap: 'wrap' },
+    filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    filterText: { fontFamily: FontFamily.bodySemi, fontSize: 12 },
+    centerMsg: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+    centerMsgText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+    avatar: { width: 44, height: 44, borderRadius: 8 },
+    name: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
+    meta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
+  });
 }
 
 // ── Lock screen ──
@@ -479,6 +649,7 @@ function createStyles(C: ThemeColors) {
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
     topTitle: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },
     sliderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    menuBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
     progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 5, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 100 },

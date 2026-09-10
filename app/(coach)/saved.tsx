@@ -54,9 +54,7 @@ export default function SavedProspectsScreen() {
 
       {saved.length === 0 ? (
         <View style={s.emptyWrap}>
-          <View style={s.emptyIcon}>
-            <Ionicons name="bookmark-outline" size={26} color="#a855f7" />
-          </View>
+          <Ionicons name="bookmark" size={44} color="#fff" style={{ marginBottom: 16 }} />
           <Text style={s.emptyTitle}>No saved prospects yet</Text>
           <Text style={s.emptyBody}>Save prospects as you swipe to build your watchlist.</Text>
           <Pressable onPress={() => router.push('/(coach)/match' as any)}>
@@ -130,7 +128,6 @@ function createStyles(C: ThemeColors) {
     sortTextActive: { color: '#fff' },
 
     emptyWrap: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
-    emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(234,12,95,0.12)', borderWidth: 1, borderColor: 'rgba(234,12,95,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 6 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 16 },
     emptyLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
