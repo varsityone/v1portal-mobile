@@ -99,11 +99,20 @@ function IconInstagram({ color }: { color: string }) {
   );
 }
 
+function IconYouTube({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill={color}>
+      <Path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </Svg>
+  );
+}
+
 const SOCIAL = [
   { label: 'X',         url: 'https://x.com/v1portal',               Icon: IconX         },
   { label: 'LinkedIn',  url: 'https://www.linkedin.com/company/varsityone/',    Icon: IconLinkedIn  },
   { label: 'Facebook',  url: 'https://facebook.com/v1portal',            Icon: IconFacebook  },
   { label: 'Instagram', url: 'https://instagram.com/enterv1portal',          Icon: IconInstagram },
+  { label: 'YouTube',   url: 'https://youtube.com/@v1portal',            Icon: IconYouTube   },
 ];
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
@@ -316,9 +325,9 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
           </Pressable>
         </View>
 
-        {/* Get in Touch */}
+        {/* Our Socials */}
         <View style={[d.divider, { backgroundColor: C.border }]} />
-        <Text style={[d.groupLabel, { color: C.textDim }]}>Get in Touch</Text>
+        <Text style={[d.groupLabel, { color: C.textDim }]}>Our Socials</Text>
         <View style={d.socialRow}>
           {SOCIAL.map(s => (
             <Pressable

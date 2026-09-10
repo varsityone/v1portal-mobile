@@ -315,6 +315,25 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
+      {/* Legal */}
+      <View style={[s.card, { backgroundColor: C.surface }]}>
+        <Text style={[s.sectionLabel, { color: C.textDim }]}>Legal</Text>
+        <Pressable style={[s.linkRow, { borderTopColor: C.border }]} onPress={() => router.push('/terms' as any)}>
+          <View style={s.linkRowLeft}>
+            <Ionicons name="document-text-outline" size={18} color={C.textMuted} />
+            <Text style={[s.rowLabel, { color: C.text }]}>Terms of Service</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
+        </Pressable>
+        <Pressable style={[s.linkRow, { borderTopColor: C.border }]} onPress={() => router.push('/privacy' as any)}>
+          <View style={s.linkRowLeft}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={C.textMuted} />
+            <Text style={[s.rowLabel, { color: C.text }]}>Privacy Policy</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
+        </Pressable>
+      </View>
+
       {/* Save */}
       <View style={s.saveRow}>
         <Pressable onPress={handleSave} disabled={saving}>

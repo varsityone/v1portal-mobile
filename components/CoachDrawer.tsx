@@ -329,9 +329,9 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
           )}
         </View>
 
-        {/* Get in Touch */}
+        {/* Our Socials */}
         <View style={[d.divider, { backgroundColor: C.border }]} />
-        <Text style={[d.groupLabel, { color: C.textDim }]}>Get in Touch</Text>
+        <Text style={[d.groupLabel, { color: C.textDim }]}>Our Socials</Text>
         <View style={d.socialRow}>
           {SOCIAL.map(s => (
             <Pressable

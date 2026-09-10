@@ -23,9 +23,7 @@ export default function PrivacyScreen() {
       </View>
 
       <View style={styles.hero}>
-        <View style={styles.heroIcon}>
-          <Ionicons name="shield-checkmark" size={28} color={Colors.primary} />
-        </View>
+        <Ionicons name="shield-checkmark" size={44} color="#fff" style={styles.heroIcon} />
         <Text style={styles.title}>Privacy Policy</Text>
         <Text style={styles.subtitle}>Last updated June 2025</Text>
       </View>
@@ -69,16 +67,16 @@ export default function PrivacyScreen() {
           style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.7 }]}
           onPress={() => Linking.openURL('https://v1portal.com/privacy')}
         >
-          <Ionicons name="open-outline" size={16} color={Colors.primary} />
+          <Ionicons name="open-outline" size={16} color="#fff" />
           <Text style={styles.linkText}>v1portal.com/privacy</Text>
         </Pressable>
       </View>
 
       <Pressable
         style={({ pressed }) => [styles.contactBtn, pressed && { opacity: 0.8 }]}
-        onPress={() => Linking.openURL('mailto:support@v1portal.com')}
+        onPress={() => router.push('/help' as any)}
       >
-        <Text style={styles.contactText}>Questions? support@v1portal.com</Text>
+        <Text style={styles.contactText}>Questions?</Text>
       </Pressable>
     </ScrollView>
   );
@@ -104,14 +102,6 @@ const styles = StyleSheet.create({
 
   hero: { alignItems: 'center', gap: 8, paddingVertical: 20, marginBottom: 8 },
   heroIcon: {
-    width: 62,
-    height: 62,
-    borderRadius: 18,
-    backgroundColor: `${Colors.primary}18`,
-    borderWidth: 1,
-    borderColor: `${Colors.primary}33`,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 4,
   },
   title: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
@@ -136,7 +126,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 4,
   },
-  linkText: { fontSize: 15, color: Colors.primary, fontWeight: '600' },
+  linkText: { fontSize: 15, color: '#fff', fontWeight: '600' },
 
   contactBtn: { alignSelf: 'center', paddingVertical: 8 },
   contactText: { fontSize: 13, color: Colors.textMuted, textDecorationLine: 'underline' },
