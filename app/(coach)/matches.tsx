@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -89,7 +89,7 @@ export default function CoachMatchesScreen() {
   }, [coachLoading, coach?.id, coach?.verified]);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
   if (!coach) return null;
 
@@ -127,7 +127,7 @@ export default function CoachMatchesScreen() {
             <Text style={[s.filterPillText, filter === 'all' && s.filterPillTextActive]}>All</Text>
           </Pressable>
           {positions.map(pos => {
-            const color = POSITION_COLORS[pos] ?? C.primary;
+            const color = POSITION_COLORS[pos] ?? PINK_RED;
             const active = filter === pos;
             return (
               <Pressable
@@ -161,7 +161,7 @@ export default function CoachMatchesScreen() {
             return (
               <Pressable
                 key={match.id}
-                style={[s.row, match.unread > 0 && { borderColor: 'rgba(80,26,255,0.3)' }]}
+                style={[s.row, match.unread > 0 && { borderColor: 'rgba(234,12,95,0.3)' }]}
                 onPress={() => router.push(`/(coach)/match/${match.id}` as any)}
               >
                 {match.athlete?.profile_photo_url ? (
@@ -217,7 +217,7 @@ function createStyles(C: ThemeColors) {
     container: { padding: 20, paddingBottom: 48 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background, padding: 32 },
 
-    pendingIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(80,26,255,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    pendingIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(234,12,95,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
     pendingTitle: { fontFamily: FontFamily.headlineBold, fontSize: 19, color: C.text, marginBottom: 8, textAlign: 'center' },
     pendingBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 20, textAlign: 'center' },
 
@@ -230,9 +230,9 @@ function createStyles(C: ThemeColors) {
 
     filterRow: { gap: 8, paddingBottom: 20 },
     filterPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 100, borderWidth: 1.5, borderColor: C.border },
-    filterPillActive: { backgroundColor: 'rgba(80,26,255,0.12)', borderColor: C.primary },
+    filterPillActive: { backgroundColor: 'rgba(234,12,95,0.12)', borderColor: PINK_RED },
     filterPillText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.textDim },
-    filterPillTextActive: { color: C.primary },
+    filterPillTextActive: { color: PINK_RED },
 
     emptyState: { backgroundColor: C.surface, borderRadius: 16, paddingVertical: 60, paddingHorizontal: 24, alignItems: 'center' },
     emptyTitle: { fontFamily: FontFamily.bodyBold, fontSize: 15, color: C.text, marginBottom: 8 },
@@ -246,9 +246,9 @@ function createStyles(C: ThemeColors) {
     avatarFallbackText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13 },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
     meta: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 3 },
-    unreadBadge: { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+    unreadBadge: { minWidth: 18, height: 18, borderRadius: 9, backgroundColor: PINK_RED, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
     unreadBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#fff' },
-    score: { fontFamily: FontFamily.headline, fontSize: 17, color: C.primary },
+    score: { fontFamily: FontFamily.headline, fontSize: 17, color: PINK_RED },
     scoreLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim },
     date: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginBottom: 4 },
 

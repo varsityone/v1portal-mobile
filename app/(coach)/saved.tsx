@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachSaved, SavedProspect } from '../../hooks/useCoachSaved';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors, useTheme } from '../../context/ThemeContext';
 
@@ -19,7 +19,7 @@ export default function SavedProspectsScreen() {
   const [removing, setRemoving] = useState<string | null>(null);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const handleRemove = async (id: string) => {
@@ -90,7 +90,7 @@ export default function SavedProspectsScreen() {
                 </View>
                 {athlete.v1_score != null && (
                   <LinearGradient
-                    colors={['#501af0', '#a855f7']}
+                    colors={GRADIENT}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={s.scoreBadge}
@@ -125,12 +125,12 @@ function createStyles(C: ThemeColors) {
 
     sortRow: { flexDirection: 'row', gap: 8 },
     sortButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
-    sortButtonActive: { backgroundColor: C.primary, borderColor: C.primary },
+    sortButtonActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     sortText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textDim },
     sortTextActive: { color: '#fff' },
 
     emptyWrap: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
-    emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(131,58,180,0.12)', borderWidth: 1, borderColor: 'rgba(168,85,247,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+    emptyIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(234,12,95,0.12)', borderWidth: 1, borderColor: 'rgba(234,12,95,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 6 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 16 },
     emptyLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },

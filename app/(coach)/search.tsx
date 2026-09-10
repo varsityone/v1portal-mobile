@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { starsForScore, POSITIONS, GRAD_YEARS, STATES } from '../../lib/recruitingLevels';
@@ -175,7 +175,7 @@ export default function CoachSearchScreen() {
   };
 
   if (coachLoading || !coach) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!coach.verified) {
@@ -208,12 +208,12 @@ export default function CoachSearchScreen() {
         </View>
         <View style={s.stats}>
           <View style={s.statItem}>
-            <Ionicons name="bookmark" size={14} color={C.primary} />
+            <Ionicons name="bookmark" size={14} color={PINK_RED} />
             <Text style={s.statValue}>{savedIds.size}</Text>
             <Text style={s.statLabel}>Saved</Text>
           </View>
           <View style={s.statItem}>
-            <Ionicons name="chatbubble" size={14} color={C.primary} />
+            <Ionicons name="chatbubble" size={14} color={PINK_RED} />
             <Text style={s.statValue}>{messagedCount}</Text>
             <Text style={s.statLabel}>Messaged</Text>
           </View>
@@ -298,7 +298,7 @@ export default function CoachSearchScreen() {
 
       {/* Results */}
       {loading ? (
-        <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>
       ) : prospects.length === 0 ? (
         <EmptyState icon="search" title="No prospects found" body="Try adjusting your filters or search terms." />
       ) : (
@@ -307,11 +307,11 @@ export default function CoachSearchScreen() {
             <Card key={prospect.id} style={s.prospectCard}>
               {/* Photo */}
               {prospect.profile_photo_url ? (
-                <LinearGradient colors={[C.primary, '#E1306C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photoBox}>
+                <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photoBox}>
                   <Image source={{ uri: prospect.profile_photo_url }} style={s.photo} />
                 </LinearGradient>
               ) : (
-                <LinearGradient colors={[C.primary, '#E1306C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photoBox}>
+                <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photoBox}>
                   <Avatar name={prospect.full_name || ''} size={64} />
                 </LinearGradient>
               )}
@@ -321,7 +321,7 @@ export default function CoachSearchScreen() {
                 style={[s.saveBtn, savedIds.has(prospect.id) && s.saveBtnSaved]}
                 onPress={() => toggleSaved(prospect.id)}
               >
-                <Ionicons name={savedIds.has(prospect.id) ? 'bookmark' : 'bookmark-outline'} size={18} color={C.primary} />
+                <Ionicons name={savedIds.has(prospect.id) ? 'bookmark' : 'bookmark-outline'} size={18} color={PINK_RED} />
               </Pressable>
 
               {/* Info */}
@@ -337,7 +337,7 @@ export default function CoachSearchScreen() {
                         key={i}
                         name={i < starsForScore(prospect.v1_score) ? 'star' : 'star-outline'}
                         size={12}
-                        color={C.primary}
+                        color={PINK_RED}
                       />
                     ))}
                   </View>
@@ -447,7 +447,7 @@ export default function CoachSearchScreen() {
           <Ionicons
             name={filters.verifiedOnly ? 'checkbox' : 'square-outline'}
             size={20}
-            color={filters.verifiedOnly ? C.primary : C.textDim}
+            color={filters.verifiedOnly ? PINK_RED : C.textDim}
           />
         </Pressable>
         <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
@@ -479,7 +479,7 @@ function createStyles(C: ThemeColors) {
 
     filterRow: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
     filterPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, borderWidth: 1, borderColor: C.border },
-    filterPillActive: { backgroundColor: C.primary + '20', borderColor: C.primary },
+    filterPillActive: { backgroundColor: PINK_RED + '20', borderColor: PINK_RED },
     filterPillText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
     filterPillTextActive: { color: C.text, fontWeight: '600' },
 
@@ -493,16 +493,16 @@ function createStyles(C: ThemeColors) {
     photoBox: { width: '100%', height: 160, position: 'relative', marginBottom: 12 },
     photo: { width: '100%', height: '100%', borderRadius: 12 },
     saveBtn: { position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface + 'dd', alignItems: 'center', justifyContent: 'center' },
-    saveBtnSaved: { backgroundColor: C.primary + 'dd' },
+    saveBtnSaved: { backgroundColor: PINK_RED + 'dd' },
 
     prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 2 },
     prospectMeta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginBottom: 8 },
 
     scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-    scoreNum: { fontFamily: FontFamily.headline, fontSize: 18, fontWeight: '900', color: C.primary },
+    scoreNum: { fontFamily: FontFamily.headline, fontSize: 18, fontWeight: '900', color: PINK_RED },
     starRow: { flexDirection: 'row', gap: 2 },
 
-    messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.primary, borderRadius: 10, paddingVertical: 10 },
+    messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: PINK_RED, borderRadius: 10, paddingVertical: 10 },
     messageBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     loadMoreBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 16 },
@@ -512,12 +512,12 @@ function createStyles(C: ThemeColors) {
     sheetSectionLabel: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: 0.6, alignSelf: 'flex-start', marginTop: 16, marginBottom: 10 },
     sheetChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 12 },
     sheetChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt },
-    sheetChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+    sheetChipActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     sheetChipText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted },
     sheetChipTextActive: { color: '#fff' },
     sheetToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 12, marginTop: 8, borderTopWidth: 1, borderTopColor: C.border },
     sheetToggleLabel: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.text },
-    sheetDoneBtn: { backgroundColor: C.primary, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 40, marginTop: 20, alignSelf: 'stretch', alignItems: 'center' },
+    sheetDoneBtn: { backgroundColor: PINK_RED, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 40, marginTop: 20, alignSelf: 'stretch', alignItems: 'center' },
     sheetDoneBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
   });
 }

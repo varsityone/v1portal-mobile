@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachTargeting, STATES } from '../../hooks/useCoachTargeting';
-import { GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { Card } from '../../components/ui/Card';
@@ -23,7 +23,7 @@ export default function RecruitingScreen() {
   const { selectedStates, prospects, stats, analytics, loading, toggleState, clearAll } = useCoachTargeting();
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const scoreBuckets = analytics
@@ -195,7 +195,7 @@ function createStyles(C: ThemeColors) {
 
     stateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     stateBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border },
-    stateBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+    stateBtnActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     stateText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text },
     stateTextActive: { color: '#ffffff' },
 

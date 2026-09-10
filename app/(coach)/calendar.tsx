@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachCalendarEvents } from '../../hooks/useCoachCalendarEvents';
 import { useCoachSaved } from '../../hooks/useCoachSaved';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -57,7 +57,7 @@ export default function CalendarScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const groupedByMonth = events.reduce(
@@ -84,7 +84,7 @@ export default function CalendarScreen() {
             <Text style={s.subtitle}>Track contact windows and key dates</Text>
           </View>
           <Pressable onPress={() => (showForm ? resetForm() : setShowForm(true))}>
-            <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.addBtn}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.addBtn}>
               <Text style={s.addBtnText}>{showForm ? 'Cancel' : 'Add Event'}</Text>
             </LinearGradient>
           </Pressable>
@@ -153,7 +153,7 @@ export default function CalendarScreen() {
 
               <View style={s.buttonRow}>
                 <Pressable style={s.saveBtn} onPress={handleCreate} disabled={creating || !title.trim() || !athleteId}>
-                  <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.saveBtnFill}>
+                  <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.saveBtnFill}>
                     <Text style={s.saveBtnText}>{creating ? 'Adding...' : 'Add Event'}</Text>
                   </LinearGradient>
                 </Pressable>
@@ -219,7 +219,7 @@ function createStyles(C: ThemeColors) {
     textarea: { minHeight: 80 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.background },
-    chipActive: { backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(168,85,247,0.4)' },
+    chipActive: { backgroundColor: 'rgba(234,12,95,0.15)', borderColor: 'rgba(234,12,95,0.4)' },
     chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
     chipTextActive: { color: '#fff' },
     buttonRow: { flexDirection: 'row', gap: 12, marginTop: 16 },

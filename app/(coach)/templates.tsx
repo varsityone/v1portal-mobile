@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachTemplates, MessageTemplate } from '../../hooks/useCoachTemplates';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -57,7 +57,7 @@ export default function TemplatesScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   return (
@@ -83,7 +83,7 @@ export default function TemplatesScreen() {
               }
             }}
           >
-            <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.newBtn}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.newBtn}>
               <Text style={s.newBtnText}>{showForm ? 'Cancel' : 'New Template'}</Text>
             </LinearGradient>
           </Pressable>
@@ -128,7 +128,7 @@ export default function TemplatesScreen() {
 
           <View style={s.buttonRow}>
             <Pressable style={s.saveBtn} onPress={handleSave} disabled={saving}>
-              <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.saveBtnFill}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.saveBtnFill}>
                 <Text style={s.saveBtnText}>{saving ? 'Saving...' : editingId ? 'Update Template' : 'Create Template'}</Text>
               </LinearGradient>
             </Pressable>
@@ -185,9 +185,9 @@ function createStyles(C: ThemeColors) {
     textarea: { minHeight: 160 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.background },
-    chipActive: { backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(168,85,247,0.4)' },
+    chipActive: { backgroundColor: 'rgba(234,12,95,0.15)', borderColor: 'rgba(234,12,95,0.4)' },
     chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
-    chipTextActive: { color: '#a855f7' },
+    chipTextActive: { color: PINK_RED },
     buttonRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
     saveBtn: { flex: 1, borderRadius: 8, overflow: 'hidden' },
     saveBtnFill: { paddingVertical: 12, alignItems: 'center' },

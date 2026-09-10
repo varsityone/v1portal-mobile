@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachPipeline, PipelineProspect, PipelineStatus } from '../../hooks/useCoachPipeline';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { Avatar } from '../../components/ui/Avatar';
@@ -48,7 +48,7 @@ export default function PipelineScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   const filtered = filter === 'all' ? prospects : prospects.filter(p => p.status === filter);
@@ -139,7 +139,7 @@ export default function PipelineScreen() {
               <View style={[s.statusDot, { backgroundColor: status.color }]} />
               <Text style={s.sheetOptionText}>{status.label}</Text>
               {activeProspect?.status === status.value && (
-                <Ionicons name="checkmark" size={18} color={C.primary} style={{ marginLeft: 'auto' }} />
+                <Ionicons name="checkmark" size={18} color={PINK_RED} style={{ marginLeft: 'auto' }} />
               )}
             </Pressable>
           ))}
@@ -162,7 +162,7 @@ function createStyles(C: ThemeColors) {
     filterScroll: { marginBottom: 20, marginHorizontal: -20 },
     filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20 },
     filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6 },
-    filterChipAllActive: { backgroundColor: '#833AB4' },
+    filterChipAllActive: { backgroundColor: PINK_RED },
     filterChipInactive: { borderWidth: 1, borderColor: C.border, backgroundColor: 'transparent' },
     filterChipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.text },
     filterChipTextActive: { color: '#fff' },
@@ -184,7 +184,7 @@ function createStyles(C: ThemeColors) {
     sheetTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text, textAlign: 'center' },
     sheetSubtitle: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 4, textAlign: 'center' },
     sheetOption: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 10, backgroundColor: C.surfaceAlt },
-    sheetOptionActive: { borderWidth: 1, borderColor: C.primary },
+    sheetOptionActive: { borderWidth: 1, borderColor: PINK_RED },
     sheetOptionText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
   });
 }

@@ -3,12 +3,41 @@ import { Animated, ActivityIndicator, Image, ImageBackground, Pressable, ScrollV
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import MaskedView from '@react-native-masked-view/masked-view';
+import Svg, { Defs, RadialGradient as SvgRadialGradient, Stop, Rect } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
 import { useCoachData, Coach } from '../../hooks/useCoachData';
-import { GRADIENT, TIER_GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierIndex } from '../../components/StatCard';
+
+// Mirrors web's `.coach-welcome-bg-avatar` radial mask
+// (`radial-gradient(circle at 60% 50%, black 45%, transparent 75%)`):
+// the photo is a large watermark, fully visible near its center and
+// fading to nothing at the edges, rather than a small cropped circle.
+const WATERMARK_SIZE = 280;
+function WelcomeAvatarWatermark({ uri }: { uri: string }) {
+  return (
+    <MaskedView
+      style={{ width: WATERMARK_SIZE, height: WATERMARK_SIZE }}
+      maskElement={
+        <Svg width={WATERMARK_SIZE} height={WATERMARK_SIZE}>
+          <Defs>
+            <SvgRadialGradient id="welcomeFade" cx="60%" cy="50%" r="55%">
+              <Stop offset="0%" stopColor="#fff" stopOpacity={1} />
+              <Stop offset="45%" stopColor="#fff" stopOpacity={1} />
+              <Stop offset="100%" stopColor="#fff" stopOpacity={0} />
+            </SvgRadialGradient>
+          </Defs>
+          <Rect width={WATERMARK_SIZE} height={WATERMARK_SIZE} fill="url(#welcomeFade)" />
+        </Svg>
+      }
+    >
+      <Image source={{ uri }} style={{ width: WATERMARK_SIZE, height: WATERMARK_SIZE }} />
+    </MaskedView>
+  );
+}
 
 // Matches web's components/CoachDashboard.tsx PERIOD_BG / PERIOD_ACCENT exactly —
 // a bold solid (or gradient, for the all-clear states) status banner, not a
@@ -177,7 +206,7 @@ export default function CoachDashboard() {
   if (coachLoading || (loading && coach?.verified)) {
     return (
       <View style={s.center}>
-        <ActivityIndicator color={C.primary} size="large" />
+        <ActivityIndicator color={PINK_RED} size="large" />
       </View>
     );
   }
@@ -242,7 +271,9 @@ export default function CoachDashboard() {
           pills + a pinned "View Profile" button. */}
       <View style={s.greetCard}>
         {coach.profile_photo_url ? (
-          <Image source={{ uri: coach.profile_photo_url }} style={s.greetBgAvatar} />
+          <View style={s.greetBgAvatarWrap} pointerEvents="none">
+            <WelcomeAvatarWatermark uri={coach.profile_photo_url} />
+          </View>
         ) : null}
         <View style={s.greetContent}>
           <Text style={s.greetEyebrow}>Coach Portal Dashboard</Text>
@@ -254,7 +285,7 @@ export default function CoachDashboard() {
           </Text>
           <View style={s.tierRow}>
             <Text style={s.tierRowLabel}>Status:</Text>
-            <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.tierPill}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.tierPill}>
               <Text style={s.tierPillText}>Verified Coach</Text>
             </LinearGradient>
             {coach.division ? (
@@ -285,16 +316,23 @@ export default function CoachDashboard() {
 
       <View style={s.secondaryRow}>
         {[
-          { href: '/(coach)/recruiting', label: 'Recruiting Map', sub: 'Target states', icon: 'map-outline' as const },
-          { href: '/(coach)/messages', label: 'Messages', sub: 'Reach out', icon: 'chatbubbles-outline' as const },
-          { href: '/(coach)/saved', label: 'Saved Prospects', sub: 'Your shortlist', icon: 'bookmark-outline' as const },
+          { href: '/(coach)/recruiting', label: 'Recruiting Map', sub: 'Target states', icon: 'map-outline' as const, bg: require('../../assets/coach-dashboard/recruiting-map-bg.png') },
+          { href: '/(coach)/messages', label: 'Messages', sub: 'Reach out', icon: 'chatbubbles-outline' as const, bg: require('../../assets/coach-dashboard/messages-bg.png') },
+          { href: '/(coach)/saved', label: 'Saved Prospects', sub: 'Your shortlist', icon: 'bookmark-outline' as const, bg: require('../../assets/coach-dashboard/saved-prospects-bg.png') },
         ].map(cta => (
-          <Pressable key={cta.href} style={s.secondaryCard} onPress={() => router.push(cta.href as any)}>
-            <Ionicons name={cta.icon} size={22} color="#fff" />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={s.secondaryCardTitle}>{cta.label}</Text>
-              <Text style={s.secondaryCardSub}>{cta.sub}</Text>
-            </View>
+          <Pressable key={cta.href} onPress={() => router.push(cta.href as any)}>
+            <ImageBackground source={cta.bg} resizeMode="cover" style={s.secondaryCard}>
+              <LinearGradient
+                colors={['rgba(0,0,0,0.88)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.15)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name={cta.icon} size={22} color="#fff" style={{ zIndex: 1 }} />
+              <View style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
+                <Text style={s.secondaryCardTitle}>{cta.label}</Text>
+                <Text style={s.secondaryCardSub}>{cta.sub}</Text>
+              </View>
+            </ImageBackground>
           </Pressable>
         ))}
       </View>
@@ -469,7 +507,7 @@ function createStyles(C: ThemeColors) {
     statLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
 
     greetCard: { backgroundColor: '#fff', borderRadius: 18, padding: 22, marginBottom: 20, overflow: 'hidden' },
-    greetBgAvatar: { position: 'absolute', top: 0, right: -60, width: 200, height: 200, borderRadius: 100, opacity: 0.12 },
+    greetBgAvatarWrap: { position: 'absolute', top: -40, right: -70, width: 280, height: 280 },
     greetContent: { position: 'relative' },
     greetEyebrow: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(0,0,0,0.45)', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' },
     greetCardTitle: { fontFamily: FontFamily.headline, fontSize: 24, fontWeight: '900', color: '#0a0a0a', marginBottom: 6 },
@@ -483,7 +521,7 @@ function createStyles(C: ThemeColors) {
     viewProfileBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#C13584' },
 
     secondaryRow: { gap: 10, marginBottom: 24 },
-    secondaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#000', borderRadius: 14, padding: 16, minHeight: 72 },
+    secondaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#000', borderRadius: 14, padding: 16, minHeight: 88, overflow: 'hidden' },
     secondaryCardTitle: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
     secondaryCardSub: { fontFamily: FontFamily.body, fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
 

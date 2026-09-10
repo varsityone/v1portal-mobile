@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../../hooks/useCoachData';
-import { TIER_GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -83,7 +83,7 @@ export default function CoachProfileScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Text style={s.heroName}>{coach.school_name}</Text>
             {coach.verified && (
-              <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.verifiedPill}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.verifiedPill}>
                 <Ionicons name="checkmark-circle" size={12} color="#fff" />
                 <Text style={s.verifiedPillText}>Verified</Text>
               </LinearGradient>

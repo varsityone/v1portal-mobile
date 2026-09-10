@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -291,7 +291,7 @@ function createStyles(C: ThemeColors) {
     complianceTitle: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text, marginBottom: 4 },
     complianceBody: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted, lineHeight: 18, marginBottom: 12 },
     complianceRow: { flexDirection: 'row', gap: 10 },
-    complianceQueueBtn: { flex: 1, backgroundColor: C.primary, borderRadius: 100, paddingVertical: 10, alignItems: 'center' },
+    complianceQueueBtn: { flex: 1, backgroundColor: PINK_RED, borderRadius: 100, paddingVertical: 10, alignItems: 'center' },
     complianceQueueText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     complianceCancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
     complianceCancelText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },

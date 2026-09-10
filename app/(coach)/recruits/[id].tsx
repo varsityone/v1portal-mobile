@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
-import { ThemeColors } from '../../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { Card } from '../../../components/ui/Card';
@@ -200,7 +200,7 @@ export default function RecruitDetailScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!athlete) return null;
@@ -366,13 +366,13 @@ function createStyles(C: ThemeColors) {
 
     actionsRow: { flexDirection: 'row', gap: 10 },
     actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border },
-    actionBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+    actionBtnActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     actionBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
     actionBtnTextActive: { color: '#fff' },
 
     header: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     name: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text },
-    position: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.primary, marginTop: 2 },
+    position: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: PINK_RED, marginTop: 2 },
 
     statsRow: { flexDirection: 'row', gap: 10 },
     statBox: { flex: 1, backgroundColor: C.surface, borderRadius: 10, padding: 12, alignItems: 'center' },
@@ -381,7 +381,7 @@ function createStyles(C: ThemeColors) {
 
     scoreCard: {},
     sectionLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 1, marginBottom: 8 },
-    scoreValue: { fontFamily: FontFamily.headline, fontSize: 44, color: C.primary },
+    scoreValue: { fontFamily: FontFamily.headline, fontSize: 44, color: PINK_RED },
     breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
     breakdownLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
     breakdownValue: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
@@ -396,12 +396,12 @@ function createStyles(C: ThemeColors) {
     emptyText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
     bioText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 20 },
 
-    filmCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.primary, borderRadius: 12, padding: 18 },
+    filmCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: PINK_RED, borderRadius: 12, padding: 18 },
     filmTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff', marginBottom: 2 },
     filmSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
 
     noteInput: { borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, minHeight: 90, textAlignVertical: 'top', color: C.text, backgroundColor: C.surfaceAlt, fontFamily: FontFamily.body, fontSize: 13, marginBottom: 10 },
-    noteSaveBtn: { backgroundColor: C.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+    noteSaveBtn: { backgroundColor: PINK_RED, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
     noteSaveBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     noteRow: { backgroundColor: C.surfaceAlt, borderRadius: 8, padding: 12 },
     noteContent: { fontFamily: FontFamily.body, fontSize: 13, color: C.text, lineHeight: 19, marginBottom: 6 },

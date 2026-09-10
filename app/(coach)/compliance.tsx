@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -73,7 +73,7 @@ export default function CoachComplianceScreen() {
 
   if (coachLoading || loading) {
     return (
-      <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>
+      <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>
     );
   }
   if (!coach) return null;

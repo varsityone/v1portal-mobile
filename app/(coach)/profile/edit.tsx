@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { floorFromLevels, POSITIONS, RECRUITING_LEVEL_BANDS } from '../../../lib/recruitingLevels';
-import { ThemeColors } from '../../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { Card } from '../../../components/ui/Card';
@@ -176,7 +176,7 @@ export default function CoachProfileEditScreen() {
   };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   return (
@@ -403,7 +403,7 @@ function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: Fiel
               }}
             >
               <Text style={s.menuItemText}>{opt}</Text>
-              {value === opt && <Ionicons name="checkmark" size={16} color={C.primary} />}
+              {value === opt && <Ionicons name="checkmark" size={16} color={PINK_RED} />}
             </Pressable>
           ))}
         </View>
@@ -427,7 +427,7 @@ function createStyles(C: ThemeColors) {
     sectionSub: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: -8, marginBottom: 14 },
     checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
     checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-    checkboxChecked: { backgroundColor: C.primary, borderColor: C.primary },
+    checkboxChecked: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     checkboxLabel: { flex: 1, fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
 
     photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
@@ -438,7 +438,7 @@ function createStyles(C: ThemeColors) {
       backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
     },
     photoActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 },
-    photoBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: C.primary },
+    photoBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: PINK_RED },
     photoBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     photoRemoveBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1, borderColor: C.border },
     photoRemoveBtnText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
@@ -457,11 +457,11 @@ function createStyles(C: ThemeColors) {
 
     chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
-    chipActive: { backgroundColor: C.primary + '20', borderColor: C.primary },
+    chipActive: { backgroundColor: PINK_RED + '20', borderColor: PINK_RED },
     chipText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-    chipTextActive: { color: C.primary, fontWeight: '600' },
+    chipTextActive: { color: PINK_RED, fontWeight: '600' },
 
-    saveBtn: { backgroundColor: C.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
+    saveBtn: { backgroundColor: PINK_RED, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
     saveBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
   });
 }

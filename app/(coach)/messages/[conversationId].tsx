@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
-import { ThemeColors } from '../../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -110,7 +110,7 @@ export default function MessageThreadScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!messages.length) {
@@ -141,7 +141,7 @@ export default function MessageThreadScreen() {
             multiline
           />
           <Pressable onPress={handleSend} disabled={!text.trim() || sending} hitSlop={8}>
-            <Ionicons name="send" size={20} color={text.trim() ? C.primary : C.textDim} />
+            <Ionicons name="send" size={20} color={text.trim() ? PINK_RED : C.textDim} />
           </Pressable>
         </View>
       </View>
@@ -201,7 +201,7 @@ export default function MessageThreadScreen() {
           multiline
         />
         <Pressable onPress={handleSend} disabled={!text.trim() || sending} hitSlop={8}>
-          <Ionicons name="send" size={20} color={text.trim() ? C.primary : C.textDim} />
+          <Ionicons name="send" size={20} color={text.trim() ? PINK_RED : C.textDim} />
         </Pressable>
       </View>
     </View>
@@ -221,7 +221,7 @@ function createStyles(C: ThemeColors) {
     messages: { paddingHorizontal: 16, paddingVertical: 12 },
     messageBubble: { marginBottom: 12, maxWidth: '85%' },
     bubbleLeft: { alignSelf: 'flex-start', backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
-    bubbleRight: { alignSelf: 'flex-end', backgroundColor: C.primary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
+    bubbleRight: { alignSelf: 'flex-end', backgroundColor: PINK_RED, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10 },
     messageText: { fontFamily: FontFamily.body, fontSize: 14 },
     messageTextLeft: { color: C.text },
     messageTextRight: { color: '#fff' },

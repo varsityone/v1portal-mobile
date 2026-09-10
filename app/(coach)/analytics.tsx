@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachAnalytics } from '../../hooks/useCoachAnalytics';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { FilterChips } from '../../components/ui/FilterChips';
@@ -16,7 +16,7 @@ export default function AnalyticsScreen() {
   const { kpis, loading, timeframe, setTimeframe } = useCoachAnalytics();
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!kpis) {
@@ -59,7 +59,7 @@ export default function AnalyticsScreen() {
             <Text style={s.kpiLabel}>Matches</Text>
           </Card>
           <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#a855f7' }]}>{kpis.saved}</Text>
+            <Text style={[s.kpiValue, { color: PINK_RED }]}>{kpis.saved}</Text>
             <Text style={s.kpiLabel}>Saved</Text>
           </Card>
         </View>
@@ -156,7 +156,7 @@ function createStyles(C: ThemeColors) {
 
     kpiRow: { flexDirection: 'row', gap: 12 },
     kpiCard: { flex: 1, alignItems: 'center', paddingVertical: 20 },
-    kpiValue: { fontFamily: FontFamily.headline, fontSize: 28, color: C.primary, marginBottom: 4 },
+    kpiValue: { fontFamily: FontFamily.headline, fontSize: 28, color: PINK_RED, marginBottom: 4 },
     kpiLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
 
     sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 10 },
@@ -172,7 +172,7 @@ function createStyles(C: ThemeColors) {
     prospectRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
     prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
     prospectMeta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
-    prospectScore: { fontFamily: FontFamily.headline, fontSize: 16, color: C.primary },
+    prospectScore: { fontFamily: FontFamily.headline, fontSize: 16, color: PINK_RED },
 
     errorText: { fontFamily: FontFamily.body, fontSize: 14, color: C.error },
   });

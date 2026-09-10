@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useCoachInbox } from '../../../hooks/useCoachInbox';
-import { ThemeColors } from '../../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -24,7 +24,7 @@ export default function MessagesInboxScreen() {
   }, [coach?.id]);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!coach?.verified) {
@@ -48,7 +48,7 @@ export default function MessagesInboxScreen() {
           <Text style={s.emptyTitle}>No messages yet</Text>
           <Text style={s.emptyBody}>Start reaching out to prospects to begin conversations</Text>
           <Pressable onPress={() => router.push('/(coach)/search' as any)}>
-            <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.emptyBtn}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.emptyBtn}>
               <Text style={s.emptyBtnText}>Find Prospects</Text>
             </LinearGradient>
           </Pressable>
@@ -67,7 +67,7 @@ export default function MessagesInboxScreen() {
                 {athlete?.profile_photo_url ? (
                   <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
                 ) : (
-                  <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photo} />
+                  <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photo} />
                 )}
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -113,7 +113,7 @@ function createStyles(C: ThemeColors) {
     row: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 16 },
     photo: { width: 56, height: 56, borderRadius: 10 },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
-    badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100, backgroundColor: C.primary },
+    badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100, backgroundColor: PINK_RED },
     badgeText: { fontFamily: FontFamily.bodyBold, fontSize: 10, color: '#fff' },
     metaRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
     meta: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },

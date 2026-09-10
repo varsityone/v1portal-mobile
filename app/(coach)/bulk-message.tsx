@@ -7,7 +7,7 @@ import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachSaved } from '../../hooks/useCoachSaved';
 import { useCoachTemplates } from '../../hooks/useCoachTemplates';
 import { useCoachBulkMessage } from '../../hooks/useCoachBulkMessage';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -47,7 +47,7 @@ export default function BulkMessageScreen() {
   };
 
   if (coachLoading || savedLoading || templatesLoading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   return (
@@ -148,7 +148,7 @@ export default function BulkMessageScreen() {
 
       <Pressable onPress={handleSend} disabled={!canSend}>
         <LinearGradient
-          colors={canSend ? ['#501af0', '#a855f7'] : [C.border, C.border]}
+          colors={canSend ? GRADIENT : [C.border, C.border]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.sendBtn}
@@ -186,9 +186,9 @@ function createStyles(C: ThemeColors) {
 
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.background },
-    chipActive: { backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(168,85,247,0.4)' },
+    chipActive: { backgroundColor: 'rgba(234,12,95,0.15)', borderColor: 'rgba(234,12,95,0.4)' },
     chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
-    chipTextActive: { color: '#a855f7' },
+    chipTextActive: { color: PINK_RED },
 
     messageInput: { borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 12, color: C.text, fontFamily: FontFamily.body, fontSize: 13, minHeight: 140, backgroundColor: C.background },
     warningText: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 8 },

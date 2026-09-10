@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 
@@ -77,7 +77,7 @@ export default function NotificationsSettingsScreen() {
   }, [settings]);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={C.primary} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
   }
 
   if (!settings) {
@@ -101,7 +101,7 @@ export default function NotificationsSettingsScreen() {
           <Pressable
             onPress={() => handleToggle('email_new_messages', !settings.email_new_messages)}
             disabled={saving}
-            style={[s.toggle, settings.email_new_messages && { backgroundColor: C.primary }]}
+            style={[s.toggle, settings.email_new_messages && { backgroundColor: PINK_RED }]}
           >
             <View style={[s.toggleThumb, settings.email_new_messages && s.toggleThumbActive]} />
           </Pressable>
@@ -114,7 +114,7 @@ export default function NotificationsSettingsScreen() {
           <Pressable
             onPress={() => handleToggle('email_new_matches', !settings.email_new_matches)}
             disabled={saving}
-            style={[s.toggle, settings.email_new_matches && { backgroundColor: C.primary }]}
+            style={[s.toggle, settings.email_new_matches && { backgroundColor: PINK_RED }]}
           >
             <View style={[s.toggleThumb, settings.email_new_matches && s.toggleThumbActive]} />
           </Pressable>
@@ -127,7 +127,7 @@ export default function NotificationsSettingsScreen() {
           <Pressable
             onPress={() => handleToggle('email_daily_digest', !settings.email_daily_digest)}
             disabled={saving}
-            style={[s.toggle, settings.email_daily_digest && { backgroundColor: C.primary }]}
+            style={[s.toggle, settings.email_daily_digest && { backgroundColor: PINK_RED }]}
           >
             <View style={[s.toggleThumb, settings.email_daily_digest && s.toggleThumbActive]} />
           </Pressable>
@@ -142,7 +142,7 @@ export default function NotificationsSettingsScreen() {
           <Pressable
             onPress={() => handleToggle('push_new_messages', !settings.push_new_messages)}
             disabled={saving}
-            style={[s.toggle, settings.push_new_messages && { backgroundColor: C.primary }]}
+            style={[s.toggle, settings.push_new_messages && { backgroundColor: PINK_RED }]}
           >
             <View style={[s.toggleThumb, settings.push_new_messages && s.toggleThumbActive]} />
           </Pressable>
@@ -155,7 +155,7 @@ export default function NotificationsSettingsScreen() {
           <Pressable
             onPress={() => handleToggle('push_new_matches', !settings.push_new_matches)}
             disabled={saving}
-            style={[s.toggle, settings.push_new_matches && { backgroundColor: C.primary }]}
+            style={[s.toggle, settings.push_new_matches && { backgroundColor: PINK_RED }]}
           >
             <View style={[s.toggleThumb, settings.push_new_matches && s.toggleThumbActive]} />
           </Pressable>
