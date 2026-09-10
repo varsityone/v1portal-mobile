@@ -72,6 +72,13 @@ export default function CoachSettingsScreen() {
         </Pressable>
       </Section>
 
+      <Section title="Support" C={C} s={s}>
+        <View style={{ gap: 10 }}>
+          <Row label="Help & Support" onPress={() => router.push('/(coach)/help' as any)} cta="View" C={C} s={s} />
+          <Row label="Share Feedback" onPress={() => router.push('/(coach)/help?subject=feedback' as any)} cta="View" C={C} s={s} />
+        </View>
+      </Section>
+
       <Section title="Legal" C={C} s={s}>
         <View style={{ gap: 10 }}>
           <Row label="Terms of Service" onPress={() => router.push('/terms' as any)} cta="View" C={C} s={s} />

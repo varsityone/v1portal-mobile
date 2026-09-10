@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,9 +11,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useColors } from '../../context/ThemeContext';
-import { ThemeColors } from '../../constants/Colors';
+import { ThemeColors, PINK_RED } from '../../constants/Colors';
 import { GradientButton } from '../../components/GradientButton';
 
 // Mirrors web's COACH_FAQS (lib/faqs.ts) so both platforms answer the same
@@ -38,11 +39,13 @@ const SUBJECTS = [
   'Compliance Question',
   'Program Profile Update',
   'Bug Report',
+  'Feedback / Suggestion',
   'Other',
 ];
 
 export default function CoachHelpScreen() {
   const { session } = useAuth();
+  const { subject: subjectParam } = useLocalSearchParams<{ subject?: string }>();
   const C = useColors();
   const s = styles(C);
 
@@ -54,6 +57,15 @@ export default function CoachHelpScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+  const [formCardY, setFormCardY] = useState(0);
+
+  useEffect(() => {
+    if (subjectParam === 'feedback') {
+      setSubject('Feedback / Suggestion');
+      if (formCardY > 0) scrollRef.current?.scrollTo({ y: formCardY, animated: true });
+    }
+  }, [subjectParam, formCardY]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !email.trim() || !subject || !message.trim()) {
@@ -82,7 +94,7 @@ export default function CoachHelpScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
           <Text style={s.eyebrow}>SUPPORT</Text>
           <Text style={s.title}>Help & Support</Text>
@@ -103,6 +115,7 @@ export default function CoachHelpScreen() {
         </View>
 
         {/* Support ticket */}
+        <View onLayout={e => setFormCardY(e.nativeEvent.layout.y)}>
         <Text style={[s.sectionTitle, { marginTop: 28 }]}>Submit a Support Ticket</Text>
         <Text style={s.sectionSub}>We respond within 24 hours.</Text>
 
@@ -183,6 +196,7 @@ export default function CoachHelpScreen() {
             </GradientButton>
           </View>
         )}
+        </View>
 
         <Text style={s.footer}>
           Or email us directly at{' '}
@@ -217,9 +231,9 @@ const styles = (C: ThemeColors) => StyleSheet.create({
   textarea: { minHeight: 100, paddingTop: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-  chipActive: { backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(131,58,180,0.4)' },
+  chipActive: { backgroundColor: `${PINK_RED}26`, borderColor: `${PINK_RED}66` },
   chipText: { fontSize: 12, fontWeight: '500', color: C.textMuted },
-  chipTextActive: { color: '#a855f7', fontWeight: '700' },
+  chipTextActive: { color: PINK_RED, fontWeight: '700' },
   errorText: { fontSize: 12, color: C.error, marginTop: 4 },
   submitBtn: { marginTop: 16, paddingVertical: 14, borderRadius: 100, alignItems: 'center' },
   submitBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },

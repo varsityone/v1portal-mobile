@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
+  Linking,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,12 +17,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, SCORE_GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { DIVISION_MIN_SCORE_DEFAULT, Division } from '../../../constants/RecruitingLevels';
 
 const API_BASE = 'https://v1portal.com';
+
+// Local score->tier fallback for the rare row with no cached recruiting_level —
+// mirrors the same bands used on the athlete's own profile screen.
+function fallbackTier(score: number | null): string {
+  if (!score) return '';
+  if (score >= 80) return 'FBS Prospect';
+  if (score >= 75) return 'FCS Prospect';
+  if (score >= 70) return 'D2 Prospect';
+  if (score >= 60) return 'D3/NAIA Prospect';
+  if (score >= 50) return 'NAIA/JUCO Prospect';
+  return 'JUCO/Prep School Prospect';
+}
 
 interface AthleteCard {
   id: string;
@@ -32,6 +47,12 @@ interface AthleteCard {
   v1_score: number | null;
   bio: string | null;
   profile_photo_url: string | null;
+  height: string | null;
+  weight: string | number | null;
+  gpa: string | number | null;
+  forty_yard: string | number | null;
+  hudl_link: string | null;
+  recruiting_level: string | null;
 }
 
 export default function CoachMatchScreen() {
@@ -50,6 +71,18 @@ export default function CoachMatchScreen() {
   const [swiping, setSwiping] = useState(false);
   const [matchNotif, setMatchNotif] = useState<{ id: string; name: string } | null>(null);
   const [swipeErrorNotif, setSwipeErrorNotif] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerAnim = useRef(new Animated.Value(0)).current;
+
+  const toggleDrawer = (open: boolean) => {
+    setDrawerOpen(open);
+    Animated.timing(drawerAnim, { toValue: open ? 1 : 0, duration: 320, useNativeDriver: true }).start();
+  };
+
+  useEffect(() => {
+    drawerAnim.setValue(0);
+    setDrawerOpen(false);
+  }, [currentIndex]);
 
   useEffect(() => {
     if (!swipeErrorNotif) return;
@@ -75,7 +108,7 @@ export default function CoachMatchScreen() {
       // deep" TS error (the generated athletes row type is large).
       let q: any = supabase
         .from('athletes')
-        .select('id, full_name, position, graduation_year, city, state, high_school, v1_score, bio, profile_photo_url')
+        .select('id, full_name, position, graduation_year, city, state, high_school, v1_score, bio, profile_photo_url, height, weight, gpa, forty_yard, hudl_link, recruiting_level')
         .eq('is_profile_public', true)
         .not('v1_score', 'is', null)
         .order('v1_score', { ascending: false })
@@ -254,6 +287,17 @@ export default function CoachMatchScreen() {
     );
   }
 
+  const tierLabel = current?.recruiting_level || fallbackTier(current?.v1_score ?? null);
+  const quickStats = [
+    current?.height,
+    current?.weight ? `${current.weight} lbs` : null,
+    current?.forty_yard ? `${current.forty_yard}s 40` : null,
+    current?.gpa ? `${current.gpa} GPA` : null,
+    current?.high_school,
+  ].filter(Boolean).join('   ·   ');
+
+  const drawerTranslateY = drawerAnim.interpolate({ inputRange: [0, 1], outputRange: [560, 0] });
+
   // ── Card deck — fills the whole device screen edge-to-edge, including
   // behind the status bar and home indicator ──
   return (
@@ -273,49 +317,111 @@ export default function CoachMatchScreen() {
         )}
 
         <View style={[s.cardTop, { paddingTop: insets.top + 18 }]}>
-          <View style={s.progressTrack}>
-            <View style={[s.progressFill, { width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }]} />
+          <View style={s.topRow}>
+            <Text style={s.topTitle}>Players For You</Text>
+            <View style={s.sliderBtn}>
+              <Ionicons name="options-outline" size={18} color="#fff" />
+            </View>
           </View>
-          <Text style={s.cardCounter}>{Math.min(currentIndex + 1, totalCards)} / {totalCards}</Text>
+          <View style={s.progressRow}>
+            <View style={s.progressTrack}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressFill, { width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }]} />
+            </View>
+            <Text style={s.cardCounter}>{Math.min(currentIndex + 1, totalCards)} / {totalCards}</Text>
+          </View>
         </View>
+
+        {!!tierLabel && (
+          <View style={[s.tierBadge, { top: insets.top + 90 }]}>
+            <Text style={s.tierBadgeText}>{tierLabel}</Text>
+          </View>
+        )}
+        {current?.v1_score != null && (
+          <View style={[s.scoreBadge, { top: insets.top + 90 }]}>
+            <Text style={s.scoreBadgeNum}>{current.v1_score}</Text>
+            <Text style={s.scoreBadgeLabel}>V1 Score</Text>
+          </View>
+        )}
 
         <View style={[s.cardBottom, { paddingBottom: insets.bottom + 22 }]}>
-          {current?.v1_score != null && (
-            <View style={s.scoreChip}>
-              <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Text style={s.scoreChipText}>{current.v1_score} V1</Text>
+          <Pressable style={s.infoBlock} onPress={() => toggleDrawer(true)}>
+            <View>
+              <Text style={s.cardName}>{current?.full_name ?? 'Unknown Athlete'}</Text>
+              <Text style={s.cardMeta}>
+                {[current?.position, current?.graduation_year ? `Class of ${current.graduation_year}` : null, [current?.city, current?.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ')}
+              </Text>
             </View>
-          )}
-          <Text style={s.cardName}>{current?.full_name ?? 'Unknown Athlete'}</Text>
-          <Text style={s.cardMeta}>
-            {current?.position}{current?.graduation_year ? ` · Class of ${current.graduation_year}` : ''}
-          </Text>
-          <Text style={s.cardSchool}>
-            {[current?.high_school, current?.city, current?.state].filter(Boolean).join(', ')}
-          </Text>
-          {current?.bio ? <Text style={s.cardBio} numberOfLines={3}>{current.bio}</Text> : null}
+            {!!quickStats && <Text style={s.quickStats} numberOfLines={1}>{quickStats}</Text>}
+          </Pressable>
 
-          {isAlreadyMatched ? (
+          <View style={s.actionRow}>
+            <Pressable style={s.actBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
+              <Ionicons name="close" size={20} color="#fff" />
+            </Pressable>
+            <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <Ionicons name="add" size={26} color="#fff" />
+            </Pressable>
             <Pressable
-              style={s.messageBtn}
+              style={[s.actBtn, isAlreadyMatched && s.actBtnMatched]}
+              disabled={!isAlreadyMatched}
               onPress={() => router.push(existingMatchId ? (`/(coach)/match/${existingMatchId}` as any) : ('/(coach)/matches' as any))}
             >
-              <Ionicons name="chatbubble" size={16} color="#fff" />
-              <Text style={s.messageBtnText}>Message</Text>
+              <Ionicons name="chatbubble" size={18} color={isAlreadyMatched ? C.success : 'rgba(255,255,255,0.5)'} />
             </Pressable>
-          ) : (
-            <View style={s.actionRow}>
-              <Pressable style={s.passBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
-                <Ionicons name="close" size={26} color="#fff" />
-              </Pressable>
-              <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
-                <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                <Ionicons name="heart" size={24} color="#fff" />
-              </Pressable>
-            </View>
-          )}
+          </View>
         </View>
+
+        {/* Full-profile drawer — mirrors the athlete-side program details
+            drawer's bottom-sheet pattern, tapping the name/stats opens it. */}
+        <Animated.View style={[s.drawer, { transform: [{ translateY: drawerTranslateY }] }]} pointerEvents={drawerOpen ? 'auto' : 'none'}>
+          <View style={s.dragRow}>
+            <View style={s.dragHandle} />
+            <Pressable style={s.drawerCloseBtn} onPress={() => toggleDrawer(false)} hitSlop={8}>
+              <Ionicons name="close" size={14} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={s.drawerName}>{current?.full_name ?? 'Unknown Athlete'}</Text>
+            <Text style={s.drawerSub}>
+              {[current?.position, current?.graduation_year ? `Class of ${current.graduation_year}` : null].filter(Boolean).join(' · ')}
+            </Text>
+
+            <View style={s.statGrid}>
+              {current?.height && <StatTile label="Height" value={current.height} s={s} />}
+              {current?.weight != null && <StatTile label="Weight" value={`${current.weight} lbs`} s={s} />}
+              {current?.forty_yard != null && <StatTile label="40-Yard" value={`${current.forty_yard}s`} s={s} />}
+              {current?.gpa != null && <StatTile label="GPA" value={String(current.gpa)} s={s} />}
+              {current?.high_school && <StatTile label="High School" value={current.high_school} s={s} />}
+              {(current?.city || current?.state) && <StatTile label="Location" value={[current?.city, current?.state].filter(Boolean).join(', ')} s={s} />}
+              {current?.v1_score != null && <StatTile label="V1 Score" value={String(current.v1_score)} s={s} />}
+            </View>
+
+            {current?.bio && (
+              <>
+                <Text style={s.bioLabel}>Bio</Text>
+                <Text style={s.bioText}>{current.bio}</Text>
+              </>
+            )}
+
+            {current?.hudl_link && (
+              <Pressable style={s.hudlLink} onPress={() => Linking.openURL(current.hudl_link as string)}>
+                <Ionicons name="open-outline" size={14} color={C.success} />
+                <Text style={s.hudlLinkText}>View Film on Hudl</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        </Animated.View>
       </View>
+    </View>
+  );
+}
+
+function StatTile({ label, value, s }: { label: string; value: string; s: ReturnType<typeof createStyles> }) {
+  return (
+    <View style={s.statTile}>
+      <Text style={s.statLabel}>{label}</Text>
+      <Text style={s.statValue} numberOfLines={2}>{value}</Text>
     </View>
   );
 }
@@ -365,22 +471,53 @@ function createStyles(C: ThemeColors) {
     errorToast: { position: 'absolute', left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
     errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
-    cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
-    cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
-    progressTrack: { flex: 1, height: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
-    progressFill: { height: '100%', backgroundColor: '#fff', borderRadius: 100 },
-    cardCounter: { fontFamily: FontFamily.mono, fontSize: 12, color: '#fff' },
-    cardBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 22, gap: 4 },
-    scoreChip: { alignSelf: 'flex-start', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4, overflow: 'hidden', marginBottom: 8 },
-    scoreChipText: { fontFamily: FontFamily.monoBold, fontSize: 11, color: '#fff', letterSpacing: 0.5 },
-    cardName: { fontFamily: FontFamily.headline, fontSize: 28, color: '#fff' },
-    cardMeta: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
-    cardSchool: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 8 },
-    cardBio: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 14 },
-    actionRow: { flexDirection: 'row', gap: 16, marginTop: 6 },
-    passBtn: { width: 58, height: 58, borderRadius: 29, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-    likeBtnWrap: { flex: 1, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-    messageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.success, borderRadius: 100, paddingVertical: 15, marginTop: 6 },
-    messageBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
+    cardScrim: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(10,10,12,0.4)',
+    },
+    cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 20, gap: 12 },
+    topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+    topTitle: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },
+    sliderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    progressTrack: { flex: 1, height: 5, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 100 },
+    cardCounter: { fontFamily: FontFamily.mono, fontSize: 12, fontWeight: '700', color: '#fff' },
+
+    tierBadge: { position: 'absolute', top: 92, left: 20, borderRadius: 100, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: `${PINK_RED}26` },
+    tierBadgeText: { fontFamily: FontFamily.mono, fontSize: 11, fontWeight: '700', color: PINK_RED, textTransform: 'uppercase', letterSpacing: 0.5 },
+    scoreBadge: { position: 'absolute', top: 92, right: 20, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(10,10,12,0.55)', alignItems: 'center' },
+    scoreBadgeNum: { fontFamily: FontFamily.mono, fontSize: 20, fontWeight: '700', color: '#fff' },
+    scoreBadgeLabel: { fontFamily: FontFamily.body, fontSize: 9, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 1 },
+
+    cardBottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 20, gap: 14 },
+    infoBlock: { gap: 10 },
+    cardName: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },
+    cardMeta: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
+    quickStats: { fontFamily: FontFamily.mono, fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
+
+    actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
+    actBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    actBtnMatched: { backgroundColor: 'rgba(113,255,126,0.16)' },
+    likeBtnWrap: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+
+    drawer: {
+      position: 'absolute', bottom: 0, left: 0, right: 0, height: '66%',
+      backgroundColor: 'rgba(10,10,16,0.97)', borderRadius: 20,
+      paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24,
+    },
+    dragRow: { position: 'relative', marginBottom: 16, alignItems: 'center' },
+    dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)' },
+    drawerCloseBtn: { position: 'absolute', top: -6, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
+    drawerName: { fontFamily: FontFamily.headline, fontSize: 19, color: '#fff', marginBottom: 4 },
+    drawerSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 18 },
+    statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 18 },
+    statTile: { width: '47%', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 12 },
+    statLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+    statValue: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
+    bioLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+    bioText: { fontFamily: FontFamily.body, fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 20, marginBottom: 16 },
+    hudlLink: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: 'rgba(113,255,126,0.14)', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 },
+    hudlLinkText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.success },
   });
 }

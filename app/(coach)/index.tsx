@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useCoachData, Coach } from '../../hooks/useCoachData';
-import { GRADIENT, TIER_GRADIENT, ThemeColors } from '../../constants/Colors';
+import { GRADIENT, TIER_GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierIndex } from '../../components/StatCard';
@@ -457,7 +457,7 @@ function createStyles(C: ThemeColors) {
     greetSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginTop: 2 },
 
     pendingCard: { backgroundColor: C.surface, borderRadius: 20, padding: 28, alignItems: 'center' },
-    pendingIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(80,26,255,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    pendingIconWrap: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(234,12,95,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
     pendingTitle: { fontFamily: FontFamily.headlineBold, fontSize: 19, color: C.text, marginBottom: 8, textAlign: 'center' },
     pendingBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 20, textAlign: 'center', marginBottom: 20 },
     resendBtnWrap: { borderRadius: 100, paddingVertical: 13, paddingHorizontal: 24, overflow: 'hidden' },
@@ -525,7 +525,7 @@ function createStyles(C: ThemeColors) {
     matchAvatar: { width: 40, height: 40, borderRadius: 20 },
     matchName: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 2 },
     matchSub: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
-    matchScore: { fontFamily: FontFamily.headline, fontSize: 17, color: C.primary },
+    matchScore: { fontFamily: FontFamily.headline, fontSize: 17, color: PINK_RED },
     matchScoreLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, letterSpacing: 0.5 },
   });
 }
