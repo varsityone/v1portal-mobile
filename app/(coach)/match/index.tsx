@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
@@ -64,6 +64,8 @@ export default function CoachMatchScreen() {
   const [loading, setLoading] = useState(true);
   const [allAthletes, setAllAthletes] = useState<AthleteCard[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [expandedToAll, setExpandedToAll] = useState(false);
+  const [sessionSwipedIds, setSessionSwipedIds] = useState<Set<string>>(new Set());
   const [existingMatches, setExistingMatches] = useState<Map<string, string>>(new Map());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swiping, setSwiping] = useState(false);
@@ -168,12 +170,26 @@ export default function CoachMatchScreen() {
 
   const deck = useMemo(() => {
     if (!selectedLevel) return [];
-    const inLevel = allAthletes.filter(a => levelOf(a) === selectedLevel);
+    // Non-expanded mode advances purely via currentIndex, same as before --
+    // no sessionSwipedIds filtering here, since filtering would shrink the
+    // array out from under the index on every swipe. Expanded mode builds
+    // a fresh merged deck instead, so it needs sessionSwipedIds to avoid
+    // re-showing anything already swiped earlier this session.
+    const inScope = expandedToAll
+      ? allAthletes.filter(a => !sessionSwipedIds.has(a.id))
+      : allAthletes.filter(a => levelOf(a) === selectedLevel);
     const needs = coach?.position_needs ?? [];
-    const matched = needs.length ? inLevel.filter(a => a.position && needs.includes(a.position)) : [];
-    const rest = needs.length ? inLevel.filter(a => !(a.position && needs.includes(a.position))) : inLevel;
+    const matched = needs.length ? inScope.filter(a => a.position && needs.includes(a.position)) : [];
+    const rest = needs.length ? inScope.filter(a => !(a.position && needs.includes(a.position))) : inScope;
     return [...matched, ...rest];
-  }, [allAthletes, selectedLevel, coach?.position_needs]);
+  }, [allAthletes, selectedLevel, expandedToAll, sessionSwipedIds, coach?.position_needs]);
+
+  // How many unseen athletes exist outside the currently selected level --
+  // powers the "See outside my range" button's count on the caught-up card.
+  const outsideRangeCount = useMemo(() => {
+    if (!selectedLevel) return 0;
+    return allAthletes.filter(a => !sessionSwipedIds.has(a.id) && levelOf(a) !== selectedLevel).length;
+  }, [allAthletes, selectedLevel, sessionSwipedIds]);
 
   const current = deck[currentIndex];
   const totalCards = deck.length;
@@ -242,6 +258,7 @@ export default function CoachMatchScreen() {
       setSwipeErrorNotif("That didn't save. Check your connection and try again.");
       return;
     }
+    setSessionSwipedIds(prev => new Set(prev).add(athleteId));
     setSwiping(false);
     setCurrentIndex(i => i + 1);
   };
@@ -347,7 +364,7 @@ export default function CoachMatchScreen() {
           );
 
           return (
-            <Pressable key={band.key} onPress={() => { setSelectedLevel(band.level); setCurrentIndex(0); }}>
+            <Pressable key={band.key} onPress={() => { setSelectedLevel(band.level); setExpandedToAll(false); setCurrentIndex(0); }}>
               {isYourLevel ? (
                 <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
                   <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
@@ -383,19 +400,33 @@ export default function CoachMatchScreen() {
     );
   }
 
-  // ── Empty state ──
+  // ── Empty state — matches web's "seen everyone" card exactly: full-bleed
+  // brand-gradient card, target icon, and (when more athletes exist outside
+  // the current level) a single button to expand the search. ──
   if (currentIndex >= totalCards) {
     return (
       <>
         <SafeAreaView style={s.center}>
-          <View style={s.emptyIconWrap}>
-            <Ionicons name="heart-outline" size={28} color={C.textMuted} />
+          <View style={s.emptyCard}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <View style={s.emptyIconWrapGrad}>
+              <Feather name="target" size={26} color="#fff" />
+            </View>
+            <Text style={s.emptyTitleGrad}>You've seen every player</Text>
+            <Text style={s.emptyBodyGrad}>
+              {expandedToAll
+                ? "You've seen everyone in your program's range and beyond. Check back soon."
+                : "You've seen everyone currently in your program's range."}
+            </Text>
+            {!expandedToAll && outsideRangeCount > 0 && (
+              <Pressable style={s.emptyBtnWhite} onPress={() => { setExpandedToAll(true); setCurrentIndex(0); }}>
+                <Text style={s.emptyBtnWhiteText}>See outside my range ({outsideRangeCount})</Text>
+              </Pressable>
+            )}
+            <Pressable style={{ marginTop: 14 }} onPress={() => { setSelectedLevel(null); setExpandedToAll(false); setCurrentIndex(0); }}>
+              <Text style={s.emptyLinkGrad}>Try another level</Text>
+            </Pressable>
           </View>
-          <Text style={s.emptyTitle}>You're caught up</Text>
-          <Text style={s.emptyBody}>You've seen every {selectedLevel ?? 'athlete'} available right now. Check back soon.</Text>
-          <Pressable style={s.emptyBtnGhost} onPress={() => { setSelectedLevel(null); setCurrentIndex(0); }}>
-            <Text style={s.emptyBtnGhostText}>Try another level</Text>
-          </Pressable>
         </SafeAreaView>
         <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
         <SwipeHistoryDrawer
@@ -739,6 +770,20 @@ function createStyles(C: ThemeColors) {
     emptyBtnGradientText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
     emptyBtnGhost: { borderRadius: 100, paddingVertical: 13, paddingHorizontal: 26, borderWidth: 1, borderColor: C.border },
     emptyBtnGhostText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
+
+    emptyCard: {
+      width: '100%', maxWidth: 400, borderRadius: 28, padding: 36,
+      alignItems: 'center', overflow: 'hidden',
+    },
+    emptyIconWrapGrad: {
+      width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.18)',
+      alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+    },
+    emptyTitleGrad: { fontFamily: FontFamily.headline, fontSize: 22, color: '#fff', textAlign: 'center', marginBottom: 8 },
+    emptyBodyGrad: { fontFamily: FontFamily.body, fontSize: 13.5, color: 'rgba(255,255,255,0.85)', textAlign: 'center', lineHeight: 20, marginBottom: 22 },
+    emptyBtnWhite: { alignSelf: 'stretch', backgroundColor: '#fff', borderRadius: 100, paddingVertical: 15, alignItems: 'center' },
+    emptyBtnWhiteText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#0a0a0a' },
+    emptyLinkGrad: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', textDecorationLine: 'underline' },
 
     matchCelebration: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
     matchCelebrationTitle: { fontFamily: FontFamily.headline, fontSize: 34, color: '#fff', marginTop: 10 },
