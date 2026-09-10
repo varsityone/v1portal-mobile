@@ -18,23 +18,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { useAuth } from '../../../hooks/useAuth';
-import { GRADIENT, SIGNAL_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
-import { DIVISION_MIN_SCORE_DEFAULT, Division } from '../../../constants/RecruitingLevels';
+import { RECRUITING_LEVEL_BANDS, getRecruitingLevelBand } from '../../../lib/recruitingLevels';
 
 const API_BASE = 'https://v1portal.com';
 
-// Local score->tier fallback for the rare row with no cached recruiting_level —
-// mirrors the same bands used on the athlete's own profile screen.
+// Fallback for the rare row with no cached recruiting_level — uses the same
+// canonical bands (lib/recruitingLevels.ts) the level picker filters by, so
+// a card's badge always agrees with which picker bucket it falls into.
 function fallbackTier(score: number | null): string {
   if (!score) return '';
-  if (score >= 80) return 'FBS Prospect';
-  if (score >= 75) return 'FCS Prospect';
-  if (score >= 70) return 'D2 Prospect';
-  if (score >= 60) return 'D3/NAIA Prospect';
-  if (score >= 50) return 'NAIA/JUCO Prospect';
-  return 'JUCO/Prep School Prospect';
+  return getRecruitingLevelBand(score).level;
 }
 
 interface AthleteCard {
@@ -66,7 +62,8 @@ export default function CoachMatchScreen() {
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
-  const [deck, setDeck] = useState<AthleteCard[]>([]);
+  const [allAthletes, setAllAthletes] = useState<AthleteCard[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [existingMatches, setExistingMatches] = useState<Map<string, string>>(new Map());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swiping, setSwiping] = useState(false);
@@ -147,14 +144,7 @@ export default function CoachMatchScreen() {
       if (swipedIds.length > 0) q = q.not('id', 'in', `(${swipedIds.join(',')})`);
 
       const { data } = await q;
-      const athletes = (data ?? []) as AthleteCard[];
-      const floor = coach!.min_score ?? DIVISION_MIN_SCORE_DEFAULT[(coach!.division as Division) ?? 'NJCAA'] ?? 0;
-      const inRange = athletes.filter(a => (a.v1_score ?? 0) >= floor);
-
-      const needs = coach!.position_needs ?? [];
-      const matched = needs.length ? inRange.filter(a => a.position && needs.includes(a.position)) : [];
-      const rest = needs.length ? inRange.filter(a => !(a.position && needs.includes(a.position))) : inRange;
-      setDeck([...matched, ...rest]);
+      setAllAthletes((data ?? []) as AthleteCard[]);
 
       const { data: matches } = await supabase
         .from('mutual_matches')
@@ -168,12 +158,29 @@ export default function CoachMatchScreen() {
     load();
   }, [coachLoading, coach?.id, isSetupComplete, coach?.verified]);
 
+  // Every athlete's level bucket, precomputed once so the picker's per-band
+  // counts and the deck filter always agree on the same classification.
+  const levelOf = (a: AthleteCard) => a.recruiting_level || fallbackTier(a.v1_score);
+
+  const coachDefaultLevel = coach?.min_score != null ? getRecruitingLevelBand(coach.min_score).level : null;
+
+  const showingPicker = isSetupComplete && !!coach?.verified && !loading && !selectedLevel && !matchNotif;
+
+  const deck = useMemo(() => {
+    if (!selectedLevel) return [];
+    const inLevel = allAthletes.filter(a => levelOf(a) === selectedLevel);
+    const needs = coach?.position_needs ?? [];
+    const matched = needs.length ? inLevel.filter(a => a.position && needs.includes(a.position)) : [];
+    const rest = needs.length ? inLevel.filter(a => !(a.position && needs.includes(a.position))) : inLevel;
+    return [...matched, ...rest];
+  }, [allAthletes, selectedLevel, coach?.position_needs]);
+
   const current = deck[currentIndex];
   const totalCards = deck.length;
   const isAlreadyMatched = current ? existingMatches.has(current.id) : false;
   const existingMatchId = current ? existingMatches.get(current.id) : undefined;
 
-  const isFullScreenDeck = !coachLoading && !loading && isSetupComplete && !!coach?.verified && !matchNotif;
+  const isFullScreenDeck = !coachLoading && !loading && isSetupComplete && !!coach?.verified && !matchNotif && !showingPicker;
 
   useEffect(() => {
     navigation.getParent()?.setOptions({ headerShown: !isFullScreenDeck });
@@ -284,6 +291,77 @@ export default function CoachMatchScreen() {
     );
   }
 
+  // ── Level picker — mirrors the athlete side's "Choose Your Level" screen
+  // exactly (app/(tabs)/match/index.tsx), shown fresh every time the coach
+  // opens Discover so they can pick which caliber of athlete to browse. ──
+  if (showingPicker) {
+    return (
+      <ScrollView style={s.scroll} contentContainerStyle={s.pickerContainer} showsVerticalScrollIndicator={false}>
+        {coachDefaultLevel && (
+          <View style={s.scoreChip}>
+            <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
+              <Ionicons name="school" size={13} color="#fff" />
+            </LinearGradient>
+            <Text style={s.scoreChipText}>
+              Your program typically recruits <Text style={s.scoreChipBold}>{coachDefaultLevel}</Text> — pick a level below
+            </Text>
+          </View>
+        )}
+
+        <Text style={s.pickerTitle}>Choose Your Level</Text>
+        <Text style={s.pickerSub}>
+          Pick a level to start swiping. You can browse any level — athletes above your usual range just come with a heads-up before you reach out.
+        </Text>
+
+        {RECRUITING_LEVEL_BANDS.map(band => {
+          const count = allAthletes.filter(a => levelOf(a) === band.level).length;
+          const isYourLevel = band.level === coachDefaultLevel;
+          const defaultIdx = RECRUITING_LEVEL_BANDS.findIndex(b => b.level === coachDefaultLevel);
+          const bandIdx = RECRUITING_LEVEL_BANDS.findIndex(b => b.level === band.level);
+          const isReach = defaultIdx >= 0 && bandIdx < defaultIdx;
+          const rangeText = band.minScore > 0 ? `Typically ${band.minScore}+ V1 Score` : 'Open to any V1 Score';
+
+          const rowContent = (
+            <>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <Text style={s.pickerDivLabel}>{band.level}</Text>
+                  {isYourLevel && (
+                    <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                      <Text style={s.pickerTagGradText}>YOUR RANGE</Text>
+                    </LinearGradient>
+                  )}
+                  {isReach && (
+                    <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                      <Text style={s.pickerTagGradText}>REACH</Text>
+                    </LinearGradient>
+                  )}
+                </View>
+                <Text style={s.pickerRange}>{rangeText}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={s.pickerCount}>{count} athlete{count === 1 ? '' : 's'}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+              </View>
+            </>
+          );
+
+          return (
+            <Pressable key={band.key} onPress={() => { setSelectedLevel(band.level); setCurrentIndex(0); }}>
+              {isYourLevel ? (
+                <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
+                  <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
+                </LinearGradient>
+              ) : (
+                <View style={s.pickerRow}>{rowContent}</View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    );
+  }
+
   // ── Match celebration ──
   if (matchNotif) {
     return (
@@ -314,7 +392,10 @@ export default function CoachMatchScreen() {
             <Ionicons name="heart-outline" size={28} color={C.textMuted} />
           </View>
           <Text style={s.emptyTitle}>You're caught up</Text>
-          <Text style={s.emptyBody}>You've seen every athlete matching your program right now. Check back soon.</Text>
+          <Text style={s.emptyBody}>You've seen every {selectedLevel ?? 'athlete'} available right now. Check back soon.</Text>
+          <Pressable style={s.emptyBtnGhost} onPress={() => { setSelectedLevel(null); setCurrentIndex(0); }}>
+            <Text style={s.emptyBtnGhostText}>Try another level</Text>
+          </Pressable>
         </SafeAreaView>
         <SwipeHistoryTab onPress={() => { setHistoryFilter('all'); setHistoryOpen(true); }} />
         <SwipeHistoryDrawer
@@ -365,7 +446,7 @@ export default function CoachMatchScreen() {
               <Ionicons name="menu" size={22} color="#fff" />
             </Pressable>
             <Text style={[s.topTitle, { flex: 1 }]} numberOfLines={1}>Players For You</Text>
-            <Pressable style={s.sliderBtn}>
+            <Pressable style={s.sliderBtn} onPress={() => { setSelectedLevel(null); setCurrentIndex(0); }}>
               <Ionicons name="options-outline" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -398,6 +479,11 @@ export default function CoachMatchScreen() {
               </Text>
             </View>
             {!!quickStats && <Text style={s.quickStats} numberOfLines={1}>{quickStats}</Text>}
+          </Pressable>
+
+          <Pressable style={s.viewProfileBtn} onPress={() => toggleDrawer(true)}>
+            <Text style={s.viewProfileBtnText}>View Profile</Text>
+            <Ionicons name="chevron-up" size={14} color="#fff" />
           </Pressable>
 
           <View style={s.actionRow}>
@@ -623,12 +709,36 @@ function LockScreen({ icon, title, body, cta, onPress, C, s }: {
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background, padding: 32, gap: 6 },
+    scroll: { flex: 1, backgroundColor: C.background },
+    pickerContainer: { padding: 20, paddingBottom: 40 },
+
+    scoreChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+      backgroundColor: C.surface, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 12, paddingLeft: 6,
+      marginBottom: 18,
+    },
+    scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },
+    scoreChipBold: { fontFamily: FontFamily.bodyBold, color: C.text },
+
+    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text, marginBottom: 8 },
+    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 20 },
+    pickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16, padding: 18, marginBottom: 10 },
+    pickerRowGradientBorder: { borderRadius: 17, padding: 1.5, marginBottom: 10 },
+    pickerRowActiveInner: { marginBottom: 0, borderRadius: 15.5 },
+    pickerDivLabel: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+    pickerRange: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 5 },
+    pickerCount: { fontFamily: FontFamily.mono, fontSize: 11.5, color: C.textDim },
+    pickerTagGrad: { borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3 },
+    pickerTagGradText: { fontFamily: FontFamily.mono, fontSize: 9, fontWeight: '700', color: '#fff', letterSpacing: 0.5, textTransform: 'uppercase' },
 
     emptyIconWrap: { width: 60, height: 60, borderRadius: 18, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text, textAlign: 'center', marginBottom: 4 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 18, maxWidth: 300 },
     emptyBtnGradientWrap: { borderRadius: 100, paddingVertical: 15, paddingHorizontal: 30, overflow: 'hidden' },
     emptyBtnGradientText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
+    emptyBtnGhost: { borderRadius: 100, paddingVertical: 13, paddingHorizontal: 26, borderWidth: 1, borderColor: C.border },
+    emptyBtnGhostText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
 
     matchCelebration: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
     matchCelebrationTitle: { fontFamily: FontFamily.headline, fontSize: 34, color: '#fff', marginTop: 10 },
@@ -649,7 +759,7 @@ function createStyles(C: ThemeColors) {
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
     topTitle: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },
     sliderBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-    menuBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+    menuBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 5, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 100 },
@@ -666,6 +776,9 @@ function createStyles(C: ThemeColors) {
     cardName: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },
     cardMeta: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
     quickStats: { fontFamily: FontFamily.mono, fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.75)' },
+
+    viewProfileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', borderRadius: 100, paddingVertical: 10 },
+    viewProfileBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
     actBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
