@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { floorFromLevels, POSITIONS, RECRUITING_LEVEL_BANDS } from '../../../lib/recruitingLevels';
-import { ThemeColors, PINK_RED } from '../../../constants/Colors';
+import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
-import { Card } from '../../../components/ui/Card';
 
 const PHOTO_BUCKET = 'athletes';
 
@@ -180,165 +180,213 @@ export default function CoachProfileEditScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-        <View style={s.header}>
-          <View style={s.headerTopRow}>
-            <Text style={s.title}>Edit Profile</Text>
-            <Pressable style={s.viewProfileBtn} onPress={() => router.push('/(coach)/profile' as any)}>
-              <Text style={s.viewProfileBtnText}>View Profile</Text>
-            </Pressable>
-          </View>
-          <Text style={s.subtitle}>Update your program information. This is what athletes see when they swipe.</Text>
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Header */}
+      <View style={s.header}>
+        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={10}>
+          <Ionicons name="chevron-back" size={22} color={C.text} />
+        </Pressable>
+        <View style={s.headerCenter}>
+          <Text style={s.eyebrow}>COACH PROFILE</Text>
+          <Text style={s.headerTitle}>Edit Profile</Text>
         </View>
+        <Pressable onPress={() => router.push('/(coach)/profile' as any)} hitSlop={10} style={{ width: 36, alignItems: 'flex-end' }}>
+          <Ionicons name="eye-outline" size={20} color={C.textMuted} />
+        </Pressable>
+      </View>
+
+      {/* Gradient accent bar */}
+      <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.accentBar} />
+
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Text style={s.subtitle}>Update your program information. This is what athletes see when they swipe.</Text>
 
         {/* Personal Info */}
-        <Card>
-          <Text style={s.sectionTitle}>Personal Information</Text>
-
-          <View style={s.photoRow}>
-            {formData.profile_photo_url ? (
-              <Image source={{ uri: formData.profile_photo_url }} style={s.photo} />
-            ) : (
-              <View style={[s.photo, s.photoPlaceholder]}>
-                <Ionicons name="person" size={28} color={C.textDim} />
-              </View>
-            )}
-            {uploadingPhoto && (
-              <View style={s.photoOverlay}>
-                <ActivityIndicator color="#fff" size="small" />
-              </View>
-            )}
-            <View style={s.photoActions}>
-              <Pressable style={s.photoBtn} onPress={handlePickPhoto} disabled={uploadingPhoto}>
-                <Text style={s.photoBtnText}>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</Text>
-              </Pressable>
-              {!!formData.profile_photo_url && (
-                <Pressable style={s.photoRemoveBtn} onPress={handleRemovePhoto} disabled={uploadingPhoto}>
-                  <Text style={s.photoRemoveBtnText}>Remove</Text>
-                </Pressable>
-              )}
-            </View>
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="person" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>PERSONAL INFORMATION</Text>
           </View>
-          {!!photoError && <Text style={s.photoError}>{photoError}</Text>}
+          <View style={s.card}>
+            <View style={[s.fieldRow, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
+              {formData.profile_photo_url ? (
+                <Image source={{ uri: formData.profile_photo_url }} style={s.photo} />
+              ) : (
+                <View style={[s.photo, s.photoPlaceholder]}>
+                  <Ionicons name="person" size={28} color={C.textDim} />
+                </View>
+              )}
+              {uploadingPhoto && (
+                <View style={s.photoOverlay}>
+                  <ActivityIndicator color="#fff" size="small" />
+                </View>
+              )}
+              <View style={s.photoActions}>
+                <Pressable style={s.photoBtn} onPress={handlePickPhoto} disabled={uploadingPhoto}>
+                  <Text style={s.photoBtnText}>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</Text>
+                </Pressable>
+                {!!formData.profile_photo_url && (
+                  <Pressable style={s.photoRemoveBtn} onPress={handleRemovePhoto} disabled={uploadingPhoto}>
+                    <Text style={s.photoRemoveBtnText}>Remove</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+            {!!photoError && <Text style={[s.hint, { color: '#ff4444', paddingHorizontal: 16 }]}>{photoError}</Text>}
 
-          <FieldInput label="Full Name" value={formData.full_name} onChangeText={v => setFormData({ ...formData, full_name: v })} C={C} />
-          <FieldSelect
-            label="Title"
-            value={formData.title}
-            options={TITLES}
-            onSelect={v => setFormData({ ...formData, title: v })}
-            open={showTitleMenu}
-            setOpen={setShowTitleMenu}
-            C={C}
-          />
-        </Card>
+            <FieldInput label="Full Name" value={formData.full_name} onChangeText={v => setFormData({ ...formData, full_name: v })} C={C} bordered />
+            <FieldSelect
+              label="Title"
+              value={formData.title}
+              options={TITLES}
+              onSelect={v => setFormData({ ...formData, title: v })}
+              open={showTitleMenu}
+              setOpen={setShowTitleMenu}
+              C={C}
+              bordered
+            />
+          </View>
+        </View>
 
         {/* School Info */}
-        <Card>
-          <Text style={s.sectionTitle}>School Information</Text>
-          <FieldInput label="School Name" value={formData.school_name} onChangeText={v => setFormData({ ...formData, school_name: v })} C={C} />
-          <FieldInput label="School Email" value={formData.school_email} onChangeText={v => setFormData({ ...formData, school_email: v })} C={C} />
-          <FieldInput label="Phone" value={formData.phone} onChangeText={v => setFormData({ ...formData, phone: v })} C={C} />
-          <Pressable style={s.checkboxRow} onPress={() => setFormData({ ...formData, phone_public: !formData.phone_public })}>
-            <View style={[s.checkbox, formData.phone_public && s.checkboxChecked]}>
-              {formData.phone_public && <Ionicons name="checkmark" size={13} color="#fff" />}
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="school" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>SCHOOL INFORMATION</Text>
+          </View>
+          <View style={s.card}>
+            <FieldInput label="School Name" value={formData.school_name} onChangeText={v => setFormData({ ...formData, school_name: v })} C={C} />
+            <FieldInput label="School Email" value={formData.school_email} onChangeText={v => setFormData({ ...formData, school_email: v })} C={C} bordered />
+            <FieldInput label="Phone" value={formData.phone} onChangeText={v => setFormData({ ...formData, phone: v })} C={C} bordered />
+            <View style={[s.fieldRow, s.fieldRowBorder]}>
+              <Pressable style={s.checkboxRow} onPress={() => setFormData({ ...formData, phone_public: !formData.phone_public })}>
+                <View style={[s.checkbox, formData.phone_public && s.checkboxChecked]}>
+                  {formData.phone_public && <Ionicons name="checkmark" size={13} color="#fff" />}
+                </View>
+                <Text style={s.checkboxLabel}>Show my phone number to athletes on my public profile</Text>
+              </Pressable>
             </View>
-            <Text style={s.checkboxLabel}>Show my phone number to athletes on my public profile</Text>
-          </Pressable>
-        </Card>
+          </View>
+        </View>
 
         {/* Division & Region */}
-        <Card>
-          <Text style={s.sectionTitle}>Division & Region</Text>
-          <FieldSelect
-            label="Division"
-            value={DIVISIONS.find(d => d.value === formData.division)?.label || ''}
-            options={DIVISIONS.map(d => d.label)}
-            onSelect={v => {
-              const div = DIVISIONS.find(d => d.label === v)?.value || '';
-              setFormData({ ...formData, division: div, region: null });
-            }}
-            open={showDivisionMenu}
-            setOpen={setShowDivisionMenu}
-            C={C}
-          />
-          {formData.division === 'NJCAA' && (
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="git-network" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>DIVISION & REGION</Text>
+          </View>
+          <View style={s.card}>
             <FieldSelect
-              label="Region"
-              value={formData.region || ''}
-              options={NJCAA_REGIONS}
-              onSelect={v => setFormData({ ...formData, region: v })}
-              open={showRegionMenu}
-              setOpen={setShowRegionMenu}
+              label="Division"
+              value={DIVISIONS.find(d => d.value === formData.division)?.label || ''}
+              options={DIVISIONS.map(d => d.label)}
+              onSelect={v => {
+                const div = DIVISIONS.find(d => d.label === v)?.value || '';
+                setFormData({ ...formData, division: div, region: null });
+              }}
+              open={showDivisionMenu}
+              setOpen={setShowDivisionMenu}
               C={C}
             />
-          )}
-        </Card>
+            {formData.division === 'NJCAA' && (
+              <FieldSelect
+                label="Region"
+                value={formData.region || ''}
+                options={NJCAA_REGIONS}
+                onSelect={v => setFormData({ ...formData, region: v })}
+                open={showRegionMenu}
+                setOpen={setShowRegionMenu}
+                C={C}
+                bordered
+              />
+            )}
+          </View>
+        </View>
 
         {/* Recruiting Focus */}
-        <Card>
-          <Text style={s.sectionTitle}>Recruiting Focus</Text>
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="football" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>RECRUITING FOCUS</Text>
+          </View>
           <Text style={s.sectionSub}>What positions do you coach and recruit, and what athlete level are you targeting?</Text>
-
-          <Text style={s.fieldLabel}>Positions You're Recruiting</Text>
-          <View style={s.chipGrid}>
-            {POSITIONS.map(pos => (
-              <Pressable
-                key={pos}
-                style={[s.chip, formData.position_needs.includes(pos) && s.chipActive]}
-                onPress={() => {
-                  const next = formData.position_needs.includes(pos)
-                    ? formData.position_needs.filter((p: string) => p !== pos)
-                    : [...formData.position_needs, pos];
-                  setFormData({ ...formData, position_needs: next });
-                }}
-              >
-                <Text style={[s.chipText, formData.position_needs.includes(pos) && s.chipTextActive]}>{pos}</Text>
-              </Pressable>
-            ))}
+          <View style={s.card}>
+            <View style={s.fieldRow}>
+              <Text style={s.label}>Positions You're Recruiting</Text>
+              <View style={s.chipWrap}>
+                {POSITIONS.map(pos => (
+                  <Pressable
+                    key={pos}
+                    style={[s.chip, formData.position_needs.includes(pos) && s.chipActive]}
+                    onPress={() => {
+                      const next = formData.position_needs.includes(pos)
+                        ? formData.position_needs.filter((p: string) => p !== pos)
+                        : [...formData.position_needs, pos];
+                      setFormData({ ...formData, position_needs: next });
+                    }}
+                  >
+                    <Text style={[s.chipText, formData.position_needs.includes(pos) && s.chipTextActive]}>{pos}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            <View style={[s.fieldRow, s.fieldRowBorder]}>
+              <Text style={s.label}>Athlete Level</Text>
+              <View style={s.chipWrap}>
+                {RECRUITING_LEVEL_BANDS.map(band => (
+                  <Pressable
+                    key={band.level}
+                    style={[s.chip, formData.level_bands.includes(band.level) && s.chipActive]}
+                    onPress={() => {
+                      const next = formData.level_bands.includes(band.level)
+                        ? formData.level_bands.filter((l: string) => l !== band.level)
+                        : [...formData.level_bands, band.level];
+                      setFormData({ ...formData, level_bands: next });
+                    }}
+                  >
+                    <Text style={[s.chipText, formData.level_bands.includes(band.level) && s.chipTextActive]}>
+                      {band.level}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           </View>
-
-          <Text style={[s.fieldLabel, { marginTop: 16 }]}>Athlete Level</Text>
-          <View style={s.chipGrid}>
-            {RECRUITING_LEVEL_BANDS.map(band => (
-              <Pressable
-                key={band.level}
-                style={[s.chip, formData.level_bands.includes(band.level) && s.chipActive]}
-                onPress={() => {
-                  const next = formData.level_bands.includes(band.level)
-                    ? formData.level_bands.filter((l: string) => l !== band.level)
-                    : [...formData.level_bands, band.level];
-                  setFormData({ ...formData, level_bands: next });
-                }}
-              >
-                <Text style={[s.chipText, formData.level_bands.includes(band.level) && s.chipTextActive]}>
-                  {band.level}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </Card>
+        </View>
 
         {/* Coaching History */}
-        <Card>
-          <Text style={s.sectionTitle}>Coaching History</Text>
-          <FieldInput label="Years Coaching" value={String(formData.years_coaching)} onChangeText={v => setFormData({ ...formData, years_coaching: Number(v) })} keyboardType="numeric" C={C} />
-          <FieldInput label="Previous Stops" value={formData.previous_stops} onChangeText={v => setFormData({ ...formData, previous_stops: v })} multiline C={C} />
-          <FieldInput label="Bio" value={formData.bio} onChangeText={v => setFormData({ ...formData, bio: v })} multiline C={C} />
-        </Card>
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="ribbon" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>COACHING HISTORY</Text>
+          </View>
+          <View style={s.card}>
+            <FieldInput label="Years Coaching" value={String(formData.years_coaching)} onChangeText={v => setFormData({ ...formData, years_coaching: Number(v) })} keyboardType="numeric" C={C} />
+            <FieldInput label="Previous Stops" value={formData.previous_stops} onChangeText={v => setFormData({ ...formData, previous_stops: v })} multiline C={C} bordered />
+            <FieldInput label="Bio" value={formData.bio} onChangeText={v => setFormData({ ...formData, bio: v })} multiline C={C} bordered />
+          </View>
+        </View>
 
         {/* Messaging */}
-        <Card>
-          <Text style={s.sectionTitle}>Messaging</Text>
-          <FieldInput label="Message to Recruits" value={formData.message_to_recruits} onChangeText={v => setFormData({ ...formData, message_to_recruits: v })} multiline C={C} />
-          <FieldInput label="Twitter" value={formData.twitter} onChangeText={v => setFormData({ ...formData, twitter: v })} placeholder="@handle" C={C} />
-        </Card>
+        <View style={s.sectionWrap}>
+          <View style={s.sectionHeader}>
+            <Ionicons name="megaphone" size={14} color="#fff" />
+            <Text style={s.sectionTitle}>MESSAGING</Text>
+          </View>
+          <View style={s.card}>
+            <FieldInput label="Message to Recruits" value={formData.message_to_recruits} onChangeText={v => setFormData({ ...formData, message_to_recruits: v })} multiline C={C} />
+            <FieldInput label="Twitter" value={formData.twitter} onChangeText={v => setFormData({ ...formData, twitter: v })} placeholder="@handle" C={C} bordered />
+          </View>
+        </View>
 
-        {/* Save Button */}
-        <Pressable style={s.saveBtn} onPress={handleSave} disabled={saving}>
-          <Text style={s.saveBtnText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
+        {/* Save CTA */}
+        <Pressable onPress={handleSave} disabled={saving} style={s.saveBtnWrap}>
+          <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.saveBtn, saving && { opacity: 0.6 }]}>
+            <Text style={s.saveBtnText}>{saving ? 'Saving…' : 'Save Profile'}</Text>
+          </LinearGradient>
         </Pressable>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -351,6 +399,7 @@ interface FieldInputProps {
   placeholder?: string;
   multiline?: boolean;
   keyboardType?: string;
+  bordered?: boolean;
   C: any;
 }
 
@@ -361,35 +410,41 @@ interface FieldSelectProps {
   onSelect: (value: string) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
+  bordered?: boolean;
   C: any;
 }
 
-function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboardType, C }: FieldInputProps) {
+function FieldInput({ label, value, onChangeText, placeholder, multiline, keyboardType, bordered, C }: FieldInputProps) {
   const s = useMemo(() => createStyles(C), [C]);
+  const filled = !!value;
   return (
-    <View style={s.fieldBox}>
-      <Text style={s.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[s.input, multiline && { minHeight: 80 }]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder || ''}
-        placeholderTextColor={C.textDim}
-        multiline={multiline}
-        keyboardType={keyboardType as any}
-      />
+    <View style={[s.fieldRow, bordered && s.fieldRowBorder]}>
+      <Text style={s.label}>{label}</Text>
+      <View style={s.inputWrap}>
+        <TextInput
+          style={[s.input, s.inputBoxed, multiline && s.inputMulti, filled && s.inputFilled]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder || label}
+          placeholderTextColor="#9a9a9a"
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'auto'}
+          keyboardType={keyboardType as any}
+        />
+        {filled && <Ionicons name="checkmark-circle" size={16} color={C.success} style={s.fieldCheck} />}
+      </View>
     </View>
   );
 }
 
-function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: FieldSelectProps) {
+function FieldSelect({ label, value, options, onSelect, open, setOpen, bordered, C }: FieldSelectProps) {
   const s = useMemo(() => createStyles(C), [C]);
   return (
-    <View style={s.fieldBox}>
-      <Text style={s.fieldLabel}>{label}</Text>
-      <Pressable style={s.selectBtn} onPress={() => setOpen(!open)}>
-        <Text style={s.selectText}>{value || 'Select...'}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={C.textDim} />
+    <View style={[s.fieldRow, bordered && s.fieldRowBorder]}>
+      <Text style={s.label}>{label}</Text>
+      <Pressable style={[s.input, s.inputBoxed, s.selectBtn]} onPress={() => setOpen(!open)}>
+        <Text style={s.selectText} numberOfLines={1}>{value || 'Select...'}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#6b6b6b" />
       </Pressable>
       {open && (
         <View style={s.menu}>
@@ -414,54 +469,68 @@ function FieldSelect({ label, value, options, onSelect, open, setOpen, C }: Fiel
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    container: { padding: 20, paddingBottom: 48, backgroundColor: C.background },
+    root: { flex: 1, backgroundColor: C.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
-    header: { marginBottom: 24 },
-    headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
-    title: { fontFamily: FontFamily.headline, fontSize: 28, fontWeight: '900', color: C.text },
-    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
-    viewProfileBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 100, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
-    viewProfileBtnText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
 
-    sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 14 },
-    sectionSub: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: -8, marginBottom: 14 },
-    checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12 },
+    backBtn: { width: 36, height: 36, backgroundColor: C.surface, borderRadius: 100, alignItems: 'center', justifyContent: 'center' },
+    headerCenter: { alignItems: 'center' },
+    eyebrow: { fontFamily: FontFamily.bodyBold, fontSize: 10, letterSpacing: 1.4, color: PINK_RED, marginBottom: 2 },
+    headerTitle: { fontFamily: FontFamily.headline, fontSize: 18, color: C.text },
+
+    accentBar: { height: 3, marginHorizontal: 20, borderRadius: 100, marginBottom: 20 },
+
+    scroll: { flex: 1 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+    subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginBottom: 20, marginTop: 4 },
+
+    sectionWrap: { marginBottom: 20 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+    sectionTitle: { fontFamily: FontFamily.mono, fontSize: 11, letterSpacing: 1.0, color: C.textMuted },
+    sectionSub: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginBottom: 8, marginTop: -4 },
+
+    card: { backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden' },
+    fieldRow: { paddingHorizontal: 16, paddingVertical: 12 },
+    fieldRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
+    label: { fontFamily: FontFamily.body, fontSize: 12, fontWeight: '500', color: '#b2b2b2', marginBottom: 6 },
+
+    inputWrap: { position: 'relative', justifyContent: 'center' },
+    input: { fontFamily: FontFamily.body, fontSize: 15, color: C.text, paddingVertical: 0 },
+    inputBoxed: { backgroundColor: '#fff', color: '#18171a', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
+    inputMulti: { height: 80, textAlignVertical: 'top' },
+    inputFilled: { paddingRight: 34 },
+    fieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
+
+    selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    selectText: { fontFamily: FontFamily.body, fontSize: 15, color: '#18171a', flex: 1 },
+    menu: { backgroundColor: '#fff', borderRadius: 8, marginTop: 8, overflow: 'hidden', maxHeight: 260 },
+    menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+    menuItemText: { fontFamily: FontFamily.body, fontSize: 13, color: '#18171a' },
+
+    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+    chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceAlt },
+    chipActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
+    chipText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: C.textMuted },
+    chipTextActive: { color: '#fff' },
+
+    checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
     checkboxChecked: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     checkboxLabel: { flex: 1, fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
 
-    photoRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 8 },
     photo: { width: 64, height: 64, borderRadius: 14, borderWidth: 2, borderColor: C.border },
     photoPlaceholder: { backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-    photoOverlay: {
-      position: 'absolute', left: 0, top: 0, width: 64, height: 64, borderRadius: 14,
-      backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
-    },
+    photoOverlay: { position: 'absolute', left: 16, top: 12, width: 64, height: 64, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
     photoActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 },
     photoBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: PINK_RED },
     photoBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     photoRemoveBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1, borderColor: C.border },
     photoRemoveBtnText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-    photoError: { fontFamily: FontFamily.body, fontSize: 11, color: '#ff4444', marginBottom: 14 },
 
-    fieldBox: { marginBottom: 14 },
-    fieldLabel: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text, marginBottom: 6 },
-    input: { fontFamily: FontFamily.body, fontSize: 13, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, color: C.text, backgroundColor: C.surface },
+    hint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
 
-    selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, backgroundColor: C.surface },
-    selectText: { fontFamily: FontFamily.body, fontSize: 13, color: C.text },
-
-    menu: { backgroundColor: C.surface, borderRadius: 10, borderWidth: 1, borderColor: C.border, marginTop: 8, overflow: 'hidden' },
-    menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border },
-    menuItemText: { fontFamily: FontFamily.body, fontSize: 13, color: C.text },
-
-    chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
-    chipActive: { backgroundColor: PINK_RED + '20', borderColor: PINK_RED },
-    chipText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-    chipTextActive: { color: PINK_RED, fontWeight: '600' },
-
-    saveBtn: { backgroundColor: PINK_RED, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
-    saveBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
+    saveBtnWrap: { marginTop: 8 },
+    saveBtn: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    saveBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 16, color: '#ffffff', letterSpacing: 0.3 },
   });
 }
