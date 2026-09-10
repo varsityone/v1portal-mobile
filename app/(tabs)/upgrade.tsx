@@ -115,6 +115,55 @@ export default function UpgradeScreen() {
     );
   }
 
+  // Already subscribed — this screen doubles as "Manage Subscription" from
+  // Settings, so an active/trial member should land on a manage/cancel view,
+  // not get re-prompted to buy the plan they already have.
+  const isSubscribed = athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial';
+  if (isSubscribed) {
+    const storeSubscriptionsUrl = Platform.OS === 'ios'
+      ? 'itms-apps://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions';
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+        <Text style={s.eyebrow}>Your Subscription</Text>
+        <Text style={s.title}>You're on Match+.</Text>
+        <Text style={s.subtitle}>
+          Your subscription is active — full program matches, coach outreach, and your recruiting roadmap are all unlocked.
+        </Text>
+
+        <View style={[s.card, { backgroundColor: C.surface }]}>
+          <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.badge}>
+            <Text style={s.badgeText}>Match+ {athlete?.subscription_status === 'trial' ? '· Trial' : '· Active'}</Text>
+          </LinearGradient>
+
+          <Text style={[s.description, { color: C.textMuted, marginTop: 12 }]}>
+            Purchases made through this app are billed to your {Platform.OS === 'ios' ? 'App Store' : 'Google Play'} account. Manage, change, or cancel your subscription directly in your device's subscription settings — V1Portal cannot cancel it for you.
+          </Text>
+
+          <Pressable onPress={() => Linking.openURL(storeSubscriptionsUrl)}>
+            <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaBtn}>
+              <Text style={s.ctaText}>Manage Subscription</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        <Pressable onPress={handleRestore} disabled={restoring} style={{ marginTop: 18 }}>
+          <Text style={s.restoreText}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+        </Pressable>
+
+        <View style={s.legalRow}>
+          <Pressable onPress={() => Linking.openURL('https://v1portal.com/terms')}>
+            <Text style={s.legalLink}>Terms of Use</Text>
+          </Pressable>
+          <Text style={s.legalDot}>·</Text>
+          <Pressable onPress={() => Linking.openURL('https://v1portal.com/privacy')}>
+            <Text style={s.legalLink}>Privacy Policy</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
+
   const score = athlete?.v1_score != null ? Math.round(Number(athlete.v1_score)) : null;
   const rl = assessment?.recruiting_level;
   const levelLabel = typeof rl === 'object' && rl !== null

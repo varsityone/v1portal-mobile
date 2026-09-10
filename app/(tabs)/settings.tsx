@@ -303,7 +303,7 @@ export default function SettingsScreen() {
       {/* Feedback */}
       <View style={[s.card, { backgroundColor: C.surface }]}>
         <Text style={[s.sectionLabel, { color: C.textDim }]}>Feedback</Text>
-        <Pressable style={[s.linkRow, { borderTopColor: C.border }]} onPress={() => router.push('/help' as any)}>
+        <Pressable style={[s.linkRow, { borderTopColor: C.border }]} onPress={() => router.push('/help?subject=feedback' as any)}>
           <View style={s.linkRowLeft}>
             <Ionicons name="chatbubble-outline" size={18} color={C.textMuted} />
             <View>

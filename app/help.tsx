@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,11 +11,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useColors } from '../context/ThemeContext';
-import { ThemeColors } from '../constants/Colors';
+import { PINK_RED, ThemeColors } from '../constants/Colors';
 import { FontFamily } from '../constants/Fonts';
 import { GradientButton } from '../components/GradientButton';
 
@@ -43,11 +43,13 @@ const SUBJECTS = [
   'Billing / Subscription',
   'Cancel Subscription',
   'Bug Report',
+  'Feedback / Suggestion',
   'Other',
 ];
 
 export default function HelpScreen() {
   const router = useRouter();
+  const { subject: subjectParam } = useLocalSearchParams<{ subject?: string }>();
   const { session } = useAuth();
   const C = useColors();
   const s = styles(C);
@@ -60,6 +62,17 @@ export default function HelpScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+  const [formCardY, setFormCardY] = useState(0);
+
+  // Arriving from Settings' "Share Feedback" row (?subject=feedback) —
+  // pre-select the matching subject and jump straight to the ticket form.
+  useEffect(() => {
+    if (subjectParam === 'feedback') {
+      setSubject('Feedback / Suggestion');
+      if (formCardY > 0) scrollRef.current?.scrollTo({ y: formCardY, animated: true });
+    }
+  }, [subjectParam, formCardY]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !email.trim() || !subject || !message.trim()) {
@@ -99,7 +112,7 @@ export default function HelpScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* FAQs */}
           <Text style={s.sectionTitle}>Frequently Asked Questions</Text>
@@ -125,6 +138,7 @@ export default function HelpScreen() {
           </View>
 
           {/* Support ticket */}
+          <View onLayout={e => setFormCardY(e.nativeEvent.layout.y)}>
           <Text style={[s.sectionTitle, { marginTop: 28 }]}>Submit a Support Ticket</Text>
           <Text style={s.sectionSub}>We respond within 24 hours.</Text>
 
@@ -211,6 +225,7 @@ export default function HelpScreen() {
 
             </View>
           )}
+          </View>
 
           <Text style={s.footer}>
             Or email us directly at{' '}
@@ -287,10 +302,10 @@ const styles = (C: ThemeColors) => StyleSheet.create({
     backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border,
   },
   chipActive: {
-    backgroundColor: 'rgba(131,58,180,0.15)', borderColor: 'rgba(131,58,180,0.4)',
+    backgroundColor: `${PINK_RED}26`, borderColor: `${PINK_RED}66`,
   },
   chipText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-  chipTextActive: { fontFamily: FontFamily.bodyBold, color: '#a855f7' },
+  chipTextActive: { fontFamily: FontFamily.bodyBold, color: PINK_RED },
   errorText: { fontFamily: FontFamily.body, fontSize: 12, color: C.error, marginTop: 4 },
   submitBtn: {
     marginTop: 16, paddingVertical: 14, borderRadius: 100, alignItems: 'center',

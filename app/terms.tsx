@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
-export default function PrivacyScreen() {
+export default function TermsScreen() {
   const router = useRouter();
 
   return (
@@ -24,53 +24,54 @@ export default function PrivacyScreen() {
 
       <View style={styles.hero}>
         <View style={styles.heroIcon}>
-          <Ionicons name="shield-checkmark" size={28} color={Colors.primary} />
+          <Ionicons name="document-text" size={28} color={Colors.primary} />
         </View>
-        <Text style={styles.title}>Privacy Policy</Text>
-        <Text style={styles.subtitle}>Last updated June 2025</Text>
+        <Text style={styles.title}>Terms of Service</Text>
+        <Text style={styles.subtitle}>Last updated June 2026</Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.body}>
-          V1Portal is committed to protecting your privacy. Your data powers your
-          recruiting profile and is never sold for monetary compensation. See the full
-          policy below for how analytics/advertising sharing and California privacy
-          rights (CCPA) apply.
+          By using V1Portal you agree to these Terms. V1Portal is a mutual-matching
+          platform connecting high school football athletes with college coaches — a
+          guidance and connection tool, not a guarantee of any recruiting outcome,
+          offer, or scholarship.
         </Text>
 
         <View style={styles.divider} />
 
-        <Text style={styles.sectionTitle}>Data We Collect</Text>
+        <Text style={styles.sectionTitle}>Subscriptions</Text>
         <Text style={styles.body}>
-          • Athletic and academic profile information you provide{'\n'}
-          • Recruiting activity (program matches, in-app messages){'\n'}
-          • Device identifiers for push notifications{'\n'}
-          • Usage analytics to improve the product
+          Match+ auto-renews monthly until canceled. If you subscribed through this
+          app, your payment is charged to your Apple ID and renews unless canceled at
+          least 24 hours before the end of the current period — manage or cancel
+          anytime in your device's Settings → [your name] → Subscriptions. If you
+          subscribed on the web, manage your subscription from Settings → Manage
+          Subscription.
         </Text>
 
         <View style={styles.divider} />
 
-        <Text style={styles.sectionTitle}>How We Use It</Text>
+        <Text style={styles.sectionTitle}>Account Deletion</Text>
         <Text style={styles.body}>
-          Your data powers your V1 Score, program matching, and in-app messaging with
-          coaches. We send push notifications only for recruiting-relevant alerts — task
-          reminders, new match notifications, and coach message notifications.
+          You can permanently delete your account and personal data anytime from
+          Settings → Delete Account, right in the app. No need to contact support.
         </Text>
 
         <View style={styles.divider} />
 
-        <Text style={styles.sectionTitle}>Full Policy</Text>
+        <Text style={styles.sectionTitle}>Full Terms</Text>
         <Text style={styles.body}>
-          For complete details including data retention, deletion requests, and your
-          rights under CCPA and GDPR, visit our full privacy policy:
+          For the complete Terms of Service — including NCAA compliance, prohibited
+          uses, liability, and governing law — see the full document:
         </Text>
 
         <Pressable
           style={({ pressed }) => [styles.linkBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => Linking.openURL('https://v1portal.com/privacy')}
+          onPress={() => Linking.openURL('https://v1portal.com/terms')}
         >
           <Ionicons name="open-outline" size={16} color={Colors.primary} />
-          <Text style={styles.linkText}>v1portal.com/privacy</Text>
+          <Text style={styles.linkText}>v1portal.com/terms</Text>
         </Pressable>
       </View>
 

@@ -313,7 +313,12 @@ export default function SignupWizardScreen() {
                 <View style={[s.checkbox, agreedToTerms && s.checkboxChecked]}>
                   {agreedToTerms && <Ionicons name="checkmark" size={11} color="#0a0a0a" />}
                 </View>
-                <Text style={s.checkboxLabel}>I agree to the <Text style={s.checkboxLink}>Terms of Service</Text> and <Text style={s.checkboxLink}>Privacy Policy</Text>.</Text>
+                <Text style={s.checkboxLabel}>
+                  I agree to the{' '}
+                  <Text style={s.checkboxLink} onPress={() => router.push('/terms' as any)}>Terms of Service</Text>
+                  {' '}and{' '}
+                  <Text style={s.checkboxLink} onPress={() => router.push('/privacy' as any)}>Privacy Policy</Text>.
+                </Text>
               </Pressable>
             </View>
             <Pressable style={[s.btnGradientWrap, (!canProceed() || loading) && s.btnDisabled]} disabled={!canProceed() || loading} onPress={handleNext}>
