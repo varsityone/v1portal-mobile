@@ -1,13 +1,27 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachAnalytics } from '../../hooks/useCoachAnalytics';
-import { ThemeColors, PINK_RED } from '../../constants/Colors';
+import { ThemeColors, PINK_RED, GRADIENT } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { FilterChips } from '../../components/ui/FilterChips';
-import { Card } from '../../components/ui/Card';
 import { Avatar } from '../../components/ui/Avatar';
+
+// White cells with black numbers -- always white regardless of theme, so
+// this doesn't depend on the screen's theme-aware createStyles(C).
+function WhiteCard({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
+  return <View style={[whiteCardStyles.card, style]}>{children}</View>;
+}
+const whiteCardStyles = StyleSheet.create({
+  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16 },
+});
+
+const TIMEFRAMES = [
+  { label: 'Last 7 days', value: 'week' },
+  { label: 'Last 30 days', value: 'month' },
+  { label: 'All time', value: 'all' },
+] as const;
 
 export default function AnalyticsScreen() {
   const C = useColors();
@@ -30,69 +44,78 @@ export default function AnalyticsScreen() {
         <Text style={s.title}>Recruiting Analytics</Text>
       </View>
 
-      <FilterChips
-        options={[
-          { label: 'Last 7 days', value: 'week' },
-          { label: 'Last 30 days', value: 'month' },
-          { label: 'All time', value: 'all' },
-        ]}
-        selected={[timeframe]}
-        onToggle={(t) => setTimeframe(t as any)}
-      />
+      <View style={s.tabRow}>
+        {TIMEFRAMES.map(opt => {
+          const active = timeframe === opt.value;
+          return active ? (
+            <Pressable key={opt.value} onPress={() => setTimeframe(opt.value)}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.tabActive}>
+                <Text style={s.tabActiveText}>{opt.label}</Text>
+              </LinearGradient>
+            </Pressable>
+          ) : (
+            <Pressable key={opt.value} style={[s.tabInactive, { backgroundColor: C.surfaceAlt }]} onPress={() => setTimeframe(opt.value)}>
+              <Text style={[s.tabInactiveText, { color: C.textDim }]}>{opt.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <View style={{ gap: 12, marginTop: 16 }}>
         {/* KPI Tiles */}
         <View style={s.kpiRow}>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#3b82f6' }]}>{kpis.viewed}</Text>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.viewed}</Text>
             <Text style={s.kpiLabel}>Prospects Viewed</Text>
-          </Card>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#ec4899' }]}>{kpis.liked}</Text>
+          </WhiteCard>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.liked}</Text>
             <Text style={s.kpiLabel}>Likes</Text>
-          </Card>
+          </WhiteCard>
         </View>
 
         <View style={s.kpiRow}>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#22c55e' }]}>{kpis.matched}</Text>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.matched}</Text>
             <Text style={s.kpiLabel}>Matches</Text>
-          </Card>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: PINK_RED }]}>{kpis.saved}</Text>
+          </WhiteCard>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.saved}</Text>
             <Text style={s.kpiLabel}>Saved</Text>
-          </Card>
+          </WhiteCard>
         </View>
 
         <View style={s.kpiRow}>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#f59e0b' }]}>{kpis.messaged}</Text>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.messaged}</Text>
             <Text style={s.kpiLabel}>Messaged</Text>
-          </Card>
-          <Card style={s.kpiCard}>
-            <Text style={[s.kpiValue, { color: '#06b6d4' }]}>{kpis.conversionRate}%</Text>
+          </WhiteCard>
+          <WhiteCard style={s.kpiCard}>
+            <Text style={s.kpiValue}>{kpis.conversionRate}%</Text>
             <Text style={s.kpiLabel}>Conversion Rate</Text>
-          </Card>
+          </WhiteCard>
         </View>
 
-        {/* Funnel */}
-        <Card>
+        {/* Funnel -- one continuous brand-gradient fill behind the 3
+            stage-proportional sections, rather than 3 flat distinct colors */}
+        <WhiteCard>
           <Text style={s.sectionTitle}>Recruiting Funnel</Text>
           <View style={s.funnelBar}>
-            <View style={[s.funnelSegment, { flex: kpis.funnelViewed, backgroundColor: '#3b82f6' }]} />
-            <View style={[s.funnelSegment, { flex: kpis.funnelLiked, backgroundColor: '#ec4899' }]} />
-            <View style={[s.funnelSegment, { flex: kpis.funnelMatched, backgroundColor: '#22c55e' }]} />
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+            <View style={[s.funnelDivider, { flex: kpis.funnelViewed || 1 }]} />
+            <View style={[s.funnelDivider, { flex: kpis.funnelLiked || 1 }]} />
+            <View style={[s.funnelDivider, { flex: kpis.funnelMatched || 1, borderRightWidth: 0 }]} />
           </View>
           <View style={s.funnelLabels}>
             <Text style={s.funnelLabel}>{kpis.funnelViewed} Viewed</Text>
             <Text style={s.funnelLabel}>{kpis.funnelLiked} Liked</Text>
             <Text style={s.funnelLabel}>{kpis.funnelMatched} Matched</Text>
           </View>
-        </Card>
+        </WhiteCard>
 
         {/* Top Positions */}
         {kpis.topPositions.length > 0 && (
-          <Card>
+          <WhiteCard>
             <Text style={s.sectionTitle}>Top Positions</Text>
             <View style={{ gap: 8 }}>
               {kpis.topPositions.map((pos, i) => (
@@ -104,12 +127,12 @@ export default function AnalyticsScreen() {
                 </View>
               ))}
             </View>
-          </Card>
+          </WhiteCard>
         )}
 
         {/* Top States */}
         {kpis.topStates.length > 0 && (
-          <Card>
+          <WhiteCard>
             <Text style={s.sectionTitle}>Top States</Text>
             <View style={{ gap: 8 }}>
               {kpis.topStates.map((st, i) => (
@@ -120,12 +143,12 @@ export default function AnalyticsScreen() {
                 </View>
               ))}
             </View>
-          </Card>
+          </WhiteCard>
         )}
 
         {/* Top Liked Prospects */}
         {kpis.topLiked.length > 0 && (
-          <Card>
+          <WhiteCard>
             <Text style={s.sectionTitle}>Top Liked Prospects</Text>
             <View style={{ gap: 10 }}>
               {kpis.topLiked.map((athlete) => (
@@ -139,7 +162,7 @@ export default function AnalyticsScreen() {
                 </View>
               ))}
             </View>
-          </Card>
+          </WhiteCard>
         )}
       </View>
     </ScrollView>
@@ -154,25 +177,35 @@ function createStyles(C: ThemeColors) {
     eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
     title: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text },
 
+    tabRow: { flexDirection: 'row', gap: 8 },
+    tabActive: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 100 },
+    tabActiveText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+    tabInactive: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 100 },
+    tabInactiveText: { fontFamily: FontFamily.bodySemi, fontSize: 13 },
+
     kpiRow: { flexDirection: 'row', gap: 12 },
     kpiCard: { flex: 1, alignItems: 'center', paddingVertical: 20 },
-    kpiValue: { fontFamily: FontFamily.headline, fontSize: 28, color: PINK_RED, marginBottom: 4 },
-    kpiLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
+    // Everything below sits on a WhiteCard (always #fff), so uses fixed
+    // dark-on-white colors -- black numbers, gray labels -- rather than
+    // C.text / C.textDim, which are theme-aware and would go near-white in
+    // dark mode. No per-metric accent colors: one uniform black number.
+    kpiValue: { fontFamily: FontFamily.headline, fontSize: 28, color: '#1a1a1a', marginBottom: 4 },
+    kpiLabel: { fontFamily: FontFamily.body, fontSize: 12, color: '#999' },
 
-    sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 10 },
-    funnelBar: { flexDirection: 'row', height: 24, borderRadius: 12, overflow: 'hidden', gap: 2, marginBottom: 10 },
-    funnelSegment: { borderRadius: 12 },
+    sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#1a1a1a', marginBottom: 10 },
+    funnelBar: { flexDirection: 'row', height: 24, borderRadius: 12, overflow: 'hidden', marginBottom: 10 },
+    funnelDivider: { borderRightWidth: 2, borderRightColor: '#fff' },
     funnelLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-    funnelLabel: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim },
+    funnelLabel: { fontFamily: FontFamily.body, fontSize: 11, color: '#999' },
 
     breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    breakdownLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text, minWidth: 80 },
-    breakdownValue: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
+    breakdownLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#1a1a1a', minWidth: 80 },
+    breakdownValue: { fontFamily: FontFamily.body, fontSize: 12, color: '#999' },
 
-    prospectRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
-    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
-    prospectMeta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
-    prospectScore: { fontFamily: FontFamily.headline, fontSize: 16, color: PINK_RED },
+    prospectRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#1a1a1a' },
+    prospectMeta: { fontFamily: FontFamily.body, fontSize: 11, color: '#999', marginTop: 2 },
+    prospectScore: { fontFamily: FontFamily.headline, fontSize: 16, color: '#1a1a1a' },
 
     errorText: { fontFamily: FontFamily.body, fontSize: 14, color: C.error },
   });
