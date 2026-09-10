@@ -4,40 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MaskedView from '@react-native-masked-view/masked-view';
-import Svg, { Defs, RadialGradient as SvgRadialGradient, Stop, Rect } from 'react-native-svg';
 import { supabase } from '../../lib/supabase';
 import { useCoachData, Coach } from '../../hooks/useCoachData';
 import { GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierIndex } from '../../components/StatCard';
-
-// Mirrors web's `.coach-welcome-bg-avatar` radial mask
-// (`radial-gradient(circle at 60% 50%, black 45%, transparent 75%)`):
-// the photo is a large watermark, fully visible near its center and
-// fading to nothing at the edges, rather than a small cropped circle.
-const WATERMARK_SIZE = 280;
-function WelcomeAvatarWatermark({ uri }: { uri: string }) {
-  return (
-    <MaskedView
-      style={{ width: WATERMARK_SIZE, height: WATERMARK_SIZE }}
-      maskElement={
-        <Svg width={WATERMARK_SIZE} height={WATERMARK_SIZE}>
-          <Defs>
-            <SvgRadialGradient id="welcomeFade" cx="60%" cy="50%" r="55%">
-              <Stop offset="0%" stopColor="#fff" stopOpacity={1} />
-              <Stop offset="45%" stopColor="#fff" stopOpacity={1} />
-              <Stop offset="100%" stopColor="#fff" stopOpacity={0} />
-            </SvgRadialGradient>
-          </Defs>
-          <Rect width={WATERMARK_SIZE} height={WATERMARK_SIZE} fill="url(#welcomeFade)" />
-        </Svg>
-      }
-    >
-      <Image source={{ uri }} style={{ width: WATERMARK_SIZE, height: WATERMARK_SIZE }} />
-    </MaskedView>
-  );
-}
 
 // Matches web's components/CoachDashboard.tsx PERIOD_BG / PERIOD_ACCENT exactly —
 // a bold solid (or gradient, for the all-clear states) status banner, not a
@@ -270,11 +242,6 @@ export default function CoachDashboard() {
           dashboard's greeting card: eyebrow + title + status line + tier
           pills + a pinned "View Profile" button. */}
       <View style={s.greetCard}>
-        {coach.profile_photo_url ? (
-          <View style={s.greetBgAvatarWrap} pointerEvents="none">
-            <WelcomeAvatarWatermark uri={coach.profile_photo_url} />
-          </View>
-        ) : null}
         <View style={s.greetContent}>
           <Text style={s.greetEyebrow}>Coach Portal Dashboard</Text>
           <Text style={s.greetCardTitle}>{greeting}, Coach {firstName}.</Text>
@@ -298,8 +265,19 @@ export default function CoachDashboard() {
         </View>
         {coach.profile_slug ? (
           <Pressable style={s.viewProfileBtn} onPress={() => router.push(`/(coach)/profile` as any)}>
-            <Text style={s.viewProfileBtnText}>View Profile</Text>
-            <Ionicons name="arrow-forward" size={12} color="#C13584" />
+            <MaskedView
+              maskElement={
+                <View style={s.viewProfileMaskRow}>
+                  <Text style={[s.viewProfileBtnText, { opacity: 1 }]}>View Profile</Text>
+                  <Ionicons name="arrow-forward" size={14} color="#000" />
+                </View>
+              }
+            >
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.viewProfileMaskRow}>
+                <Text style={[s.viewProfileBtnText, { opacity: 0 }]}>View Profile</Text>
+                <Ionicons name="arrow-forward" size={14} color="transparent" />
+              </LinearGradient>
+            </MaskedView>
           </Pressable>
         ) : null}
       </View>
@@ -507,7 +485,6 @@ function createStyles(C: ThemeColors) {
     statLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
 
     greetCard: { backgroundColor: '#fff', borderRadius: 18, padding: 22, marginBottom: 20, overflow: 'hidden' },
-    greetBgAvatarWrap: { position: 'absolute', top: -40, right: -70, width: 280, height: 280 },
     greetContent: { position: 'relative' },
     greetEyebrow: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(0,0,0,0.45)', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' },
     greetCardTitle: { fontFamily: FontFamily.headline, fontSize: 24, fontWeight: '900', color: '#0a0a0a', marginBottom: 6 },
@@ -517,8 +494,13 @@ function createStyles(C: ThemeColors) {
     tierPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
     tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: 'rgba(0,0,0,0.5)' },
-    viewProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, alignSelf: 'flex-start' },
-    viewProfileBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#C13584' },
+    viewProfileBtn: {
+      marginTop: 18, borderRadius: 100, paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)',
+      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    },
+    viewProfileMaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    viewProfileBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#000' },
 
     secondaryRow: { gap: 10, marginBottom: 24 },
     secondaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#000', borderRadius: 14, padding: 16, minHeight: 88, overflow: 'hidden' },
