@@ -14,6 +14,7 @@ export interface ConversationRow {
     v1_score: number | null;
     profile_photo_url: string | null;
   } | null;
+  preview: string | null;
 }
 
 export interface UseCoachInboxResult {
@@ -38,9 +39,33 @@ export function useCoachInbox(): UseCoachInboxResult {
         .order('last_message_at', { ascending: false });
 
       if (error) throw error;
-      setConversations((data as ConversationRow[]) ?? []);
+      const rows = ((data as unknown as ConversationRow[]) ?? []).map(r => ({ ...r, preview: null as string | null }));
+
+      // One batch query for every conversation's latest message, rather than
+      // an N+1 -- coach_athlete_conversations only tracks last_message_at/from,
+      // not the content, so the preview line has to come from here. Mirrors
+      // useAthleteInbox.ts's identical pattern.
+      const ids = rows.map(r => r.id);
+      if (ids.length > 0) {
+        const { data: msgRows } = await supabase
+          .from('coach_athlete_messages')
+          .select('conversation_id, sender_type, content, created_at')
+          .in('conversation_id', ids)
+          .order('created_at', { ascending: false });
+
+        const latestByConv = new Map<string, { sender_type: string; content: string }>();
+        (msgRows ?? []).forEach((m: any) => {
+          if (!latestByConv.has(m.conversation_id)) latestByConv.set(m.conversation_id, m);
+        });
+        rows.forEach(r => {
+          const m = latestByConv.get(r.id);
+          r.preview = m ? (m.sender_type === 'coach' ? `You: ${m.content}` : m.content) : null;
+        });
+      }
+
+      setConversations(rows);
     } catch (e) {
-      console.error('Inbox fetch error:', e);
+      console.error('Coach inbox fetch error:', e);
     } finally {
       setLoading(false);
     }
