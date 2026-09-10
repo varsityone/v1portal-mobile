@@ -1,13 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
-import { useCoachTargeting, STATES } from '../../hooks/useCoachTargeting';
+import { useCoachTargeting } from '../../hooks/useCoachTargeting';
 import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { Card } from '../../components/ui/Card';
+import RecruitingMap from '../../components/RecruitingMap';
+
+const COLLAPSED_ROWS = 3;
+const GRID_COLUMNS = 3;
 
 const POSITION_COLORS: Record<string, string> = {
   QB: '#f59e0b', RB: '#22c55e', WR: '#3b82f6', TE: '#8b5cf6',
@@ -21,6 +24,7 @@ export default function RecruitingScreen() {
   const router = useRouter();
   const { coach, loading: coachLoading } = useCoachData();
   const { selectedStates, prospects, stats, analytics, loading, toggleState, clearAll } = useCoachTargeting();
+  const [showAllProspects, setShowAllProspects] = useState(false);
 
   if (coachLoading || loading) {
     return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
@@ -64,57 +68,52 @@ export default function RecruitingScreen() {
         </View>
       </View>
 
-      <Card style={s.mapCard}>
-        <View style={s.sectionHeaderRow}>
-          <Text style={s.sectionTitle}>Select Target States</Text>
-          {stats.targetedStates > 0 && (
-            <Pressable onPress={clearAll}>
-              <Text style={s.clearAllText}>Clear All</Text>
-            </Pressable>
-          )}
-        </View>
-        <View style={s.stateGrid}>
-          {STATES.map(state => (
-            <Pressable
-              key={state}
-              style={[s.stateBtn, selectedStates.has(state) && s.stateBtnActive]}
-              onPress={() => toggleState(state)}
-            >
-              <Text style={[s.stateText, selectedStates.has(state) && s.stateTextActive]}>{state}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </Card>
+      <View style={s.sectionHeaderRow}>
+        <Text style={s.sectionTitle}>USA Map</Text>
+        {stats.targetedStates > 0 && (
+          <Pressable onPress={clearAll}>
+            <Text style={s.clearAllText}>Clear All</Text>
+          </Pressable>
+        )}
+      </View>
+      <RecruitingMap targetedStates={selectedStates} onToggleState={toggleState} />
 
       <View style={{ marginTop: 16 }}>
         <Text style={s.sectionTitleDark}>Targeted Athletes ({prospects.length})</Text>
         {prospects.length === 0 ? (
-          <Text style={s.emptyText}>Tap states above to see targeted athletes</Text>
+          <Text style={s.emptyText}>Tap states on the map to see targeted athletes</Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4, paddingVertical: 4 }}>
-            {prospects.map(prospect => (
-              <Pressable
-                key={prospect.id}
-                style={s.prospectCard}
-                onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}
-              >
-                {prospect.profile_photo_url ? (
-                  <Image source={{ uri: prospect.profile_photo_url }} style={s.prospectPhoto} />
-                ) : (
-                  <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.prospectPhoto} />
-                )}
-                <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name ?? 'Unknown'}</Text>
-                <Text style={s.prospectSub} numberOfLines={1}>
-                  {[prospect.position, prospect.state].filter(Boolean).join(' · ')}
-                </Text>
-                {prospect.v1_score != null && (
-                  <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.scoreBadge}>
-                    <Text style={s.scoreBadgeText}>{prospect.v1_score}</Text>
-                  </LinearGradient>
-                )}
+          <>
+            <View style={s.prospectGrid}>
+              {(showAllProspects ? prospects : prospects.slice(0, COLLAPSED_ROWS * GRID_COLUMNS)).map(prospect => (
+                <Pressable
+                  key={prospect.id}
+                  style={s.prospectCard}
+                  onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}
+                >
+                  {prospect.profile_photo_url ? (
+                    <Image source={{ uri: prospect.profile_photo_url }} style={s.prospectPhoto} />
+                  ) : (
+                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.prospectPhoto} />
+                  )}
+                  <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name ?? 'Unknown'}</Text>
+                  <Text style={s.prospectSub} numberOfLines={1}>
+                    {[prospect.position, prospect.state].filter(Boolean).join(' · ')}
+                  </Text>
+                  {prospect.v1_score != null && (
+                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.scoreBadge}>
+                      <Text style={s.scoreBadgeText}>{prospect.v1_score}</Text>
+                    </LinearGradient>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+            {prospects.length > COLLAPSED_ROWS * GRID_COLUMNS && (
+              <Pressable style={s.seeMoreBtn} onPress={() => setShowAllProspects(v => !v)}>
+                <Text style={s.seeMoreBtnText}>{showAllProspects ? 'See Less' : `See More (${prospects.length - COLLAPSED_ROWS * GRID_COLUMNS})`}</Text>
               </Pressable>
-            ))}
-          </ScrollView>
+            )}
+          </>
         )}
       </View>
 
@@ -187,26 +186,22 @@ function createStyles(C: ThemeColors) {
     statBoxValueZero: { color: '#ccc' },
     statBoxSub: { fontFamily: FontFamily.bodySemi, fontSize: 10, color: '#999', marginTop: 8 },
 
-    mapCard: {},
     sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text },
     sectionTitleDark: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, marginBottom: 10 },
-    clearAllText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
-
-    stateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    stateBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: C.border },
-    stateBtnActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
-    stateText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text },
-    stateTextActive: { color: '#ffffff' },
+    clearAllText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: PINK_RED },
 
     emptyText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, paddingVertical: 8 },
 
-    prospectCard: { width: 130, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6 },
-    prospectPhoto: { width: 68, height: 68, borderRadius: 34, marginBottom: 10 },
-    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text, textAlign: 'center' },
-    prospectSub: { fontFamily: FontFamily.body, fontSize: 11, color: C.textMuted, marginTop: 2, textAlign: 'center' },
-    scoreBadge: { marginTop: 8, paddingHorizontal: 12, paddingVertical: 3, borderRadius: 100 },
-    scoreBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 12, color: '#fff' },
+    prospectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+    prospectCard: { width: '31.5%', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 2 },
+    prospectPhoto: { width: 56, height: 56, borderRadius: 28, marginBottom: 8 },
+    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text, textAlign: 'center' },
+    prospectSub: { fontFamily: FontFamily.body, fontSize: 10, color: C.textMuted, marginTop: 2, textAlign: 'center' },
+    scoreBadge: { marginTop: 6, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 100 },
+    scoreBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: '#fff' },
+    seeMoreBtn: { alignSelf: 'center', marginTop: 8, paddingVertical: 8, paddingHorizontal: 18 },
+    seeMoreBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: PINK_RED },
 
     insightsCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
     avgScoreValue: { fontFamily: FontFamily.mono, fontSize: 44, color: '#000', letterSpacing: -1 },
