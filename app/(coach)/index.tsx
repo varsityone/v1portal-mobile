@@ -260,7 +260,9 @@ export default function CoachDashboard() {
                 <Text style={[s.tierPillText, { color: '#555' }]}>{coach.division}</Text>
               </View>
             ) : null}
-            {coach.school_name ? <Text style={s.tierRowSchool}>{coach.school_name}</Text> : null}
+            {coach.school_name ? (
+              <Text style={s.tierRowSchool} numberOfLines={1}>{coach.school_name}</Text>
+            ) : null}
           </View>
         </View>
         {coach.profile_slug ? (
@@ -489,11 +491,11 @@ function createStyles(C: ThemeColors) {
     greetEyebrow: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(0,0,0,0.45)', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' },
     greetCardTitle: { fontFamily: FontFamily.headline, fontSize: 24, fontWeight: '900', color: '#0a0a0a', marginBottom: 6 },
     greetCardSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(0,0,0,0.5)', lineHeight: 18 },
-    tierRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-    tierRowLabel: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
-    tierPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
-    tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
-    tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 11, color: 'rgba(0,0,0,0.5)' },
+    tierRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', gap: 6, marginTop: 14 },
+    tierRowLabel: { fontFamily: FontFamily.bodySemi, fontSize: 9.5, color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 0 },
+    tierPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100, flexShrink: 0 },
+    tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 10.5, color: '#fff' },
+    tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 10.5, color: 'rgba(0,0,0,0.5)', flexShrink: 1, minWidth: 0 },
     viewProfileBtn: {
       marginTop: 18, borderRadius: 100, paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
       backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)',
