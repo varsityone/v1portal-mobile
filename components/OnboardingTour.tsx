@@ -1,5 +1,6 @@
+import { getTourPopoverPosition } from '../lib/tourPopover';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, useWindowDimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontFamily } from '../constants/Fonts';
 
 export interface TourStep {
@@ -38,7 +39,8 @@ const POPOVER_W = 300;
 export default function OnboardingTour({ isOpen, onClose, steps, targets, onStepChange }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
-  const { width: vw, height: vh } = Dimensions.get('window');
+  const { width: vw, height: vh } = useWindowDimensions();
+  const [cardHeight, setCardHeight] = useState(260);
 
   // Reset to step 0 each time the tour is (re)opened.
   useEffect(() => {
@@ -81,8 +83,7 @@ export default function OnboardingTour({ isOpen, onClose, steps, targets, onStep
 
   const hl = { top: box.y - PAD, left: box.x - PAD, width: box.width + PAD * 2, height: box.height + PAD * 2 };
 
-  const popTop = Math.max(8, Math.min(hl.top + hl.height + 14, vh - 260));
-  const popLeft = Math.max(8, Math.min(hl.left + hl.width / 2 - POPOVER_W / 2, vw - POPOVER_W - 8));
+  const popoverPosition = getTourPopoverPosition(box, { width: vw, height: vh }, cardHeight);
 
   const goNext = () => {
     if (stepIndex < steps.length - 1) setStepIndex(i => i + 1);
@@ -102,7 +103,7 @@ export default function OnboardingTour({ isOpen, onClose, steps, targets, onStep
         <View pointerEvents="none" style={[s.dim, { top: hl.top, left: hl.left + hl.width, right: 0, height: hl.height }]} />
         <View pointerEvents="none" style={[s.highlightBox, { top: hl.top, left: hl.left, width: hl.width, height: hl.height }]} />
 
-        <Animated.View style={[s.popover, { top: popTop, left: popLeft, opacity: fade }]}>
+        <Animated.View onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[s.popover, popoverPosition, { opacity: fade }]}>
           <View style={s.headerRow}>
             <Text style={s.stepLabel}>STEP {stepIndex + 1} OF {steps.length}</Text>
             <Pressable onPress={onClose} hitSlop={8}>

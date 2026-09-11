@@ -26,26 +26,16 @@ import StatCard, { ACTIVITY_TIERS, MESSAGE_TIERS, activityTierIndex, unreadTierI
 import Copyright from '../../components/Copyright';
 
 const TOUR_STEPS = [
-  {
-    target: 'phase-status',
-    title: 'Your Recruiting Status',
-    description: 'Your tier and recruiting level at a glance, along with where you stand in the gameplan below.',
-  },
-  {
-    target: 'gameplan',
-    title: 'Your Gameplan',
-    description: 'Three steps to get in front of coaches. Complete each phase in order to unlock your full profile and start matching.',
-  },
-  {
-    target: 'v1-score',
-    title: 'Your V1 Score',
-    description: 'Your recruiting grade across athletics, academics, production, and intangibles — scored the way coaches actually evaluate you.',
-  },
-  {
-    target: 'programs',
-    title: 'Top Fit Programs',
-    description: 'The programs that best match your level, ranked by fit. View all to swipe on more and start getting matched with coaches.',
-  },
+  { target: 'phase-status', title: 'Your Recruiting Status', description: 'Your plan and recruiting level appear here, so you can quickly see where you stand.' },
+  { target: 'profile', title: 'Your Athlete Profile', description: 'Open your profile to review what coaches see. Use Edit Profile to update your details and profile photo.' },
+  { target: 'phase-1', title: 'Phase 1: Know Your Value', description: 'Start with your assessment and understand your results. Each phase shows whether it is completed, in progress, or locked.' },
+  { target: 'phase-2', title: 'Phase 2: Build Your Profile', description: 'Add your football, academic, and contact details. You can upload an optional profile photo here too.' },
+  { target: 'phase-3', title: 'Phase 3: Find Your Matches', description: 'Complete the earlier phases to move into matching and outreach. Your next available step or completed status appears below.' },
+  { target: 'v1-score', title: 'Your V1 Score', description: 'Your assessment results determine your V1 Score and recruiting level. Open My V1 Score from the menu for the breakdown.' },
+  { target: 'matches', title: 'Mutual Matches', description: 'This counts coaches who matched back with you. Open Program Matches in the menu to see those connections.' },
+  { target: 'messages', title: 'Coach Messages', description: 'See how many unread messages you have. Tap this card to open your inbox.' },
+  { target: 'views', title: 'Profile Views', description: 'Track interest in your profile here. The cards below also show how many programs you have reviewed and liked.' },
+  { target: 'programs', title: 'Top Fit Programs', description: 'After your assessment, this section shows programs that fit your level. Use View All when available to explore more. Replay this tour anytime from the menu.' },
 ];
 
 // Matches web's .gp-spot-rest-wrap/.gp-spot-rest-track: an infinite,
@@ -137,14 +127,27 @@ export default function DashboardScreen() {
   });
 
   const scrollRef = useRef<ScrollView>(null);
+  const viewportRef = useRef<View>(null);
   const scrollOffsetRef = useRef(0);
   const phaseStatusRef = useRef<View>(null);
-  const gameplanRef = useRef<View>(null);
+  const profileRef = useRef<View>(null);
+  const phase1Ref = useRef<View>(null);
+  const phase2Ref = useRef<View>(null);
+  const phase3Ref = useRef<View>(null);
+  const matchesRef = useRef<View>(null);
+  const messagesRef = useRef<View>(null);
+  const viewsRef = useRef<View>(null);
   const scoreRef = useRef<View>(null);
   const programsRef = useRef<View>(null);
   const tourRefs = useRef<Record<string, React.RefObject<View | null>>>({
     'phase-status': phaseStatusRef,
-    'gameplan': gameplanRef,
+    'profile': profileRef,
+    'phase-1': phase1Ref,
+    'phase-2': phase2Ref,
+    'phase-3': phase3Ref,
+    'matches': matchesRef,
+    'messages': messagesRef,
+    'views': viewsRef,
     'v1-score': scoreRef,
     'programs': programsRef,
   }).current;
@@ -155,15 +158,7 @@ export default function DashboardScreen() {
   const tourMeasureVersion = useRef(0);
   const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | null | undefined>>({});
 
-  // measureInWindow gives a target's true screen position regardless of
-  // nesting depth or current scroll (even fully off-screen), so we use it
-  // twice per step: once to compute how far to scroll (current window Y
-  // minus a fixed header clearance), then again after the scroll animation
-  // settles to get the highlight box's final on-screen position. Avoids
-  // needing content-relative offsets, which onLayout can't give reliably
-  // for a ref nested below the ScrollView's direct children (e.g. v1-score,
-  // wrapped inside its own statsGrid row).
-  const TOUR_HEADER_CLEARANCE = 76;
+  // Align each target inside the actual visible dashboard, below its header.
   const handleTourStepChange = useCallback((target: string) => {
     const version = ++tourMeasureVersion.current;
     clearTimeout(tourMeasureTimer.current);
@@ -173,18 +168,20 @@ export default function DashboardScreen() {
       setTourTargets(prev => ({ ...prev, [target]: null }));
       return;
     }
-    ref.measureInWindow((x, y) => {
-      if (version !== tourMeasureVersion.current) return;
-      const delta = y - TOUR_HEADER_CLEARANCE;
-      if (Math.abs(delta) > 4) {
-        scrollRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
-      }
-      tourMeasureTimer.current = setTimeout(() => {
-        ref.measureInWindow((x2, y2, width, height) => {
-          if (version !== tourMeasureVersion.current) return;
-          setTourTargets(prev => ({ ...prev, [target]: width > 0 ? { x: x2, y: y2, width, height } : null }));
-        });
-      }, 500);
+    viewportRef.current?.measureInWindow((_scrollX, scrollY) => {
+      ref.measureInWindow((_x, y) => {
+        if (version !== tourMeasureVersion.current) return;
+        const delta = y - (scrollY + 12);
+        if (Math.abs(delta) > 4) {
+          scrollRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
+        }
+        tourMeasureTimer.current = setTimeout(() => {
+          ref.measureInWindow((x, y, width, height) => {
+            if (version !== tourMeasureVersion.current) return;
+            setTourTargets(prev => ({ ...prev, [target]: width > 0 && height > 0 ? { x, y, width, height } : null }));
+          });
+        }, 500);
+      });
     });
   }, [tourRefs]);
 
@@ -302,14 +299,15 @@ export default function DashboardScreen() {
 
   return (
     <>
+      <View ref={viewportRef} collapsable={false} style={{ flex: 1 }}>
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1, backgroundColor: C.background }}
-        contentContainerStyle={s.container}
+        contentContainerStyle={[s.container, tourOpen && { paddingBottom: 340 }]}
         onScroll={e => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
         scrollEventThrottle={16}
       >
-        <View ref={phaseStatusRef} collapsable={false}>
+        <View>
           <View style={s.greetingCard}>
             <Text style={s.label}>ATHLETE PORTAL DASHBOARD</Text>
             <Text style={s.greeting}>{greeting}, {firstName}.</Text>
@@ -321,7 +319,7 @@ export default function DashboardScreen() {
                 : `You're on Phase ${gp.activePhaseIdx + 1} of ${gp.phases.length}. Keep the momentum going.`}
             </Text>
 
-            <View style={s.tierRow}>
+            <View ref={phaseStatusRef} collapsable={false} style={s.tierRow}>
               <Text style={s.tierRowLabel}>Tier:</Text>
               <View style={[s.tierPill, { backgroundColor: tierBg }]}>
                 <Text style={s.tierPillText}>{tierName}</Text>
@@ -336,14 +334,14 @@ export default function DashboardScreen() {
               ) : null}
             </View>
 
-            <Pressable style={s.viewProfileBtn} onPress={() => router.push('/(tabs)/profile' as any)}>
+            <Pressable ref={profileRef} collapsable={false} style={s.viewProfileBtn} onPress={() => router.push('/(tabs)/profile' as any)}>
               <Text style={s.viewProfileText}>View Profile</Text>
               <Ionicons name="arrow-forward" size={12} color={PROFILE_ARROW_COLOR} />
             </Pressable>
           </View>
         </View>
 
-        <View ref={gameplanRef} collapsable={false}>
+        <View>
           <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplan}>
             <Text style={s.heroTitle}>Your Gameplan</Text>
             <Text style={s.heroSubtitle}>Where new athletes start. Three steps to connect with coaches who match your level.</Text>
@@ -359,7 +357,7 @@ export default function DashboardScreen() {
                 const locked = gp.phaseLocked[i];
                 const current = !done && !locked && i === gp.activePhaseIdx;
                 return (
-                  <View key={phase.number} style={s.heroPhaseRow}>
+                  <View key={phase.number} ref={tourRefs[`phase-${phase.number}`]} collapsable={false} style={s.heroPhaseRow}>
                     <View style={[
                       s.heroPhaseNode,
                       done && s.heroPhaseNodeDone,
@@ -406,6 +404,7 @@ export default function DashboardScreen() {
           <View ref={scoreRef} collapsable={false}>
             <ScoreAnimator finalScore={currentScore} duration={2000} recruitingLevel={band?.level} />
           </View>
+          <View ref={matchesRef} collapsable={false}>
           <StatCard
             label="Mutual Matches"
             value={matchCount}
@@ -413,7 +412,8 @@ export default function DashboardScreen() {
             tiers={ACTIVITY_TIERS}
             activeIndex={activityTierIndex(matchCount, [1, 3, 6, 10])}
           />
-          <Pressable onPress={() => router.push('/(tabs)/messages' as any)}>
+          </View>
+          <Pressable ref={messagesRef} collapsable={false} onPress={() => router.push('/(tabs)/messages' as any)}>
             <StatCard
               label="Unread Messages"
               value={loadingStats ? 0 : unreadMessages}
@@ -425,6 +425,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={s.statsGrid}>
+          <View ref={viewsRef} collapsable={false}>
           <StatCard
             label="Profile Views"
             value={stats.profileViews}
@@ -432,6 +433,7 @@ export default function DashboardScreen() {
             tiers={ACTIVITY_TIERS}
             activeIndex={activityTierIndex(stats.profileViews, [10, 25, 50, 100])}
           />
+          </View>
           <StatCard
             label="Programs Reviewed"
             value={stats.programsReviewed}
@@ -461,7 +463,7 @@ export default function DashboardScreen() {
           </LinearGradient>
         )}
 
-        <View ref={programsRef} collapsable={false} style={s.programsSection}>
+        <View style={s.programsSection}>
           <View style={s.programsHeader}>
             <Text style={s.programsHeaderLabel}>Top Fit Programs</Text>
             {topFitPrograms.length > 0 && (
@@ -474,7 +476,7 @@ export default function DashboardScreen() {
 
           {topFitPrograms.length > 0 ? (
             <View style={s.spotHero}>
-              <View style={s.spotCard}>
+              <View ref={programsRef} collapsable={false} style={s.spotCard}>
                 <View style={s.spotLogoWrap}>
                   <Text style={s.spotLogoInitials}>
                     {topFitPrograms[0].name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -531,9 +533,11 @@ export default function DashboardScreen() {
               </LinearGradient>
             </View>
           ) : (
-            <Card>
-              <Text style={s.statDesc}>Complete your assessment to see programs that fit your level.</Text>
-            </Card>
+            <View ref={programsRef} collapsable={false}>
+              <Card>
+                <Text style={s.statDesc}>Complete your assessment to see programs that fit your level.</Text>
+              </Card>
+            </View>
           )}
 
           {topFitPrograms.length > 1 && (
@@ -550,6 +554,7 @@ export default function DashboardScreen() {
 
         <Copyright />
       </ScrollView>
+      </View>
 
       <UpgradeSheet
         visible={sheet.visible}
