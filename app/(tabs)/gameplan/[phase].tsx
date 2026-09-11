@@ -26,6 +26,7 @@ import { getDashboardStats, DashboardStats } from '../../../lib/dashboardStats';
 import GradientRing from '../../../components/GradientRing';
 import GradientIcon from '../../../components/GradientIcon';
 import ProfileGuidance from '../../../components/ProfileGuidance';
+import ProfilePhotoEditor from '../../../components/ProfilePhotoEditor';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -537,6 +538,19 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <PhaseHeader phase={phase} />
+
+        {athleteId && (
+          <View>
+            <Text style={{ color: C.textMuted, fontSize: 13, marginBottom: 10 }}>
+              Add a profile photo so coaches can put a face to your name. This step is optional.
+            </Text>
+            <ProfilePhotoEditor
+              table="athletes"
+              profileId={athleteId}
+              photoUrl={typeof athlete?.profile_photo_url === 'string' ? athlete.profile_photo_url : null}
+            />
+          </View>
+        )}
 
         <Card>
           <SLabel>PROFILE COMPLETION</SLabel>
