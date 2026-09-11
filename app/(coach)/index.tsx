@@ -1,3 +1,5 @@
+import OnboardingTour from '../../components/OnboardingTour';
+import { useCoachDashboardTour } from '../../hooks/useCoachDashboardTour';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, ActivityIndicator, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,6 +74,8 @@ export default function CoachDashboard() {
   }, [pulseAnim]);
 
   const [loading, setLoading] = useState(true);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const tour = useCoachDashboardTour(coach?.id, !!coach?.verified, !coachLoading && !loading && !complianceLoading);
   const [compliance, setCompliance] = useState<Compliance | null>(null);
   const [matches, setMatches] = useState<RecentMatch[]>([]);
   const [matchCount, setMatchCount] = useState(0);
@@ -90,6 +94,7 @@ export default function CoachDashboard() {
     if (!coach.verified) { setLoading(false); return; }
 
     async function loadVerified(c: Coach) {
+      setComplianceLoading(true);
       fetch('https://v1portal.com/api/compliance/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,7 +105,7 @@ export default function CoachDashboard() {
           region: c.region ?? undefined,
           action: 'swipe',
         }),
-      }).then(r => r.json()).then(setCompliance).catch(() => null);
+      }).then(r => r.json()).then(setCompliance).catch(() => null).finally(() => setComplianceLoading(false));
 
       const { data: matchData } = await supabase
         .from('mutual_matches')
@@ -195,14 +200,15 @@ export default function CoachDashboard() {
   // just App Store optics. ──
   if (!coach.verified) {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
-        <View style={s.greetBlock}>
+      <>
+      <ScrollView ref={tour.scrollRef} onScroll={event => { tour.scrollOffset.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+        <View ref={view => { tour.refs.current['welcome'] = view; }} collapsable={false} style={s.greetBlock}>
           <Text style={s.eyebrow}>DASHBOARD</Text>
           <Text style={s.greetTitle}>{greeting}, Coach {firstName}.</Text>
           <Text style={s.greetSub}>{coach.school_name} · {coach.division}</Text>
         </View>
 
-        <View style={s.pendingCard}>
+        <View ref={view => { tour.refs.current['verification'] = view; }} collapsable={false} style={s.pendingCard}>
           <View style={s.pendingIconWrap}>
             <Ionicons name="time-outline" size={24} color="#a78bfa" />
           </View>
@@ -224,6 +230,8 @@ export default function CoachDashboard() {
           )}
         </View>
       </ScrollView>
+      <OnboardingTour isOpen={tour.open} onClose={tour.close} steps={tour.steps} targets={tour.targets} onStepChange={tour.onStepChange} />
+      </>
     );
   }
 
@@ -237,11 +245,12 @@ export default function CoachDashboard() {
     : null;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+    <>
+      <ScrollView ref={tour.scrollRef} onScroll={event => { tour.scrollOffset.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       {/* Greeting — white welcome card, same treatment as the athlete
           dashboard's greeting card: eyebrow + title + status line + tier
           pills + a pinned "View Profile" button. */}
-      <View style={s.greetCard}>
+      <View ref={view => { tour.refs.current['welcome'] = view; }} collapsable={false} style={s.greetCard}>
         <View style={s.greetContent}>
           <Text style={s.greetEyebrow}>Coach Portal Dashboard</Text>
           <Text style={s.greetCardTitle}>{greeting}, Coach {firstName}.</Text>
@@ -285,7 +294,7 @@ export default function CoachDashboard() {
       </View>
 
       {/* Primary CTA + secondary action cards */}
-      <Pressable style={s.ctaWrap} onPress={() => router.push('/(coach)/match' as any)}>
+      <Pressable ref={view => { tour.refs.current.find = view; }} collapsable={false} style={s.ctaWrap} onPress={() => router.push('/(coach)/match' as any)}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View>
           <Text style={s.ctaTitle}>Find Players</Text>
@@ -294,7 +303,7 @@ export default function CoachDashboard() {
         <Ionicons name="arrow-forward" size={18} color="#fff" />
       </Pressable>
 
-      <View style={s.secondaryRow}>
+      <View ref={view => { tour.refs.current['tools'] = view; }} collapsable={false} style={s.secondaryRow}>
         {[
           { href: '/(coach)/recruiting', label: 'Recruiting Map', sub: 'Target states', icon: 'map-outline' as const, bg: require('../../assets/coach-dashboard/recruiting-map-bg.png') },
           { href: '/(coach)/messages', label: 'Messages', sub: 'Reach out', icon: 'chatbubbles-outline' as const, bg: require('../../assets/coach-dashboard/messages-bg.png') },
@@ -324,7 +333,7 @@ export default function CoachDashboard() {
           <Text style={s.seeAll}>Full Analytics →</Text>
         </Pressable>
       </View>
-      <View style={s.statGrid}>
+      <View style={s.statGrid} ref={view => { tour.refs.current.activity = view; }} collapsable={false}>
         <StatCard label="Matches" value={matchCount} sub="Athletes who matched back with you" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(matchCount, [1, 3, 6, 10])} />
         <StatCard label="Players Viewed" value={swipeCount} sub="Prospects you've swiped through so far" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(swipeCount, [10, 25, 50, 100])} />
         <StatCard label="Saved Prospects" value={savedCount} sub="Athletes on your shortlist" tiers={ACTIVITY_TIERS} activeIndex={activityTierIndex(savedCount, [2, 5, 10, 20])} />
@@ -335,6 +344,7 @@ export default function CoachDashboard() {
           solid/gradient banner (deep period-status color) with white
           foreground, matching web's "Find Players" hero treatment rather
           than a neutral card with a colored border tint. */}
+      <View ref={view => { tour.refs.current.compliance = view; }} collapsable={false}>
       {Array.isArray(periodBg) ? (
         <LinearGradient colors={periodBg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.complianceCard}>
           <ComplianceCardBody
@@ -353,8 +363,10 @@ export default function CoachDashboard() {
         </View>
       )}
 
+      </View>
+
       {/* Recent matches */}
-      <View style={{ marginTop: 8 }}>
+      <View ref={view => { tour.refs.current.matches = view; }} collapsable={false} style={{ marginTop: 8 }}>
         <View style={s.sectionHeader}>
           <Text style={s.sectionTitle}>Recent Matches</Text>
           {matchCount > 0 && (
@@ -399,6 +411,8 @@ export default function CoachDashboard() {
         )}
       </View>
     </ScrollView>
+      <OnboardingTour isOpen={tour.open} onClose={tour.close} steps={tour.steps} targets={tour.targets} onStepChange={tour.onStepChange} />
+      </>
   );
 }
 

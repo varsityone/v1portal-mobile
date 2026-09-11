@@ -1,3 +1,4 @@
+import { requestCoachTour } from '../lib/coachTour';
 import { useProfilePhoto } from '../lib/profilePhotos';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -329,6 +330,18 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
               ))}
             </View>
           )}
+          <Pressable
+            style={d.navItem}
+            accessibilityRole="button"
+            onPress={async () => {
+              props.navigation.closeDrawer();
+              await requestCoachTour();
+              router.push('/(coach)' as any);
+            }}
+          >
+            <Ionicons name="play-outline" size={17} color="rgb(254, 31, 2)" />
+            <Text style={[d.navLabel, { color: 'rgb(254, 31, 2)' }]}>Dashboard Tour</Text>
+          </Pressable>
         </View>
 
         {/* Our Socials */}

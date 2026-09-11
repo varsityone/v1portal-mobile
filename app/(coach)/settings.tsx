@@ -1,3 +1,4 @@
+import { requestCoachTour } from '../../lib/coachTour';
 import { useMemo } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,6 +67,17 @@ export default function CoachSettingsScreen() {
         <Text style={[s.cardTitle, { color: C.text }]}>Recruiting Compliance</Text>
         <Pressable style={[s.pillBtnOutline, { borderColor: C.border2, alignSelf: 'flex-start' }]} onPress={() => router.push('/(coach)/compliance' as any)}>
           <Text style={[s.pillBtnOutlineText, { color: C.text }]}>View Compliance Calendar →</Text>
+        </Pressable>
+      </View>
+
+      <View style={[s.card, { backgroundColor: C.surface }]}>
+        <Text style={[s.cardTitle, { color: C.text }]}>Dashboard Tour</Text>
+        <Pressable accessibilityRole="button" style={[s.linkRow, { borderTopColor: C.border }]} onPress={async () => {
+          await requestCoachTour();
+          router.push('/(coach)' as any);
+        }}>
+          <Text style={[s.rowLabel, { color: C.text }]}>Preview Dashboard Tour</Text>
+          <Ionicons name="play-outline" size={18} color={C.textMuted} />
         </Pressable>
       </View>
 
