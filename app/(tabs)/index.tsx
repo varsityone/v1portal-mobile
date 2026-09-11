@@ -36,7 +36,9 @@ const TOUR_STEPS = [
   { target: 'matches', title: 'Mutual Matches', description: 'This counts coaches who matched back with you. Open Program Matches in the menu to see those connections.' },
   { target: 'messages', title: 'Coach Messages', description: 'See how many unread messages you have. Tap this card to open your inbox.' },
   { target: 'views', title: 'Profile Views', description: 'Track interest in your profile here. The cards below also show how many programs you have reviewed and liked.' },
-  { target: 'programs', title: 'Top Fit Programs', description: 'After your assessment, this section shows programs that fit your level. Use View All when available to explore more. Replay this tour anytime from the menu.' },
+  { target: 'programs', title: 'Top Fit Programs', description: 'After your assessment, this section shows programs that fit your level. Use View All when available to explore more.' },
+  { target: 'subscription', title: 'Your Subscription', description: 'See your current tier, subscription status, and included features here. If upgrade options are available, use the button on this card to compare plans.' },
+  { target: 'college-scroll', title: 'More Colleges That Fit', description: 'This scrolling row previews more colleges that fit your level. Use View All above to explore the programs. Replay this tour anytime from the menu.' },
 ];
 
 // Matches web's .gp-spot-rest-wrap/.gp-spot-rest-track: an infinite,
@@ -140,6 +142,12 @@ export default function DashboardScreen() {
   const viewsRef = useRef<View>(null);
   const scoreRef = useRef<View>(null);
   const programsRef = useRef<View>(null);
+  const subscriptionRef = useRef<View>(null);
+  const collegeScrollRef = useRef<View>(null);
+  const visibleTourSteps = useMemo(() => TOUR_STEPS.filter(step =>
+    (step.target !== 'subscription' || topFitPrograms.length > 0) &&
+    (step.target !== 'college-scroll' || topFitPrograms.length > 1)
+  ), [topFitPrograms.length]);
   const tourRefs = useRef<Record<string, React.RefObject<View | null>>>({
     'phase-status': phaseStatusRef,
     'profile': profileRef,
@@ -151,6 +159,8 @@ export default function DashboardScreen() {
     'views': viewsRef,
     'v1-score': scoreRef,
     'programs': programsRef,
+    'subscription': subscriptionRef,
+    'college-scroll': collegeScrollRef,
   }).current;
 
   const [tourOpen, setTourOpen] = useState(false);
@@ -498,6 +508,7 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
+              <View ref={subscriptionRef} collapsable={false}>
               <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.spotTier}>
                 <View style={s.spotTierHead}>
                   <View style={s.spotTierIcon}>
@@ -531,6 +542,7 @@ export default function DashboardScreen() {
                   </Pressable>
                 )}
               </LinearGradient>
+              </View>
             </View>
           ) : (
             <View ref={programsRef} collapsable={false}>
@@ -541,7 +553,9 @@ export default function DashboardScreen() {
           )}
 
           {topFitPrograms.length > 1 && (
-            <SpotRestMarquee programs={topFitPrograms.slice(1)} C={C} s={s} />
+            <View ref={collegeScrollRef} collapsable={false}>
+              <SpotRestMarquee programs={topFitPrograms.slice(1)} C={C} s={s} />
+            </View>
           )}
 
           {matchCount > 0 && (
@@ -565,7 +579,7 @@ export default function DashboardScreen() {
         phaseName={sheet.phase?.title ?? ''}
       />
 
-      <OnboardingTour key={tourRun} isOpen={tourOpen} onClose={closeTour} steps={TOUR_STEPS} targets={tourTargets} onStepChange={handleTourStepChange} />
+      <OnboardingTour key={tourRun} isOpen={tourOpen} onClose={closeTour} steps={visibleTourSteps} targets={tourTargets} onStepChange={handleTourStepChange} />
     </>
   );
 }
