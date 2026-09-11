@@ -9,7 +9,7 @@ import { useGameplanPhases } from '../../hooks/useGameplanPhases';
 import { getRecruitingLevelBand } from '../../lib/recruitingLevels';
 import { getTierFromAthlete, getTierColor } from '../../lib/tierColors';
 import { supabase } from '../../lib/supabase';
-import { hasSeenTour, markTourSeen, consumeTourRequest } from '../../lib/onboardingTour';
+import { hasSeenTour, markTourSeen, consumeTourRequest, subscribeTourRequest } from '../../lib/onboardingTour';
 import { getTopFitPrograms, TopFitProgram } from '../../lib/topFitPrograms';
 import { getDashboardStats, DashboardStats } from '../../lib/dashboardStats';
 import { Phase } from '../../constants/Phases';
@@ -150,6 +150,9 @@ export default function DashboardScreen() {
   }).current;
 
   const [tourOpen, setTourOpen] = useState(false);
+  const [tourRun, setTourRun] = useState(0);
+  const tourMeasureTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const tourMeasureVersion = useRef(0);
   const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | null | undefined>>({});
 
   // measureInWindow gives a target's true screen position regardless of
@@ -162,15 +165,23 @@ export default function DashboardScreen() {
   // wrapped inside its own statsGrid row).
   const TOUR_HEADER_CLEARANCE = 76;
   const handleTourStepChange = useCallback((target: string) => {
+    const version = ++tourMeasureVersion.current;
+    clearTimeout(tourMeasureTimer.current);
+    setTourTargets(prev => ({ ...prev, [target]: undefined }));
     const ref = tourRefs[target]?.current;
-    if (!ref) return;
+    if (!ref) {
+      setTourTargets(prev => ({ ...prev, [target]: null }));
+      return;
+    }
     ref.measureInWindow((x, y) => {
+      if (version !== tourMeasureVersion.current) return;
       const delta = y - TOUR_HEADER_CLEARANCE;
       if (Math.abs(delta) > 4) {
         scrollRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
       }
-      setTimeout(() => {
+      tourMeasureTimer.current = setTimeout(() => {
         ref.measureInWindow((x2, y2, width, height) => {
+          if (version !== tourMeasureVersion.current) return;
           setTourTargets(prev => ({ ...prev, [target]: width > 0 ? { x: x2, y: y2, width, height } : null }));
         });
       }, 500);
@@ -182,13 +193,25 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      (async () => {
-        const forced = await consumeTourRequest();
-        const seen = await hasSeenTour();
-        if (cancelled || (!forced && seen)) return;
-        if (!cancelled) setTourArmed(true);
-      })();
-      return () => { cancelled = true; setTourArmed(false); };
+      const checkTour = async () => {
+        try {
+          const forced = await consumeTourRequest();
+          const seen = await hasSeenTour();
+          if (!cancelled && (forced || !seen)) setTourArmed(true);
+        } catch (error) {
+          console.warn('Unable to load tour preferences:', error);
+        }
+      };
+      void checkTour();
+      const unsubscribe = subscribeTourRequest(() => { void checkTour(); });
+      return () => {
+        cancelled = true;
+        unsubscribe();
+        tourMeasureVersion.current++;
+        clearTimeout(tourMeasureTimer.current);
+        setTourArmed(false);
+        setTourOpen(false);
+      };
     }, [])
   );
 
@@ -199,16 +222,19 @@ export default function DashboardScreen() {
     if (!tourArmed || loading || loadingStats) return;
     const t = setTimeout(() => {
       setTourTargets({});
+      setTourRun(run => run + 1);
       setTourOpen(true);
       setTourArmed(false);
     }, 250);
     return () => clearTimeout(t);
   }, [tourArmed, loading, loadingStats]);
 
-  const closeTour = () => {
+  const closeTour = useCallback(() => {
+    tourMeasureVersion.current++;
+    clearTimeout(tourMeasureTimer.current);
     setTourOpen(false);
-    markTourSeen();
-  };
+    void markTourSeen().catch(error => console.warn('Unable to save tour preference:', error));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -534,7 +560,7 @@ export default function DashboardScreen() {
         phaseName={sheet.phase?.title ?? ''}
       />
 
-      <OnboardingTour isOpen={tourOpen} onClose={closeTour} steps={TOUR_STEPS} targets={tourTargets} onStepChange={handleTourStepChange} />
+      <OnboardingTour key={tourRun} isOpen={tourOpen} onClose={closeTour} steps={TOUR_STEPS} targets={tourTargets} onStepChange={handleTourStepChange} />
     </>
   );
 }
