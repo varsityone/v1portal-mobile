@@ -1,3 +1,4 @@
+import { getTourScrollOffset } from '../../lib/tourPopover';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -171,10 +172,9 @@ export default function DashboardScreen() {
     viewportRef.current?.measureInWindow((_scrollX, scrollY) => {
       ref.measureInWindow((_x, y) => {
         if (version !== tourMeasureVersion.current) return;
-        const delta = y - (scrollY + 12);
-        if (Math.abs(delta) > 4) {
-          scrollRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
-        }
+        const nextOffset = getTourScrollOffset(target, scrollOffsetRef.current, y, scrollY);
+        scrollRef.current?.scrollTo({ y: nextOffset, animated: target !== 'phase-status' });
+        if (target === 'phase-status') scrollOffsetRef.current = 0;
         tourMeasureTimer.current = setTimeout(() => {
           ref.measureInWindow((x, y, width, height) => {
             if (version !== tourMeasureVersion.current) return;

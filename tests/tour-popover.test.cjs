@@ -33,3 +33,14 @@ test('placement adapts to the measured height of longer tour text', () => {
   assert.ok(short.top > target.y + target.height);
   assert.ok(tall.top + 350 < target.y);
 });
+
+test('opening step returns to the top even when replayed far down the dashboard', () => {
+  const scroll = moduleExports.getTourScrollOffset;
+  assert.equal(scroll('phase-status', 1600, -1300, 100), 0);
+  assert.equal(scroll('phase-status', 0, 280, 100), 0);
+});
+test('later steps align below the measured header and never scroll negative', () => {
+  const scroll = moduleExports.getTourScrollOffset;
+  assert.equal(scroll('messages', 400, 500, 140), 748);
+  assert.equal(scroll('profile', 0, 100, 140), 0);
+});

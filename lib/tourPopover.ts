@@ -16,3 +16,10 @@ export function getTourPopoverPosition(
     left: Math.max(margin, Math.min(box.x + box.width / 2 - width / 2, viewport.width - width - margin)),
   };
 }
+
+export function getTourScrollOffset(target: string, currentOffset: number, targetY: number, viewportY: number) {
+  // The opening step should show the complete welcome card, not align its
+  // tier row to the header and scroll the greeting off screen.
+  if (target === 'phase-status') return 0;
+  return Math.max(0, currentOffset + targetY - (viewportY + 12));
+}
