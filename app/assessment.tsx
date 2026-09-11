@@ -185,10 +185,8 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 10,
-    backgroundColor: Colors.background,
+    backgroundColor: '#000000',
   },
   errorText: {
     color: Colors.textMuted,

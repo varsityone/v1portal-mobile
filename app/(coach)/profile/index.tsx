@@ -1,3 +1,4 @@
+import { useProfilePhoto } from '../../../lib/profilePhotos';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,6 +28,7 @@ export default function CoachProfileScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const { coach } = useCoachData();
+  const photoUrl = useProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
   const [tab, setTab] = useState<'overview' | 'contact'>('overview');
 
   if (!coach) return null;
@@ -60,8 +62,8 @@ export default function CoachProfileScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={s.hero}>
-        {coach.profile_photo_url ? (
-          <Image source={{ uri: coach.profile_photo_url }} style={StyleSheet.absoluteFill} />
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} />
         ) : (
           <View style={[StyleSheet.absoluteFill, s.heroFallback]}>
             <Text style={s.heroFallbackLetter}>{coach.school_name?.charAt(0) ?? '?'}</Text>

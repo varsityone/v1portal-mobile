@@ -160,7 +160,7 @@ export default function RootLayout() {
   const [banner, setBanner] = useState<BannerData | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     BigShouldersDisplay_700Bold,
     BigShouldersDisplay_800ExtraBold,
     BigShouldersDisplay_900Black,
@@ -195,23 +195,29 @@ export default function RootLayout() {
     bootstrapped.current = true;
 
     async function bootstrap() {
-      const start = Date.now();
-      const { data: { session } } = await supabase.auth.getSession();
-      const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
-      if (session?.user?.id) configurePurchases(session.user.id);
+      try {
+        const start = Date.now();
+        const { data: { session } } = await supabase.auth.getSession();
+        const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
+        if (session?.user?.id) configurePurchases(session.user.id);
 
-      // Always show loader at least 2s so the animation is visible
-      const elapsed = Date.now() - start;
-      if (elapsed < 2000) await new Promise(r => setTimeout(r, 2000 - elapsed));
+        // Always show loader at least 2s so the animation is visible
+        const elapsed = Date.now() - start;
+        if (elapsed < 2000) await new Promise(r => setTimeout(r, 2000 - elapsed));
 
-      if (!session) {
+        if (!session) {
+          router.replace('/(auth)/login');
+        } else if (!seen) {
+          router.replace('/onboarding');
+        } else {
+          router.replace(await resolveHomeRoute(session.user.id) as any);
+        }
+      } catch (error) {
+        console.warn('Unable to restore session:', error);
         router.replace('/(auth)/login');
-      } else if (!seen) {
-        router.replace('/onboarding');
-      } else {
-        router.replace(await resolveHomeRoute(session.user.id) as any);
+      } finally {
+        setAppReady(true);
       }
-      setAppReady(true);
     }
     bootstrap();
   }, []);
@@ -254,23 +260,32 @@ export default function RootLayout() {
 
     // ── Auth state ──────────────────────────────────────────────────────────
 
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event) => {
+    let signInTimer: ReturnType<typeof setTimeout> | undefined;
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
+        clearTimeout(signInTimer);
         router.replace('/(auth)/login');
-      }
-      if (event === 'SIGNED_IN') {
-        setAppReady(false);
-        const { data: { session: s } } = await supabase.auth.getSession();
-        if (s?.user?.id) configurePurchases(s.user.id);
-        const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
-        await new Promise(r => setTimeout(r, 1500));
-        if (!seen) {
-          router.replace('/onboarding');
-        } else {
-          const dest = s?.user?.id ? await resolveHomeRoute(s.user.id) : '/(tabs)';
-          router.replace(dest as any);
-        }
         setAppReady(true);
+      }
+      if (event === 'SIGNED_IN' && session) {
+        // Finish the auth event before starting profile requests.
+        clearTimeout(signInTimer);
+        signInTimer = setTimeout(() => {
+          void (async () => {
+            setAppReady(false);
+            try {
+              configurePurchases(session.user.id);
+              const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
+              const dest = seen ? await resolveHomeRoute(session.user.id) : '/onboarding';
+              router.replace(dest as any);
+            } catch (error) {
+              console.warn('Unable to finish sign-in:', error);
+              router.replace('/(auth)/login');
+            } finally {
+              setAppReady(true);
+            }
+          })();
+        }, 0);
       }
     });
 
@@ -304,13 +319,13 @@ export default function RootLayout() {
     return () => {
       linkSub.remove();
       authSub.unsubscribe();
+      clearTimeout(signInTimer);
       foregroundSub?.remove();
       responseSub?.remove();
       if (dismissTimer.current) clearTimeout(dismissTimer.current);
     };
   }, []);
 
-  if (!appReady || !fontsLoaded) return <LoadingScreen />;
 
   return (
     <ThemeProvider>
@@ -319,6 +334,11 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         </Stack>
+        {(!appReady || (!fontsLoaded && !fontError)) && (
+          <View style={[StyleSheet.absoluteFill, { zIndex: 10000 }]}>
+            <LoadingScreen />
+          </View>
+        )}
         <NotificationBanner banner={banner} onDismiss={dismissBanner} />
       </View>
     </ThemeProvider>

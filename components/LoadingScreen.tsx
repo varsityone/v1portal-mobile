@@ -56,7 +56,9 @@ export default function LoadingScreen() {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#050507',
+    alignSelf: 'stretch',
+    width: '100%',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },

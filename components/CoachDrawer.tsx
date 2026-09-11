@@ -1,3 +1,4 @@
+import { useProfilePhoto } from '../lib/profilePhotos';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -145,6 +146,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const { session, signOut } = useAuth();
   const { coach } = useCoachData();
+  const photoUrl = useProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [unreadMatches, setUnreadMatches] = useState(0);
@@ -218,8 +220,8 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
 
       {/* Coach avatar + name + tier badge — matches web's shell-drawer-header exactly */}
       <View style={d.profileHeader}>
-        {coach?.profile_photo_url ? (
-          <Image source={{ uri: coach.profile_photo_url }} style={d.avatar} />
+        {photoUrl ? (
+          <Image source={{ uri: photoUrl }} style={d.avatar} />
         ) : (
           <View style={[d.avatar, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
             <Text style={[d.avatarText, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>

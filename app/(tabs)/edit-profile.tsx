@@ -1,3 +1,4 @@
+import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -516,6 +517,8 @@ export default function EditProfileScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {athlete && <ProfilePhotoEditor table="athletes" profileId={athlete.id} photoUrl={athlete.profile_photo_url} />}
+
         {/* ── Profile Link ── */}
         {profileSlug ? (
           <View style={s.sectionWrap}>

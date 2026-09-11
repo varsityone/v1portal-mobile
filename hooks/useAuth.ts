@@ -9,6 +9,10 @@ export function useAuth() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+    }).catch((error) => {
+      console.warn('Unable to restore session:', error);
+      setSession(null);
+    }).finally(() => {
       setLoading(false);
     });
 

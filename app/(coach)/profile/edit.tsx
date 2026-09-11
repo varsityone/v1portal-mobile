@@ -1,17 +1,15 @@
+import ProfilePhotoEditor from '../../../components/ProfilePhotoEditor';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
 import { floorFromLevels, POSITIONS, RECRUITING_LEVEL_BANDS } from '../../../lib/recruitingLevels';
 import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
-
-const PHOTO_BUCKET = 'athletes';
 
 const TITLES = [
   'Head Coach', 'Offensive Coordinator', 'Defensive Coordinator', 'Special Teams Coordinator',
@@ -53,12 +51,9 @@ export default function CoachProfileEditScreen() {
     bio: '',
     message_to_recruits: '',
     twitter: '',
-    profile_photo_url: '',
   });
 
   const [saving, setSaving] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoError, setPhotoError] = useState('');
   const [showTitleMenu, setShowTitleMenu] = useState(false);
   const [showDivisionMenu, setShowDivisionMenu] = useState(false);
   const [showRegionMenu, setShowRegionMenu] = useState(false);
@@ -81,66 +76,9 @@ export default function CoachProfileEditScreen() {
         bio: coach.bio || '',
         message_to_recruits: coach.message_to_recruits || '',
         twitter: coach.twitter || '',
-        profile_photo_url: coach.profile_photo_url || '',
       });
     }
   }, [coach]);
-
-  const handlePickPhoto = async () => {
-    if (!coach?.id || !coach?.user_id) return;
-    setPhotoError('');
-
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      setPhotoError('Photo library access is required to upload a photo.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets?.[0]) return;
-
-    const asset = result.assets[0];
-    setUploadingPhoto(true);
-    try {
-      const fileExt = (asset.uri.split('.').pop() || 'jpg').toLowerCase();
-      const filePath = `coach-photos/${coach.user_id}-${Date.now()}.${fileExt}`;
-      const arrayBuffer = await fetch(asset.uri).then(res => res.arrayBuffer());
-
-      const { error: storageError } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(filePath, arrayBuffer, {
-          contentType: asset.mimeType ?? 'image/jpeg',
-          upsert: true,
-        });
-      if (storageError) throw storageError;
-
-      const { data: { publicUrl } } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(filePath);
-      const { error: dbError } = await supabase.from('coach_accounts').update({ profile_photo_url: publicUrl }).eq('id', coach.id);
-      if (dbError) throw dbError;
-
-      setFormData((prev: any) => ({ ...prev, profile_photo_url: publicUrl }));
-    } catch (e: any) {
-      setPhotoError(e?.message ?? 'Failed to upload photo. Please try again.');
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    if (!coach?.id) return;
-    setPhotoError('');
-    try {
-      await supabase.from('coach_accounts').update({ profile_photo_url: null }).eq('id', coach.id);
-      setFormData((prev: any) => ({ ...prev, profile_photo_url: '' }));
-    } catch (e: any) {
-      setPhotoError(e?.message ?? 'Failed to remove photo.');
-    }
-  };
 
   const handleSave = async () => {
     if (!coach?.id) return;
@@ -201,6 +139,8 @@ export default function CoachProfileEditScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text style={s.subtitle}>Update your program information. This is what athletes see when they swipe.</Text>
 
+        {coach && <ProfilePhotoEditor table="coach_accounts" profileId={coach.id} photoUrl={coach.profile_photo_url} />}
+
         {/* Personal Info */}
         <View style={s.sectionWrap}>
           <View style={s.sectionHeader}>
@@ -208,32 +148,6 @@ export default function CoachProfileEditScreen() {
             <Text style={s.sectionTitle}>PERSONAL INFORMATION</Text>
           </View>
           <View style={s.card}>
-            <View style={[s.fieldRow, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
-              {formData.profile_photo_url ? (
-                <Image source={{ uri: formData.profile_photo_url }} style={s.photo} />
-              ) : (
-                <View style={[s.photo, s.photoPlaceholder]}>
-                  <Ionicons name="person" size={28} color={C.textDim} />
-                </View>
-              )}
-              {uploadingPhoto && (
-                <View style={s.photoOverlay}>
-                  <ActivityIndicator color="#fff" size="small" />
-                </View>
-              )}
-              <View style={s.photoActions}>
-                <Pressable style={s.photoBtn} onPress={handlePickPhoto} disabled={uploadingPhoto}>
-                  <Text style={s.photoBtnText}>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</Text>
-                </Pressable>
-                {!!formData.profile_photo_url && (
-                  <Pressable style={s.photoRemoveBtn} onPress={handleRemovePhoto} disabled={uploadingPhoto}>
-                    <Text style={s.photoRemoveBtnText}>Remove</Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-            {!!photoError && <Text style={[s.hint, { color: '#ff4444', paddingHorizontal: 16 }]}>{photoError}</Text>}
-
             <FieldInput label="Full Name" value={formData.full_name} onChangeText={v => setFormData({ ...formData, full_name: v })} C={C} bordered />
             <FieldSelect
               label="Title"
@@ -517,15 +431,6 @@ function createStyles(C: ThemeColors) {
     checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
     checkboxChecked: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     checkboxLabel: { flex: 1, fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-
-    photo: { width: 64, height: 64, borderRadius: 14, borderWidth: 2, borderColor: C.border },
-    photoPlaceholder: { backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-    photoOverlay: { position: 'absolute', left: 16, top: 12, width: 64, height: 64, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-    photoActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', flex: 1 },
-    photoBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, backgroundColor: PINK_RED },
-    photoBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
-    photoRemoveBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 100, borderWidth: 1, borderColor: C.border },
-    photoRemoveBtnText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
 
     hint: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 },
 

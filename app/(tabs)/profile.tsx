@@ -1,3 +1,5 @@
+import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
+import { useProfilePhoto } from '../../lib/profilePhotos';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -166,6 +168,7 @@ function EditModal({ data, onSave, onClose }: {
           </Pressable>
         </View>
         <ScrollView style={em.scroll} contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+          <ProfilePhotoEditor table="athletes" profileId={data.id} photoUrl={data.profile_photo_url} />
           {SECTIONS.map(section => (
             <View key={section.title} style={em.section}>
               <Text style={em.sectionTitle}>{section.title}</Text>
@@ -236,6 +239,7 @@ export default function ProfileScreen() {
   const s = useMemo(() => createStyles(C), [C]);
 
   const [profile,    setProfile]    = useState<ProfileData | null>(null);
+  const photoUrl = useProfilePhoto('athletes', profile?.id, profile?.profile_photo_url);
   const [breakdown,  setBreakdown]  = useState<Record<string, any>>({});
   const [seasonStats,setSeasonStats]= useState<Record<string, any>>({});
   const [loading,    setLoading]    = useState(true);
@@ -371,8 +375,8 @@ export default function ProfileScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* ── Hero ── */}
         <View style={s.hero}>
-          {profile?.profile_photo_url ? (
-            <Image source={{ uri: profile.profile_photo_url }} style={StyleSheet.absoluteFill} />
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} />
           ) : (
             <LinearGradient colors={['#1a1a2e', '#0a0a0c']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
               <View style={s.initialsWrap}><Text style={s.initials}>{initials}</Text></View>
