@@ -1,4 +1,4 @@
-import { useProfilePhoto } from '../lib/profilePhotos';
+import { useDrawerProfilePhoto } from '../hooks/useDrawerProfilePhoto';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -144,7 +144,7 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const { session, signOut } = useAuth();
   const { athlete } = useAthleteData();
-  const photoUrl = useProfilePhoto('athletes', athlete?.id, athlete?.profile_photo_url);
+  const photoUrl = useDrawerProfilePhoto('athletes', athlete?.id, athlete?.profile_photo_url);
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [unreadMatches, setUnreadMatches] = useState(0);

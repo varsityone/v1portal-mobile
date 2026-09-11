@@ -1,5 +1,5 @@
 import { requestCoachTour } from '../lib/coachTour';
-import { useProfilePhoto } from '../lib/profilePhotos';
+import { useDrawerProfilePhoto } from '../hooks/useDrawerProfilePhoto';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -147,7 +147,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const { session, signOut } = useAuth();
   const { coach } = useCoachData();
-  const photoUrl = useProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
+  const photoUrl = useDrawerProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [unreadMatches, setUnreadMatches] = useState(0);
