@@ -1,3 +1,4 @@
+import CoachRecruitingDates from '../../components/CoachRecruitingDates';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -23,7 +24,7 @@ export default function CalendarScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { loading: coachLoading } = useCoachData();
+  const { coach, loading: coachLoading } = useCoachData();
   const { events, loading, create, delete: deleteEvent } = useCoachCalendarEvents();
   const { saved } = useCoachSaved();
 
@@ -196,6 +197,7 @@ export default function CalendarScreen() {
           </View>
         ))
       )}
+      <CoachRecruitingDates division={coach?.division} region={coach?.region} />
     </ScrollView>
   );
 }

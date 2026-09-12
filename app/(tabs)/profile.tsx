@@ -374,7 +374,7 @@ export default function ProfileScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* ── Hero ── */}
         <View style={s.hero}>
-          <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
+          <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} />
           <View style={s.heroScrim} />
 
           <View style={s.heroTopRow}>

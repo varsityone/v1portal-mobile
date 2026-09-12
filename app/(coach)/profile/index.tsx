@@ -65,7 +65,7 @@ export default function CoachProfileScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={s.hero}>
-        <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
+        <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} />
         <LinearGradient colors={['rgba(0,0,0,0.55)', 'transparent', 'rgba(10,10,10,0.7)']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
         <View style={s.heroTopRow}>
@@ -214,7 +214,7 @@ export default function CoachProfileScreen() {
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    hero: { height: 300, position: 'relative', backgroundColor: '#16171a' },
+    hero: { height: 300, position: 'relative', overflow: 'hidden', backgroundColor: '#16171a' },
     heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#16171a' },
     heroFallbackLetter: { fontFamily: FontFamily.headline, fontSize: 88, color: 'rgba(255,255,255,0.12)' },
     heroTopRow: { position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
