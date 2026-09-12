@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -174,17 +175,7 @@ function ConversationRow({ conv, isLast, C, s, onPress }: {
       style={[s.row, !isLast && s.rowBorder, unread && s.rowUnread]}
       onPress={onPress}
     >
-      {coach?.profile_photo_url ? (
-        <Image source={{ uri: coach.profile_photo_url }} style={s.avatar} />
-      ) : isNew ? (
-        <View style={s.avatarNew}>
-          <Text style={s.avatarNewText}>{initialsOf(coach?.full_name ?? null)}</Text>
-        </View>
-      ) : (
-        <View style={s.avatarFallback}>
-          <Text style={s.avatarFallbackText}>{initialsOf(coach?.full_name ?? null)}</Text>
-        </View>
-      )}
+      <Image source={coach?.profile_photo_url ? { uri: coach?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
           <Text style={[s.name, unread && s.nameUnread]} numberOfLines={1}>{coach?.full_name || 'Coach'}</Text>

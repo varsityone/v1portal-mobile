@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -73,13 +74,7 @@ export default function SavedProspectsScreen() {
                 style={s.row}
                 onPress={() => router.push(`/(coach)/recruits/${row.athlete_id}` as any)}
               >
-                {athlete.profile_photo_url ? (
-                  <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
-                ) : (
-                  <View style={[s.photo, s.photoFallback]}>
-                    <Ionicons name="person" size={22} color={theme === 'dark' ? '#000' : '#fff'} />
-                  </View>
-                )}
+                <Image source={athlete?.profile_photo_url ? { uri: athlete?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.photo} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.name} numberOfLines={1}>{athlete.full_name ?? 'Unknown'}</Text>
                   <Text style={s.meta} numberOfLines={1}>

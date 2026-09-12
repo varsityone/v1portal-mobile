@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -92,11 +93,7 @@ export default function RecruitingScreen() {
                   style={s.prospectCard}
                   onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}
                 >
-                  {prospect.profile_photo_url ? (
-                    <Image source={{ uri: prospect.profile_photo_url }} style={s.prospectPhoto} />
-                  ) : (
-                    <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.prospectPhoto} />
-                  )}
+                  <Image source={prospect?.profile_photo_url ? { uri: prospect?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.prospectPhoto} />
                   <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name ?? 'Unknown'}</Text>
                   <Text style={s.prospectSub} numberOfLines={1}>
                     {[prospect.position, prospect.state].filter(Boolean).join(' · ')}

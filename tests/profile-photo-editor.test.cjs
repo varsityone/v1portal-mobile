@@ -24,6 +24,7 @@ function harness(options = {}) {
     'react-native': { Platform: { OS: options.platform ?? 'ios' }, Pressable: 'Pressable', View: 'View', Text: 'Text', Image: 'Image', ActivityIndicator: 'ActivityIndicator' },
     '@expo/vector-icons': { Ionicons: 'Icon' },
     'expo-image-picker': { launchImageLibraryAsync: async () => { calls.push(['picker']); return options.cancel ? { canceled: true } : { canceled: false, assets: [{ uri: 'file:///photo.jpg', mimeType: 'image/jpeg' }] }; } },
+    '../constants/ProfileImage': { DEFAULT_PROFILE_IMAGE: 1 },
     '../context/ThemeContext': { useColors: () => ({}) },
     '../lib/profilePhotos': { useProfilePhoto: () => options.photo ?? null, publishProfilePhoto: (...args) => calls.push(['publish', ...args]) },
     '../lib/supabase': { supabase: {

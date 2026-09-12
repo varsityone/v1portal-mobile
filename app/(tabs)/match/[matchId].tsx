@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -133,11 +134,7 @@ export default function MatchThreadScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="arrow-back" size={20} color={C.text} />
           </Pressable>
-          {otherParty?.profile_photo_url ? (
-            <Image source={{ uri: otherParty.profile_photo_url }} style={s.avatar} />
-          ) : (
-            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatar} />
-          )}
+          <Image source={otherParty?.profile_photo_url ? { uri: otherParty?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.headerName} numberOfLines={1}>{otherParty?.school_name}</Text>
             <Text style={s.headerSub} numberOfLines={1}>{otherParty?.division} · {otherParty?.position_coached}</Text>

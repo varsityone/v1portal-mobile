@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -165,13 +166,7 @@ export default function CoachMatchesScreen() {
                 style={[s.row, match.unread > 0 && { borderColor: 'rgba(234,12,95,0.3)' }]}
                 onPress={() => router.push(`/(coach)/match/${match.id}` as any)}
               >
-                {match.athlete?.profile_photo_url ? (
-                  <Image source={{ uri: match.athlete.profile_photo_url }} style={s.avatar} />
-                ) : (
-                  <View style={[s.avatar, s.avatarFallback, { borderColor: `${posColor}40` }]}>
-                    <Text style={[s.avatarFallbackText, { color: posColor }]}>{match.athlete?.position ?? '?'}</Text>
-                  </View>
-                )}
+                <Image source={match?.athlete?.profile_photo_url ? { uri: match?.athlete?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text style={s.name} numberOfLines={1}>{match.athlete?.full_name ?? 'Unknown Athlete'}</Text>

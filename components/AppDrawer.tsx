@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../constants/ProfileImage';
 import { useDrawerProfilePhoto } from '../hooks/useDrawerProfilePhoto';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -221,13 +222,7 @@ export default function AppDrawer(props: DrawerContentComponentProps) {
 
       {/* User avatar + name + tier badge — matches web's shell-drawer-header exactly */}
       <View style={d.profileHeader}>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={d.avatar} />
-        ) : (
-          <View style={[d.avatar, { backgroundColor: scheme === 'dark' ? '#ffffff' : '#000000' }]}>
-            <Text style={[d.avatarText, { color: scheme === 'dark' ? '#000000' : '#ffffff' }]}>{initials}</Text>
-          </View>
-        )}
+        <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={d.avatar} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[d.profileName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
           <View style={[d.tierBadge, { backgroundColor: tierBg }]}>

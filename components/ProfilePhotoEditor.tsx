@@ -1,6 +1,6 @@
+import { DEFAULT_PROFILE_IMAGE } from '../constants/ProfileImage';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { ProfileTable, publishProfilePhoto, useProfilePhoto } from '../lib/profilePhotos';
@@ -80,11 +80,7 @@ export default function ProfilePhotoEditor({ table, profileId, photoUrl }: {
       <Text style={{ color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 12 }}>Profile photo</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Change profile photo" disabled={busy} onPress={() => void changePhoto()}>
-          {uri ? <Image source={{ uri }} style={{ width: 76, height: 76, borderRadius: 38 }} /> : (
-            <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="camera-outline" size={30} color={C.textMuted} />
-            </View>
-          )}
+          <Image source={uri ? { uri } : DEFAULT_PROFILE_IMAGE} style={{ width: 76, height: 76, borderRadius: 38 }} />
         </Pressable>
         <View style={{ flex: 1, gap: 10 }}>
           <Pressable accessibilityRole="button" disabled={busy} onPress={() => void changePhoto()}

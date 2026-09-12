@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import { useProfilePhoto } from '../../lib/profilePhotos';
@@ -373,13 +374,7 @@ export default function ProfileScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* ── Hero ── */}
         <View style={s.hero}>
-          {photoUrl ? (
-            <Image source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} />
-          ) : (
-            <LinearGradient colors={['#1a1a2e', '#0a0a0c']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              <View style={s.initialsWrap}><Text style={s.initials}>{initials}</Text></View>
-            </LinearGradient>
-          )}
+          <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
           <View style={s.heroScrim} />
 
           <View style={s.heroTopRow}>

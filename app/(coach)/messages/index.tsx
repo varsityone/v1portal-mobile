@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -167,13 +168,7 @@ function ConversationRowItem({ conv, isLast, C, s, onPress }: {
       style={[s.row, !isLast && s.rowBorder, unread && s.rowUnread]}
       onPress={onPress}
     >
-      {athlete?.profile_photo_url ? (
-        <Image source={{ uri: athlete.profile_photo_url }} style={s.avatar} />
-      ) : (
-        <View style={s.avatarFallback}>
-          <Text style={s.avatarFallbackText}>{initialsOf(athlete?.full_name ?? null)}</Text>
-        </View>
-      )}
+      <Image source={athlete?.profile_photo_url ? { uri: athlete?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
           <Text style={[s.name, unread && s.nameUnread]} numberOfLines={1}>{athlete?.full_name || 'Athlete'}</Text>

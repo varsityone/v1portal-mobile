@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -473,11 +474,7 @@ export default function MatchScreen() {
   return (
     <View style={s.deckRoot}>
       <View style={s.card}>
-        {current?.profile_photo_url ? (
-          <Image source={{ uri: current.profile_photo_url }} style={StyleSheet.absoluteFill} />
-        ) : (
-          <LinearGradient colors={['#1a1a2e', '#0a0a0c']} style={StyleSheet.absoluteFill} />
-        )}
+        <Image source={current?.profile_photo_url ? { uri: current?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
         <View style={s.cardScrim} />
 
         {swipeErrorNotif && (
@@ -725,11 +722,7 @@ function SwipeHistoryDrawer({
               const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
               return (
                 <View key={swipe.id} style={s.row}>
-                  {coach?.profile_photo_url ? (
-                    <Image source={{ uri: coach.profile_photo_url }} style={s.avatar} />
-                  ) : (
-                    <View style={[s.avatar, { backgroundColor: C.surfaceAlt }]} />
-                  )}
+                  <Image source={coach?.profile_photo_url ? { uri: coach?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.name} numberOfLines={1}>{coach?.school_name ?? 'Unknown'}</Text>
                     <Text style={s.meta}>{swipe.direction === 'like' ? '❤️ Liked' : '✕ Passed'} · {dateStr}</Text>

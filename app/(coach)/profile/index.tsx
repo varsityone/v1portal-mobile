@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useProfilePhoto } from '../../../lib/profilePhotos';
 import { useMemo, useState } from 'react';
@@ -64,13 +65,7 @@ export default function CoachProfileScreen() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={s.hero}>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={StyleSheet.absoluteFill} />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, s.heroFallback]}>
-            <Text style={s.heroFallbackLetter}>{coach.school_name?.charAt(0) ?? '?'}</Text>
-          </View>
-        )}
+        <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
         <LinearGradient colors={['rgba(0,0,0,0.55)', 'transparent', 'rgba(10,10,10,0.7)']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
 
         <View style={s.heroTopRow}>

@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import OnboardingTour from '../../components/OnboardingTour';
 import { useCoachDashboardTour } from '../../hooks/useCoachDashboardTour';
@@ -386,11 +387,7 @@ export default function CoachDashboard() {
           <View style={{ gap: 10 }}>
             {matches.map(match => (
               <Pressable key={match.id} style={s.matchRow} onPress={() => router.push(`/(coach)/match/${match.id}` as any)}>
-                {match.athlete?.profile_photo_url ? (
-                  <Image source={{ uri: match.athlete.profile_photo_url }} style={s.matchAvatar} />
-                ) : (
-                  <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.matchAvatar} />
-                )}
+                <Image source={match?.athlete?.profile_photo_url ? { uri: match?.athlete?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.matchAvatar} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.matchName} numberOfLines={1}>{match.athlete?.full_name ?? 'Unknown Athlete'}</Text>
                   <Text style={s.matchSub} numberOfLines={1}>
