@@ -30,7 +30,7 @@
       "autoIncrement": true,
       "ios": {
         "simulator": false,
-        "autoIncrement": true
+        "autoIncrement": false
       },
       "android": {
         "buildType": "app-bundle",
