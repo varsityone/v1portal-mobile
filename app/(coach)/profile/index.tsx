@@ -214,7 +214,7 @@ export default function CoachProfileScreen() {
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    hero: { height: 356, position: 'relative', overflow: 'hidden', backgroundColor: '#16171a' },
+    hero: { height: 388, position: 'relative', overflow: 'hidden', backgroundColor: '#16171a' },
     heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#16171a' },
     heroFallbackLetter: { fontFamily: FontFamily.headline, fontSize: 88, color: 'rgba(255,255,255,0.12)' },
     heroTopRow: { position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
