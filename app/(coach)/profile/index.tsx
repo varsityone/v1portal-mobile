@@ -233,7 +233,7 @@ function createStyles(C: ThemeColors) {
     needsPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
 
     body: { paddingHorizontal: 20, paddingTop: 0 },
-    statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -20, marginBottom: 8 },
+    statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12, marginBottom: 8 },
     statCard: { minWidth: 100, flexGrow: 1, backgroundColor: C.surface, borderRadius: 14, padding: 12, alignItems: 'center' },
     statLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, marginBottom: 6, textAlign: 'center' },
     statValue: { fontFamily: FontFamily.headline, fontSize: 15, color: C.text, textAlign: 'center' },

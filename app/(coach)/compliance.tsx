@@ -1,5 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import LoadingScreen from '../../components/LoadingScreen';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +48,8 @@ function daysBetween(a: string, b: string) {
 
 export default function CoachComplianceScreen() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const calendarY = useRef(0);
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const { coach, loading: coachLoading } = useCoachData();
@@ -85,12 +88,14 @@ export default function CoachComplianceScreen() {
     ? periods.find(p => p.start_date > currentPeriod.end_date) ?? null
     : periods.find(p => p.start_date > today) ?? null;
 
-  const cfg = PERIOD_CONFIG[currentPeriod?.period_type ?? 'unknown'];
+  const cfg = PERIOD_CONFIG[currentPeriod?.period_type ?? 'unknown'] ?? PERIOD_CONFIG.unknown;
+  const heroColors: [string, string] = currentPeriod && ['contact', 'open'].includes(currentPeriod.period_type)
+    ? ['#117600', '#00E833'] : [cfg.color, '#18181B'];
   const daysLeft = currentPeriod ? daysBetween(today, currentPeriod.end_date) : null;
   const nextCfg = nextPeriod ? (PERIOD_CONFIG[nextPeriod.period_type] ?? PERIOD_CONFIG.unknown) : null;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
+    <ScrollView ref={scrollRef} style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       <View style={s.header}>
         <Text style={s.title}>Compliance</Text>
         <Text style={s.sub}>
@@ -99,29 +104,39 @@ export default function CoachComplianceScreen() {
       </View>
 
       {/* Current period hero */}
-      <View style={[s.heroCard, { borderColor: `${cfg.color}40` }]}>
+      <LinearGradient colors={heroColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroCard}>
         <View style={s.heroTop}>
-          <View style={{ flex: 1 }}>
+          <Ionicons name="shield-checkmark" size={34} color="#fff" />
+          <View style={{ flex: 1, minWidth: 0 }}>
             <View style={s.statusRow}>
-              <View style={[s.dot, { backgroundColor: cfg.color, width: 10, height: 10, borderRadius: 5 }]} />
-              <Text style={s.statusLabel}>CURRENT STATUS</Text>
+              <View style={[s.dot, { backgroundColor: '#FFE126', width: 7, height: 7, borderRadius: 4 }]} />
+              <Text style={s.statusLabel}>COMPLIANCE STATUS · {coach.division}</Text>
             </View>
-            <Text style={[s.heroPeriod, { color: cfg.color }]}>{cfg.label}</Text>
-            <Text style={s.heroDesc}>{currentPeriod?.description ?? "No active recruiting period found for today's date."}</Text>
+            <Text style={s.heroPeriod}>{cfg.label}</Text>
           </View>
           {daysLeft !== null && (
-            <View style={[s.daysBox, { backgroundColor: `${cfg.color}14` }]}>
-              <Text style={[s.daysValue, { color: cfg.color }]}>{daysLeft}</Text>
-              <Text style={s.daysLabel}>days left</Text>
+            <View style={s.daysBox}>
+              <Text style={s.daysValue}>{daysLeft}</Text>
+              <Text style={s.daysLabel}>DAYS LEFT</Text>
             </View>
           )}
         </View>
-        {currentPeriod && (
-          <View style={[s.heroFooter, { borderTopColor: C.border }]}>
-            <Text style={s.heroFooterText}>{formatDate(currentPeriod.start_date)} — {formatDate(currentPeriod.end_date)}</Text>
+        <Text style={s.heroDesc}>{currentPeriod?.description ?? "No active recruiting period found for today's date."}</Text>
+        {!!currentPeriod?.communication_allowed?.length && (
+          <View style={s.heroChips}>
+            {currentPeriod.communication_allowed.map(comm => (
+              <View key={comm} style={s.heroChip}>
+                <Text style={s.heroChipText}>{COMM_LABELS[comm] ?? comm.replace(/_/g, ' ')}</Text>
+              </View>
+            ))}
           </View>
         )}
-      </View>
+        <Pressable accessibilityRole="button" style={s.calendarButton} onPress={() => scrollRef.current?.scrollTo({ y: calendarY.current, animated: true })}>
+          <Text style={[s.calendarButtonText, { color: heroColors[0] }]}>View Full Calendar</Text>
+          <Ionicons name="arrow-forward" size={18} color={heroColors[0]} />
+        </Pressable>
+        {currentPeriod && <Text style={s.heroFooterText}>{formatDate(currentPeriod.start_date)} — {formatDate(currentPeriod.end_date)}</Text>}
+      </LinearGradient>
 
       {/* What's allowed */}
       {currentPeriod && (
@@ -157,7 +172,7 @@ export default function CoachComplianceScreen() {
       )}
 
       {/* Full calendar */}
-      <Text style={s.calendarTitle}>Full Year Calendar</Text>
+      <Text onLayout={event => { calendarY.current = event.nativeEvent.layout.y; }} style={s.calendarTitle}>Full Year Calendar</Text>
 
       {periods.length > 0 && (() => {
         const first = new Date(periods[0].start_date).getTime();
@@ -283,18 +298,22 @@ function createStyles(C: ThemeColors) {
     title: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
     sub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, marginTop: 2 },
 
-    heroCard: { backgroundColor: C.surface, borderWidth: 1, borderRadius: 16, padding: 20, marginBottom: 16 },
-    heroTop: { flexDirection: 'row', gap: 12 },
-    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    heroCard: { borderRadius: 24, padding: 22, marginBottom: 20 },
+    heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 },
     dot: { width: 10, height: 10, borderRadius: 5 },
-    statusLabel: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim, letterSpacing: 0.8 },
-    heroPeriod: { fontFamily: FontFamily.headlineBold, fontSize: 20, marginBottom: 6 },
-    heroDesc: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19 },
-    daysBox: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' },
-    daysValue: { fontFamily: FontFamily.headline, fontSize: 24 },
-    daysLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, letterSpacing: 0.5, marginTop: 2 },
-    heroFooter: { marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
-    heroFooterText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
+    statusLabel: { flex: 1, fontFamily: FontFamily.bodyBold, fontSize: 10, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+    heroPeriod: { fontFamily: FontFamily.headlineBold, fontSize: 26, color: '#fff' },
+    heroDesc: { fontFamily: FontFamily.body, fontSize: 14, color: '#fff', lineHeight: 22, marginTop: 20 },
+    daysBox: { alignItems: 'center', minWidth: 48 },
+    daysValue: { fontFamily: FontFamily.headlineBold, fontSize: 36, color: '#fff' },
+    daysLabel: { fontFamily: FontFamily.bodySemi, fontSize: 9, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 },
+    heroChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 18 },
+    heroChip: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 100, paddingHorizontal: 11, paddingVertical: 5 },
+    heroChipText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.4 },
+    calendarButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 100, paddingHorizontal: 18, paddingVertical: 12, marginTop: 22 },
+    calendarButtonText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13 },
+    heroFooterText: { fontFamily: FontFamily.body, fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 14 },
 
     allowedCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 18, marginBottom: 16, gap: 9 },
     allowedTitle: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 0.8, marginBottom: 6 },
