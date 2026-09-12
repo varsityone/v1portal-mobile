@@ -1,3 +1,4 @@
+import SwipeCardBackground from '../../../components/SwipeCardBackground';
 import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -456,8 +457,7 @@ export default function CoachMatchScreen() {
   return (
     <View style={s.deckRoot}>
       <View style={s.card}>
-        <Image source={current?.profile_photo_url ? { uri: current?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
-        <View style={s.cardScrim} />
+        <SwipeCardBackground uri={current?.profile_photo_url} />
 
         {swipeErrorNotif && (
           <View style={[s.errorToast, { top: insets.top + 12 }]}>
@@ -786,10 +786,6 @@ function createStyles(C: ThemeColors) {
     errorToast: { position: 'absolute', left: 20, right: 20, zIndex: 20, backgroundColor: 'rgba(220,38,38,0.95)', borderRadius: 12, padding: 14 },
     errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
-    cardScrim: {
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(10,10,12,0.4)',
-    },
     cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 20, gap: 12 },
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
     topTitle: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff', letterSpacing: -0.3 },

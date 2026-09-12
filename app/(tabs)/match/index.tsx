@@ -1,3 +1,4 @@
+import SwipeCardBackground from '../../../components/SwipeCardBackground';
 import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -474,8 +475,7 @@ export default function MatchScreen() {
   return (
     <View style={s.deckRoot}>
       <View style={s.card}>
-        <Image source={current?.profile_photo_url ? { uri: current?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={StyleSheet.absoluteFill} />
-        <View style={s.cardScrim} />
+        <SwipeCardBackground uri={current?.profile_photo_url} />
 
         {swipeErrorNotif && (
           <View style={[s.errorToast, { top: insets.top + 12 }]}>
@@ -820,7 +820,6 @@ function createStyles(C: ThemeColors) {
     errorToastText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
     backChevron: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
     card: { flex: 1, overflow: 'hidden', backgroundColor: '#111' },
-    cardScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(8,8,10,0.15)' },
     cardTop: { position: 'absolute', top: 0, left: 0, right: 0, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10 },
     progressTrack: { flex: 1, height: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' },
     progressFill: { height: '100%', backgroundColor: '#fff', borderRadius: 100 },
