@@ -230,7 +230,7 @@ function createStyles(C: ThemeColors) {
     needsRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 },
     needsLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.8 },
     needsPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, backgroundColor: '#F6BA00' },
-    needsPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#111111' },
+    needsPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
 
     body: { paddingHorizontal: 20, paddingTop: 0 },
     statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -20, marginBottom: 8 },
