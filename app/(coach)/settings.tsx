@@ -40,6 +40,19 @@ export default function CoachSettingsScreen() {
           </View>
         </View>
 
+        <View style={[s.row, { borderBottomColor: C.border }]}>
+          <View>
+            <Text style={[s.rowLabel, { color: C.text }]}>Account Type</Text>
+            <Text style={[s.rowSub, { color: C.textDim }]}>Coach</Text>
+          </View>
+        </View>
+        <View style={[s.row, { borderBottomColor: C.border }]}>
+          <View>
+            <Text style={[s.rowLabel, { color: C.text }]}>Subscription Tier</Text>
+            <Text style={[s.rowSub, { color: C.textDim }]}>Free — 2026 season</Text>
+          </View>
+        </View>
+
         <View style={s.rowLast}>
           <View>
             <Text style={[s.rowLabel, { color: C.text }]}>Program Profile</Text>
@@ -127,6 +140,21 @@ export default function CoachSettingsScreen() {
             <Text style={[s.rowLabel, { color: C.text }]}>Privacy Policy</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
+        </Pressable>
+      </View>
+
+      <View style={[s.card, { backgroundColor: C.surface }]}>
+        <Text style={[s.cardTitle, { color: C.text }]}>Unsubscribe</Text>
+        <Text style={[s.cardBody, { color: C.textDim }]}>Stop recruiting notification emails while keeping your account active.</Text>
+        <Pressable accessibilityRole="button" style={[s.pillBtnOutline, { borderColor: C.error, alignSelf: 'flex-start' }]} onPress={() => router.push('/unsubscribe?account=coach' as any)}>
+          <Text style={[s.pillBtnOutlineText, { color: C.error }]}>Unsubscribe from all emails</Text>
+        </Pressable>
+      </View>
+      <View style={[s.card, { backgroundColor: C.surface }]}>
+        <Text style={[s.cardTitle, { color: C.text }]}>Delete Account</Text>
+        <Text style={[s.cardBody, { color: C.textDim }]}>Permanently delete your account and personal data. This cannot be undone.</Text>
+        <Pressable accessibilityRole="button" style={[s.pillBtnOutline, { borderColor: C.error, alignSelf: 'flex-start' }]} onPress={() => router.push('/delete-account' as any)}>
+          <Text style={[s.pillBtnOutlineText, { color: C.error }]}>Delete Account</Text>
         </Pressable>
       </View>
 

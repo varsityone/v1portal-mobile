@@ -696,7 +696,7 @@ function createEmStyles(C: ThemeColors) {
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    scroll: { flex: 1, backgroundColor: C.background },
+    scroll: { flex: 1, backgroundColor: '#09090B' },
     container: { paddingBottom: 60 },
 
     hero: { height: 380, position: 'relative', overflow: 'hidden' },

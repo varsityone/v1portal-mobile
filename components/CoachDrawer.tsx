@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE_IMAGE } from '../constants/ProfileImage';
+import { Avatar } from './ui/Avatar';
 import { requestCoachTour } from '../lib/coachTour';
 import { useDrawerProfilePhoto } from '../hooks/useDrawerProfilePhoto';
 import { useEffect, useState } from 'react';
@@ -190,9 +190,6 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
   const email = session?.user?.email ?? '';
   const fullName = coach?.full_name || '';
   const displayName = fullName || email || 'Coach';
-  const initials = fullName
-    ? fullName.trim().split(' ').filter(Boolean).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()
-    : email.slice(0, 2).toUpperCase();
 
   return (
     <View style={[d.root, { backgroundColor: C.bg }]}>
@@ -222,7 +219,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
 
       {/* Coach avatar + name + tier badge — matches web's shell-drawer-header exactly */}
       <View style={d.profileHeader}>
-        <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} style={d.avatar} />
+        <Avatar key={coach?.id ?? 'signed-out'} uri={photoUrl} name={displayName} size={38} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[d.profileName, { color: C.text }]} numberOfLines={1}>{displayName}</Text>
           {coach?.verified ? (

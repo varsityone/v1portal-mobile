@@ -63,7 +63,7 @@ export default function CoachProfileScreen() {
   ].filter(f => f.value);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={{ paddingBottom: 48 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#09090B' }} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={s.hero}>
         <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} />
         <LinearGradient colors={['rgba(0,0,0,0.55)', 'transparent', 'rgba(10,10,10,0.7)']} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />

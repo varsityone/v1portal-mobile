@@ -22,6 +22,7 @@ export function initialsFor(name: string | null | undefined, email?: string | nu
 export function Avatar({ uri, name, size = 44 }: AvatarProps) {
   return (
     <Image
+      key={uri || 'default-profile'}
       source={uri ? { uri } : DEFAULT_PROFILE_IMAGE}
       accessibilityLabel={name ? `${name}'s profile photo` : 'Profile photo'}
       style={{ width: size, height: size, borderRadius: size / 2, flexShrink: 0 }}

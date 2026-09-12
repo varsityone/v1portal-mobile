@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useColors } from '../context/ThemeContext';
@@ -17,47 +17,56 @@ import { GradientButton } from '../components/GradientButton';
 
 export default function UnsubscribeScreen() {
   const router = useRouter();
+  const { account } = useLocalSearchParams<{ account?: string }>();
+  const isCoach = account === 'coach';
   const C = useColors();
   const s = styles(C);
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [alreadyOff, setAlreadyOff] = useState(false);
-  const [athleteId, setAthleteId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: ath } = await supabase
-      .from('athletes')
-      .select('id, email_notifications')
-      .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`)
-      .maybeSingle();
-
-    if (ath) {
-      setAthleteId(ath.id);
-      if (ath.email_notifications === false) {
+    if (isCoach) {
+      const { data: coach, error } = await supabase.from('coach_accounts').select('id').eq('user_id', user.id).single();
+      if (error || !coach) { setStatus('error'); return; }
+      setProfileId(coach.id);
+      const { data, error: settingsError } = await supabase.from('coach_notification_settings')
+        .select('email_new_messages, email_new_matches, email_daily_digest').eq('coach_id', coach.id).maybeSingle();
+      if (settingsError) { setStatus('error'); return; }
+      if (data && data.email_new_messages === false && data.email_new_matches === false && data.email_daily_digest === false) {
         setAlreadyOff(true);
         setStatus('done');
       }
+    } else {
+      const { data: ath, error } = await supabase.from('athletes').select('id, email_notifications')
+        .or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`).maybeSingle();
+      if (error || !ath) { setStatus('error'); return; }
+      setProfileId(ath.id);
+      if (ath.email_notifications === false) { setAlreadyOff(true); setStatus('done'); }
     }
-  }, []);
+  }, [isCoach]);
 
-  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+  useEffect(() => { fetchStatus().catch(() => setStatus('error')); }, [fetchStatus]);
+
+  const saveEmailPreferences = async (enabled: boolean) => {
+    if (!profileId) throw new Error('Account not found.');
+    const result = isCoach
+      ? await supabase.from('coach_notification_settings').upsert({
+          coach_id: profileId, email_new_messages: enabled, email_new_matches: enabled, email_daily_digest: enabled,
+        }, { onConflict: 'coach_id' }).select('coach_id').single()
+      : await supabase.from('athletes').update({
+          email_notifications: enabled, weekly_pulse: enabled, score_update_notifications: enabled,
+        }).eq('id', profileId).select('id').single();
+    if (result.error) throw result.error;
+  };
 
   const handleUnsubscribe = async () => {
     setStatus('loading');
     try {
-      const id = athleteId;
-      if (!id) throw new Error('Account not found.');
-
-      await supabase
-        .from('athletes')
-        .update({
-          email_notifications: false,
-          weekly_pulse: false,
-          score_update_notifications: false,
-        })
-        .eq('id', id);
+      await saveEmailPreferences(false);
 
       setStatus('done');
     } catch (err: any) {
@@ -68,11 +77,7 @@ export default function UnsubscribeScreen() {
   const handleResubscribe = async () => {
     setStatus('loading');
     try {
-      if (!athleteId) throw new Error('Account not found.');
-      await supabase
-        .from('athletes')
-        .update({ email_notifications: true, weekly_pulse: true, score_update_notifications: true })
-        .eq('id', athleteId);
+      await saveEmailPreferences(true);
       setAlreadyOff(false);
       setStatus('idle');
     } catch {
@@ -110,7 +115,7 @@ export default function UnsubscribeScreen() {
                 <Pressable style={s.btnGhost} onPress={handleResubscribe}>
                   <Text style={s.btnGhostText}>Re-enable emails</Text>
                 </Pressable>
-                <GradientButton style={s.btnPrimary} onPress={() => router.replace('/(tabs)' as any)}>
+                <GradientButton style={s.btnPrimary} onPress={() => router.replace((isCoach ? '/(coach)' : '/(tabs)') as any)}>
                   <Text style={s.btnPrimaryText}>Go to Dashboard</Text>
                 </GradientButton>
               </View>
@@ -139,7 +144,7 @@ export default function UnsubscribeScreen() {
               </View>
               <Text style={s.title}>Unsubscribe from emails</Text>
               <Text style={s.body}>
-                This will stop all emails from V1Portal including your weekly recruiting pulse and score update notifications.
+                {isCoach ? 'This will stop recruiting emails about new messages, new matches, and your daily digest.' : 'This will stop all emails from V1Portal including your weekly recruiting pulse and score update notifications.'}
               </Text>
               <Text style={s.subBody}>
                 Your account and all your data stay active. You can re-enable emails anytime from Settings.
