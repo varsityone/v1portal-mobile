@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
 import { ThemeColors, PINK_RED } from '../../constants/Colors';
@@ -77,7 +78,7 @@ export default function NotificationsSettingsScreen() {
   }, [settings]);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   if (!settings) {

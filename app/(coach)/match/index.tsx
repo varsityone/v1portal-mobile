@@ -1,3 +1,4 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -270,9 +271,7 @@ export default function CoachMatchScreen() {
 
   if (coachLoading) {
     return (
-      <View style={s.center}>
-        <Ionicons name="heart" size={28} color={C.textDim} />
-      </View>
+      <LoadingScreen />
     );
   }
 
@@ -302,9 +301,7 @@ export default function CoachMatchScreen() {
 
   if (loading) {
     return (
-      <View style={s.center}>
-        <Ionicons name="heart" size={28} color={C.textDim} />
-      </View>
+      <LoadingScreen />
     );
   }
 

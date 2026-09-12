@@ -1,6 +1,7 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../../components/ProfilePhotoEditor';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,7 +115,7 @@ export default function CoachProfileEditScreen() {
   };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   return (

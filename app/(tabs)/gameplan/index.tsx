@@ -1,3 +1,4 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -177,6 +178,8 @@ export default function GameplanScreen() {
   const handleRefresh = async () => {
     await Promise.all([refresh(), fetchCounts()]);
   };
+
+  if (loading && !athlete) return <LoadingScreen />;
 
   return (
     <>

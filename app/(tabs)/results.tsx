@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAthleteData } from '../../hooks/useAthleteData';
@@ -54,7 +55,7 @@ export default function ResultsScreen() {
   }, [athlete?.v1_score]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   if (!athlete || !assessment) {

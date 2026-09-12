@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachPipeline, PipelineProspect, PipelineStatus } from '../../hooks/useCoachPipeline';
@@ -48,7 +49,7 @@ export default function PipelineScreen() {
   };
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   const filtered = filter === 'all' ? prospects : prospects.filter(p => p.status === filter);

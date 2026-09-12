@@ -1,3 +1,4 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -322,9 +323,7 @@ export default function AnalyticsScreen() {
 
   if (dataLoading) {
     return (
-      <View style={[s.center, { flex: 1 }]}>
-        <ActivityIndicator color={PINK_RED} size="large" />
-      </View>
+      <LoadingScreen />
     );
   }
 

@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -19,7 +20,7 @@ export default function SavedProspectsScreen() {
   const [removing, setRemoving] = useState<string | null>(null);
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   const handleRemove = async (id: string) => {

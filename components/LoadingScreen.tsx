@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // The app's single branded full-screen loading state — a beating logo mark
@@ -13,21 +13,27 @@ export default function LoadingScreen() {
 
   useEffect(() => {
     // Heartbeat: two quick thumps then a pause
-    Animated.loop(
+    const heartbeat = Animated.loop(
       Animated.sequence([
-        Animated.timing(beat, { toValue: 1.22, duration: 110, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-        Animated.timing(beat, { toValue: 1, duration: 110, easing: Easing.in(Easing.ease), useNativeDriver: true }),
-        Animated.timing(beat, { toValue: 1.13, duration: 90, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-        Animated.timing(beat, { toValue: 1, duration: 90, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+        Animated.timing(beat, { toValue: 1.22, duration: 110, easing: Easing.out(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(beat, { toValue: 1, duration: 110, easing: Easing.in(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(beat, { toValue: 1.13, duration: 90, easing: Easing.out(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(beat, { toValue: 1, duration: 90, easing: Easing.in(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
         Animated.delay(800),
       ])
-    ).start();
+    );
+    heartbeat.start();
 
     // Progress bar: fast to 75%, then eases to 100%
-    Animated.sequence([
+    const progress = Animated.sequence([
       Animated.timing(barWidth, { toValue: 0.75, duration: 720, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
       Animated.timing(barWidth, { toValue: 1, duration: 480, easing: Easing.inOut(Easing.ease), useNativeDriver: false }),
-    ]).start();
+    ]);
+    progress.start();
+    return () => {
+      heartbeat.stop();
+      progress.stop();
+    };
   }, []);
 
   return (

@@ -1,3 +1,4 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -108,10 +109,7 @@ export default function UpgradeScreen() {
 
   if (activating) {
     return (
-      <SafeAreaView style={s.center}>
-        <ActivityIndicator color={C.text} size="large" />
-        <Text style={[s.body, { marginTop: 16 }]}>Activating Match+…</Text>
-      </SafeAreaView>
+      <LoadingScreen />
     );
   }
 

@@ -1,6 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -363,7 +363,7 @@ export default function CalendarScreen() {
   };
 
   if (athleteLoading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   if (!isPremium) {

@@ -1,3 +1,4 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
@@ -278,9 +279,7 @@ export default function MatchScreen() {
 
   if (athleteLoading || loading) {
     return (
-      <View style={s.center}>
-        <Ionicons name="heart" size={28} color={C.textDim} />
-      </View>
+      <LoadingScreen />
     );
   }
 

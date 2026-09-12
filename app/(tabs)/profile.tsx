@@ -1,8 +1,8 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import { useProfilePhoto } from '../../lib/profilePhotos';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -331,9 +331,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={PINK_RED} size="large" />
-      </View>
+      <LoadingScreen />
     );
   }
 

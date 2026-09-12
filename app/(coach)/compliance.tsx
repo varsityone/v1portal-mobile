@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -73,7 +74,7 @@ export default function CoachComplianceScreen() {
 
   if (coachLoading || loading) {
     return (
-      <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>
+      <LoadingScreen />
     );
   }
   if (!coach) return null;

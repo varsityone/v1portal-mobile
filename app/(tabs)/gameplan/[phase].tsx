@@ -1,6 +1,6 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -143,15 +143,6 @@ function EmptyState({
           </LinearGradient>
         </Pressable>
       )}
-    </View>
-  );
-}
-
-function CenteredLoader() {
-  const C = useColors();
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background }}>
-      <ActivityIndicator color={PINK_RED} size="large" />
     </View>
   );
 }
@@ -666,14 +657,13 @@ function Phase3({ athleteId, phase, onBack, gp }: {
     });
   }, [athleteId]);
 
+  if (loading) return <LoadingScreen />;
+
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} />
 
-      {loading ? (
-        <CenteredLoader />
-      ) : (
-        <>
+      <>
           <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.p3Hero}>
             <Text style={s.p3Eyebrow}>Mutual Matches</Text>
             <Text style={s.p3Num}>{matchCount}</Text>
@@ -693,8 +683,7 @@ function Phase3({ athleteId, phase, onBack, gp }: {
             <View style={s.statTile}><Text style={s.statNum}>{stats.programsReviewed}</Text><Text style={s.statLbl}>Programs Reviewed</Text></View>
             <View style={s.statTile}><Text style={s.statNum}>{stats.programsLiked}</Text><Text style={s.statLbl}>Programs Liked</Text></View>
           </View>
-        </>
-      )}
+      </>
 
       <View style={{ backgroundColor: C.surface, borderRadius: 14, padding: 20, gap: 12 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>How It Works</Text>
@@ -747,11 +736,13 @@ function Phase4({ athleteId, phase, onBack }: {
   const pending = tasks.filter(t => !t.is_complete);
   const done = tasks.filter(t => t.is_complete);
 
+  if (loading) return <LoadingScreen />;
+
   return (
     <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
       <PhaseHeader phase={phase} />
       {/* No stepper here — the recruiting timeline is a standalone post-match utility, not part of the 3-step funnel. */}
-      {loading ? <CenteredLoader /> : tasks.length === 0 ? (
+      {tasks.length === 0 ? (
         <EmptyState icon="calendar-outline" title="No tasks yet" body="Your recruiting tasks and deadlines will appear here once your timeline is set up." />
       ) : (
         <>
@@ -817,7 +808,7 @@ export default function PhaseDetailScreen() {
   const gp = useGameplanPhases(athleteData.athlete, athleteData.assessment, matchCount);
   const onBack = () => router.back();
 
-  if (athleteData.loading) return <CenteredLoader />;
+  if (athleteData.loading) return <LoadingScreen />;
 
   if (!phase) {
     return (

@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachAnalytics } from '../../hooks/useCoachAnalytics';
@@ -30,7 +31,7 @@ export default function AnalyticsScreen() {
   const { kpis, loading, timeframe, setTimeframe } = useCoachAnalytics();
 
   if (coachLoading || loading) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   if (!kpis) {

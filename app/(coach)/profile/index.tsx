@@ -1,3 +1,4 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useProfilePhoto } from '../../../lib/profilePhotos';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -27,10 +28,11 @@ export default function CoachProfileScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { coach } = useCoachData();
+  const { coach, loading } = useCoachData();
   const photoUrl = useProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
   const [tab, setTab] = useState<'overview' | 'contact'>('overview');
 
+  if (loading) return <LoadingScreen />;
   if (!coach) return null;
 
   const divisionLabel = coach.division ? (DIVISION_LABELS[coach.division] ?? coach.division) : null;

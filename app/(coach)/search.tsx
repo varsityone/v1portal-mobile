@@ -1,5 +1,6 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -175,7 +176,7 @@ export default function CoachSearchScreen() {
   };
 
   if (coachLoading || !coach) {
-    return <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>;
+    return <LoadingScreen />;
   }
 
   if (!coach.verified) {
@@ -189,6 +190,8 @@ export default function CoachSearchScreen() {
       </View>
     );
   }
+
+  if (loading) return <LoadingScreen />;
 
   const activeFilterChips = [
     ...filters.positions.map(p => ({ key: `pos-${p}`, label: p, clear: () => toggleArrayFilter('positions', p) })),
@@ -297,9 +300,7 @@ export default function CoachSearchScreen() {
       )}
 
       {/* Results */}
-      {loading ? (
-        <View style={s.center}><ActivityIndicator color={PINK_RED} size="large" /></View>
-      ) : prospects.length === 0 ? (
+      {prospects.length === 0 ? (
         <EmptyState icon="search" title="No prospects found" body="Try adjusting your filters or search terms." />
       ) : (
         <View style={s.resultGrid}>

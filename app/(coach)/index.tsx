@@ -1,7 +1,8 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import OnboardingTour from '../../components/OnboardingTour';
 import { useCoachDashboardTour } from '../../hooks/useCoachDashboardTour';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, ActivityIndicator, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -182,9 +183,7 @@ export default function CoachDashboard() {
 
   if (coachLoading || (loading && coach?.verified)) {
     return (
-      <View style={s.center}>
-        <ActivityIndicator color={PINK_RED} size="large" />
-      </View>
+      <LoadingScreen />
     );
   }
   if (!coach) return null;

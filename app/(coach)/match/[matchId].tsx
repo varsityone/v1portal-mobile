@@ -1,3 +1,4 @@
+import LoadingScreen from '../../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -166,9 +167,7 @@ export default function CoachMatchThreadScreen() {
 
   if (loading) {
     return (
-      <View style={s.center}>
-        <Ionicons name="chatbubble-outline" size={26} color={C.textDim} />
-      </View>
+      <LoadingScreen />
     );
   }
 

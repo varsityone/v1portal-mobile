@@ -1,7 +1,7 @@
+import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Clipboard,
   KeyboardAvoidingView,
@@ -487,9 +487,7 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: C.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={PINK_RED} size="large" />
-      </View>
+      <LoadingScreen />
     );
   }
 
