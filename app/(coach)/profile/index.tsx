@@ -214,14 +214,14 @@ export default function CoachProfileScreen() {
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    hero: { height: 300, position: 'relative', overflow: 'hidden', backgroundColor: '#16171a' },
+    hero: { height: 324, position: 'relative', overflow: 'hidden', backgroundColor: '#16171a' },
     heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#16171a' },
     heroFallbackLetter: { fontFamily: FontFamily.headline, fontSize: 88, color: 'rgba(255,255,255,0.12)' },
     heroTopRow: { position: 'absolute', top: 54, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heroBackBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
     heroEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.35)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100 },
     heroEditBtnText: { fontFamily: FontFamily.bodySemi, fontSize: 12, color: '#fff' },
-    heroInfo: { position: 'absolute', left: 20, right: 20, bottom: 20 },
+    heroInfo: { position: 'absolute', left: 20, right: 20, bottom: 44 },
     heroName: { fontFamily: FontFamily.headline, fontSize: 26, color: '#fff' },
     verifiedPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 100 },
     verifiedPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
@@ -233,7 +233,7 @@ function createStyles(C: ThemeColors) {
     needsPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
 
     body: { paddingHorizontal: 20, paddingTop: 0 },
-    statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12, marginBottom: 8 },
+    statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -20, marginBottom: 8 },
     statCard: { minWidth: 100, flexGrow: 1, backgroundColor: C.surface, borderRadius: 14, padding: 12, alignItems: 'center' },
     statLabel: { fontFamily: FontFamily.mono, fontSize: 9, color: C.textDim, marginBottom: 6, textAlign: 'center' },
     statValue: { fontFamily: FontFamily.headline, fontSize: 15, color: C.text, textAlign: 'center' },
