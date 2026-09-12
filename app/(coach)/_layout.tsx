@@ -55,7 +55,7 @@ export default function CoachDrawerLayout() {
       <HelpAttractButton onPress={() => router.push('/(coach)/help' as any)} />
 
       <Drawer
-        drawerContent={CoachDrawer}
+        drawerContent={(props) => <CoachDrawer {...props} />}
         screenOptions={{
           headerShown: true,
           headerTitle: () => <HeaderLogo />,

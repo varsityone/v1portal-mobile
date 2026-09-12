@@ -59,7 +59,7 @@ export default function DrawerLayout() {
       <HelpAttractButton onPress={() => router.push('/help' as any)} />
 
       <Drawer
-        drawerContent={AppDrawer}
+        drawerContent={(props) => <AppDrawer {...props} />}
         screenOptions={{
           headerShown: true,
           headerTitle: () => <HeaderLogo />,

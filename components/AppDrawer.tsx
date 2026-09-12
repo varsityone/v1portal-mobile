@@ -3,7 +3,7 @@ import { useDrawerProfilePhoto } from '../hooks/useDrawerProfilePhoto';
 import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DrawerContentComponentProps } from '@react-navigation/drawer';
+import type { DrawerContentComponentProps } from 'expo-router/drawer';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
