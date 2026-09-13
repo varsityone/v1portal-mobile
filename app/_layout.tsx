@@ -31,7 +31,7 @@ import {
   JetBrainsMono_600SemiBold,
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
-import { DMSans_900Black } from '@expo-google-fonts/dm-sans';
+import { DMSans_800ExtraBold, DMSans_900Black } from '@expo-google-fonts/dm-sans';
 import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { supabase } from '../lib/supabase';
 import { configurePurchases } from '../lib/purchases';
@@ -161,6 +161,7 @@ export default function RootLayout() {
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular: require('../assets/fonts/Inter_400Regular.ttf'),
     BigShouldersDisplay_700Bold,
     BigShouldersDisplay_800ExtraBold,
     BigShouldersDisplay_900Black,
@@ -170,6 +171,7 @@ export default function RootLayout() {
     Archivo_800ExtraBold,
     JetBrainsMono_600SemiBold,
     JetBrainsMono_700Bold,
+    DMSans_800ExtraBold,
     DMSans_900Black,
     SpaceGrotesk_700Bold,
   });

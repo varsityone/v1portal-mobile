@@ -3,11 +3,10 @@ import LoadingScreen from '../../components/LoadingScreen';
 import OnboardingTour from '../../components/OnboardingTour';
 import { useCoachDashboardTour } from '../../hooks/useCoachDashboardTour';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { supabase } from '../../lib/supabase';
 import { useCoachData, Coach } from '../../hooks/useCoachData';
 import { GRADIENT, PINK_RED, ThemeColors } from '../../constants/Colors';
@@ -60,7 +59,8 @@ interface RecentMatch {
 export default function CoachDashboard() {
   const router = useRouter();
   const C = useColors();
-  const s = useMemo(() => createStyles(C), [C]);
+  const { width } = useWindowDimensions();
+  const s = useMemo(() => createStyles(C, width), [C, width]);
   const { coach, loading: coachLoading } = useCoachData();
 
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
@@ -249,7 +249,7 @@ export default function CoachDashboard() {
       <ScrollView ref={tour.scrollRef} onScroll={event => { tour.scrollOffset.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16} style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
       {/* Greeting — white welcome card, same treatment as the athlete
           dashboard's greeting card: eyebrow + title + status line + tier
-          pills + a pinned "View Profile" button. */}
+          pills + a compact "View Profile" button. */}
       <View ref={view => { tour.refs.current['welcome'] = view; }} collapsable={false} style={s.greetCard}>
         <View style={s.greetContent}>
           <Text style={s.greetEyebrow}>Coach Portal Dashboard</Text>
@@ -266,7 +266,7 @@ export default function CoachDashboard() {
             </LinearGradient>
             {coach.division ? (
               <View style={[s.tierPill, { backgroundColor: '#f0eeea' }]}>
-                <Text style={[s.tierPillText, { color: '#555' }]}>{coach.division}</Text>
+                <Text style={s.divisionPillText}>{coach.division}</Text>
               </View>
             ) : null}
             {coach.school_name ? (
@@ -275,20 +275,9 @@ export default function CoachDashboard() {
           </View>
         </View>
         {coach.profile_slug ? (
-          <Pressable style={s.viewProfileBtn} onPress={() => router.push(`/(coach)/profile` as any)}>
-            <MaskedView
-              maskElement={
-                <View style={s.viewProfileMaskRow}>
-                  <Text style={[s.viewProfileBtnText, { opacity: 1 }]}>View Profile</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#000" />
-                </View>
-              }
-            >
-              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.viewProfileMaskRow}>
-                <Text style={[s.viewProfileBtnText, { opacity: 0 }]}>View Profile</Text>
-                <Ionicons name="arrow-forward" size={14} color="transparent" />
-              </LinearGradient>
-            </MaskedView>
+          <Pressable accessibilityRole="button" style={s.viewProfileBtn} onPress={() => router.push(`/(coach)/profile` as any)}>
+            <Text style={s.viewProfileBtnText}>View Profile</Text>
+            <Ionicons name="arrow-forward" size={14} color="#fff" />
           </Pressable>
         ) : null}
       </View>
@@ -474,7 +463,8 @@ function ComplianceCardBody({ coach, periodLabel, isRestrictive, daysLeftInPerio
   );
 }
 
-function createStyles(C: ThemeColors) {
+function createStyles(C: ThemeColors, width: number) {
+  const titleSize = Math.min(28, Math.max(20, width * 0.025));
   return StyleSheet.create({
     container: { padding: 20, paddingBottom: 48 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
@@ -496,23 +486,24 @@ function createStyles(C: ThemeColors) {
     statValue: { fontFamily: FontFamily.headline, fontSize: 26, color: C.text },
     statLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
 
-    greetCard: { backgroundColor: '#fff', borderRadius: 18, padding: 22, marginBottom: 20, overflow: 'hidden' },
+    // Match the web WelcomeCard's responsive padding, type scale, and button.
+    greetCard: { backgroundColor: '#fff', borderRadius: 18, paddingVertical: width <= 480 ? 14 : width <= 640 ? 16 : 24, paddingHorizontal: width <= 480 ? 16 : width <= 640 ? 18 : 28, marginBottom: 16, overflow: 'hidden' },
     greetContent: { position: 'relative' },
-    greetEyebrow: { fontFamily: FontFamily.mono, fontSize: 10, color: 'rgba(0,0,0,0.45)', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' },
-    greetCardTitle: { fontFamily: FontFamily.headline, fontSize: 24, fontWeight: '900', color: '#0a0a0a', marginBottom: 6 },
-    greetCardSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(0,0,0,0.5)', lineHeight: 18 },
-    tierRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', gap: 6, marginTop: 14 },
-    tierRowLabel: { fontFamily: FontFamily.bodySemi, fontSize: 9.5, color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 0 },
-    tierPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100, flexShrink: 0 },
-    tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 10.5, color: '#fff' },
-    tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 10.5, color: 'rgba(0,0,0,0.5)', flexShrink: 1, minWidth: 0 },
+    greetEyebrow: { fontFamily: FontFamily.monoBold, fontSize: 10, lineHeight: 16, color: '#999', letterSpacing: 1.2, marginBottom: 6, textTransform: 'uppercase' },
+    greetCardTitle: { fontFamily: FontFamily.headline, fontSize: titleSize, lineHeight: titleSize * 1.1, letterSpacing: titleSize * -0.02, color: '#000' },
+    greetCardSub: { fontFamily: 'Inter_400Regular', fontSize: 11, fontWeight: '400', color: '#999', lineHeight: 17.6, letterSpacing: 0, margin: 0, maxWidth: 560 },
+    tierRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 7 },
+    tierRowLabel: { fontFamily: FontFamily.bodySemi, fontSize: 11, lineHeight: 13.2, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.55, flexShrink: 0 },
+    tierPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, flexShrink: 0 },
+    tierPillText: { fontFamily: FontFamily.bodyBold, fontSize: 12, lineHeight: 14.4, color: '#fff' },
+    divisionPillText: { fontFamily: FontFamily.bodyBold, fontSize: 11, lineHeight: 13.2, color: '#555' },
+    tierRowSchool: { fontFamily: FontFamily.bodySemi, fontSize: 11, lineHeight: 13.2, color: C.textMuted, flexShrink: 1, minWidth: 0 },
     viewProfileBtn: {
-      marginTop: 18, borderRadius: 100, paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)',
-      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+      alignSelf: 'stretch', flexDirection: 'row', gap: 8, minHeight: 44,
+      marginTop: 8, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 20,
+      alignItems: 'center', justifyContent: 'center', backgroundColor: '#000',
     },
-    viewProfileMaskRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    viewProfileBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#000' },
+    viewProfileBtnText: { fontFamily: 'DMSans_800ExtraBold', fontSize: 13, lineHeight: 15.6, color: '#fff' },
 
     secondaryRow: { gap: 10, marginBottom: 24 },
     secondaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#000', borderRadius: 14, padding: 16, minHeight: 88, overflow: 'hidden' },
