@@ -359,9 +359,7 @@ export default function DashboardScreen() {
         <View>
           {allPhasesDone && !gameplanExpanded ? (
             <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplanBadge}>
-              <View style={s.heroGameplanBadgeCheck}>
-                <Ionicons name="checkmark" size={20} color="#fff" />
-              </View>
+              <Ionicons name="checkmark" size={28} color="#fff" style={{ fontWeight: '900' }} />
               <View style={s.heroGameplanBadgeText}>
                 <Text style={s.heroGameplanBadgeTitle}>Gameplan Complete</Text>
                 <Text style={s.heroGameplanBadgeSubtitle}>You've completed all phases</Text>
@@ -660,12 +658,11 @@ function createStyles(C: ThemeColors) {
     heroCompleteText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
     heroCompleteRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
     heroCompleteCollapseBtn: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
-    heroGameplanBadge: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 20, padding: 16, marginBottom: 20 },
-    heroGameplanBadgeCheck: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    heroGameplanBadge: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, padding: 16, marginBottom: 20 },
     heroGameplanBadgeText: { flex: 1 },
     heroGameplanBadgeTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: '#fff', marginBottom: 2 },
     heroGameplanBadgeSubtitle: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
-    heroGameplanBadgeBtn: { backgroundColor: '#fff', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, flexShrink: 0 },
+    heroGameplanBadgeBtn: { backgroundColor: '#fff', borderRadius: 23, paddingVertical: 8, paddingHorizontal: 12, flexShrink: 0 },
     heroGameplanBadgeBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#ff5555' },
 
     sectionLabel: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted, marginBottom: 14 },
