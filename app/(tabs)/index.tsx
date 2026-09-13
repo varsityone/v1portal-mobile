@@ -170,6 +170,10 @@ export default function DashboardScreen() {
   const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | null | undefined>>({});
   const [gameplanExpanded, setGameplanExpanded] = useState(true);
 
+  useEffect(() => {
+    if (gp.completedCount >= gp.phases.length) setGameplanExpanded(false);
+  }, [gp.completedCount, gp.phases.length]);
+
   // Align each target inside the actual visible dashboard, below its header.
   const handleTourStepChange = useCallback((target: string) => {
     const version = ++tourMeasureVersion.current;
@@ -354,9 +358,9 @@ export default function DashboardScreen() {
 
         <View>
           {allPhasesDone && !gameplanExpanded ? (
-            <View style={s.heroGameplanBadge}>
+            <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplanBadge}>
               <View style={s.heroGameplanBadgeCheck}>
-                <Ionicons name="checkmark" size={20} color="#000" />
+                <Ionicons name="checkmark" size={20} color="#fff" />
               </View>
               <View style={s.heroGameplanBadgeText}>
                 <Text style={s.heroGameplanBadgeTitle}>Gameplan Complete</Text>
@@ -368,7 +372,7 @@ export default function DashboardScreen() {
               >
                 <Text style={s.heroGameplanBadgeBtnText}>Open</Text>
               </Pressable>
-            </View>
+            </LinearGradient>
           ) : (
             <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplan}>
               <Text style={s.heroTitle}>Your Gameplan</Text>
@@ -656,13 +660,13 @@ function createStyles(C: ThemeColors) {
     heroCompleteText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
     heroCompleteRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
     heroCompleteCollapseBtn: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
-    heroGameplanBadge: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 16, marginBottom: 20 },
-    heroGameplanBadgeCheck: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    heroGameplanBadge: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 20, padding: 16, marginBottom: 20 },
+    heroGameplanBadgeCheck: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     heroGameplanBadgeText: { flex: 1 },
-    heroGameplanBadgeTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: C.text, marginBottom: 2 },
-    heroGameplanBadgeSubtitle: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
-    heroGameplanBadgeBtn: { backgroundColor: 'rgba(80,26,255,0.08)', borderWidth: 1, borderColor: 'rgba(80,26,255,0.2)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, flexShrink: 0 },
-    heroGameplanBadgeBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#501aff' },
+    heroGameplanBadgeTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: '#fff', marginBottom: 2 },
+    heroGameplanBadgeSubtitle: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+    heroGameplanBadgeBtn: { backgroundColor: '#fff', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, flexShrink: 0 },
+    heroGameplanBadgeBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#ff5555' },
 
     sectionLabel: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted, marginBottom: 14 },
     statsGrid: { gap: 16, marginBottom: 16 },
