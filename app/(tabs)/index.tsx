@@ -359,7 +359,7 @@ export default function DashboardScreen() {
         <View>
           {allPhasesDone && !gameplanExpanded ? (
             <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplanBadge}>
-              <Ionicons name="checkmark" size={28} color="#fff" style={{ fontWeight: '900' }} />
+              <Ionicons name="checkmark" size={28} color="#fff" style={{ fontWeight: 'bold' }} />
               <View style={s.heroGameplanBadgeText}>
                 <Text style={s.heroGameplanBadgeTitle}>Gameplan Complete</Text>
                 <Text style={s.heroGameplanBadgeSubtitle}>You've completed all phases</Text>
