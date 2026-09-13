@@ -168,6 +168,7 @@ export default function DashboardScreen() {
   const tourMeasureTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const tourMeasureVersion = useRef(0);
   const [tourTargets, setTourTargets] = useState<Record<string, TourMeasurement | null | undefined>>({});
+  const [gameplanExpanded, setGameplanExpanded] = useState(true);
 
   // Align each target inside the actual visible dashboard, below its header.
   const handleTourStepChange = useCallback((target: string) => {
@@ -352,61 +353,87 @@ export default function DashboardScreen() {
         </View>
 
         <View>
-          <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplan}>
-            <Text style={s.heroTitle}>Your Gameplan</Text>
-            <Text style={s.heroSubtitle}>Where new athletes start. Three steps to connect with coaches who match your level.</Text>
-
-            <View style={s.heroProgressBar}>
-              <View style={[s.heroProgressFill, { width: `${Math.max(progressPct, 6)}%` }]} />
-            </View>
-            <Text style={s.heroProgressText}>{Math.round(progressPct)}% Complete • Phase {gp.activePhaseIdx + 1} of {gp.phases.length}</Text>
-
-            <View style={s.heroPhases}>
-              {gp.phases.map((phase, i) => {
-                const done = gp.phaseComplete[i];
-                const locked = gp.phaseLocked[i];
-                const current = !done && !locked && i === gp.activePhaseIdx;
-                return (
-                  <View key={phase.number} ref={tourRefs[`phase-${phase.number}`]} collapsable={false} style={s.heroPhaseRow}>
-                    <View style={[
-                      s.heroPhaseNode,
-                      done && s.heroPhaseNodeDone,
-                      current && s.heroPhaseNodeCurrent,
-                    ]}>
-                      {done ? (
-                        <Ionicons name="checkmark" size={16} color="#ff0000" />
-                      ) : locked ? (
-                        <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.85)" />
-                      ) : (
-                        <Text style={s.heroPhaseNumber}>{phase.number}</Text>
-                      )}
-                    </View>
-                    <View style={s.heroPhaseContent}>
-                      <Text style={s.heroPhaseTitle}>{phase.title}</Text>
-                      <Text style={s.heroPhaseDesc}>{phase.description}</Text>
-                      <Text style={s.heroPhaseStatus}>
-                        {done ? 'Completed' : current ? 'In Progress' : locked ? `Complete Phase ${phase.number - 1} first` : 'Up Next'}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {!allPhasesDone ? (
-              <Pressable
-                style={s.heroCta}
-                onPress={() => handlePhasePress(gp.phases[gp.activePhaseIdx], gp.activePhaseIdx)}
-              >
-                <Text style={s.heroCtaText}>Continue: Next Step →</Text>
-              </Pressable>
-            ) : (
-              <View style={s.heroComplete}>
-                <Ionicons name="checkmark" size={16} color="#fff" />
-                <Text style={s.heroCompleteText}>Gameplan Complete</Text>
+          {allPhasesDone && !gameplanExpanded ? (
+            <View style={s.heroGameplanBadge}>
+              <View style={s.heroGameplanBadgeCheck}>
+                <Ionicons name="checkmark" size={20} color="#000" />
               </View>
-            )}
-          </LinearGradient>
+              <View style={s.heroGameplanBadgeText}>
+                <Text style={s.heroGameplanBadgeTitle}>Gameplan Complete</Text>
+                <Text style={s.heroGameplanBadgeSubtitle}>You've completed all phases</Text>
+              </View>
+              <Pressable
+                style={s.heroGameplanBadgeBtn}
+                onPress={() => setGameplanExpanded(true)}
+              >
+                <Text style={s.heroGameplanBadgeBtnText}>Open</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <LinearGradient colors={['#ff0000', '#ffa700']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroGameplan}>
+              <Text style={s.heroTitle}>Your Gameplan</Text>
+              <Text style={s.heroSubtitle}>Where new athletes start. Three steps to connect with coaches who match your level.</Text>
+
+              <View style={s.heroProgressBar}>
+                <View style={[s.heroProgressFill, { width: `${Math.max(progressPct, 6)}%` }]} />
+              </View>
+              <Text style={s.heroProgressText}>{Math.round(progressPct)}% Complete • Phase {gp.activePhaseIdx + 1} of {gp.phases.length}</Text>
+
+              <View style={s.heroPhases}>
+                {gp.phases.map((phase, i) => {
+                  const done = gp.phaseComplete[i];
+                  const locked = gp.phaseLocked[i];
+                  const current = !done && !locked && i === gp.activePhaseIdx;
+                  return (
+                    <View key={phase.number} ref={tourRefs[`phase-${phase.number}`]} collapsable={false} style={s.heroPhaseRow}>
+                      <View style={[
+                        s.heroPhaseNode,
+                        done && s.heroPhaseNodeDone,
+                        current && s.heroPhaseNodeCurrent,
+                      ]}>
+                        {done ? (
+                          <Ionicons name="checkmark" size={16} color="#ff0000" />
+                        ) : locked ? (
+                          <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.85)" />
+                        ) : (
+                          <Text style={s.heroPhaseNumber}>{phase.number}</Text>
+                        )}
+                      </View>
+                      <View style={s.heroPhaseContent}>
+                        <Text style={s.heroPhaseTitle}>{phase.title}</Text>
+                        <Text style={s.heroPhaseDesc}>{phase.description}</Text>
+                        <Text style={s.heroPhaseStatus}>
+                          {done ? 'Completed' : current ? 'In Progress' : locked ? `Complete Phase ${phase.number - 1} first` : 'Up Next'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {!allPhasesDone ? (
+                <Pressable
+                  style={s.heroCta}
+                  onPress={() => handlePhasePress(gp.phases[gp.activePhaseIdx], gp.activePhaseIdx)}
+                >
+                  <Text style={s.heroCtaText}>Continue: Next Step →</Text>
+                </Pressable>
+              ) : (
+                <View style={s.heroCompleteRow}>
+                  <View style={s.heroComplete}>
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Text style={s.heroCompleteText}>Gameplan Complete</Text>
+                  </View>
+                  <Pressable
+                    style={s.heroCompleteCollapseBtn}
+                    onPress={() => setGameplanExpanded(false)}
+                  >
+                    <Ionicons name="chevron-up" size={20} color="#666" />
+                  </Pressable>
+                </View>
+              )}
+            </LinearGradient>
+          )}
         </View>
 
         <Text style={s.sectionLabel}>After you complete the Gameplan:</Text>
@@ -627,6 +654,15 @@ function createStyles(C: ThemeColors) {
     heroCtaText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
     heroComplete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#000', borderRadius: 100, paddingVertical: 14, alignSelf: 'flex-start', paddingHorizontal: 22 },
     heroCompleteText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
+    heroCompleteRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+    heroCompleteCollapseBtn: { width: 40, height: 40, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
+    heroGameplanBadge: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 20, padding: 16, marginBottom: 20 },
+    heroGameplanBadgeCheck: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    heroGameplanBadgeText: { flex: 1 },
+    heroGameplanBadgeTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 15, color: C.text, marginBottom: 2 },
+    heroGameplanBadgeSubtitle: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+    heroGameplanBadgeBtn: { backgroundColor: 'rgba(80,26,255,0.08)', borderWidth: 1, borderColor: 'rgba(80,26,255,0.2)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, flexShrink: 0 },
+    heroGameplanBadgeBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#501aff' },
 
     sectionLabel: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted, marginBottom: 14 },
     statsGrid: { gap: 16, marginBottom: 16 },
