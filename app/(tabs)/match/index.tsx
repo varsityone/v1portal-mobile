@@ -1,3 +1,4 @@
+import SaveProgramDialog from '../../../components/SaveProgramDialog';
 import SwipeCardBackground from '../../../components/SwipeCardBackground';
 import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -37,6 +38,8 @@ const FREE_ATHLETE_CARD_LIMIT = 3;
 
 interface CoachCard {
   id: string;
+  program_id: string;
+  match_available: boolean;
   full_name: string | null;
   school_name: string | null;
   division: string;
@@ -73,6 +76,14 @@ export default function MatchScreen() {
 
   const [loading, setLoading] = useState(true);
   const [coachCards, setCoachCards] = useState<CoachCard[]>([]);
+  const [savedPrograms, setSavedPrograms] = useState<string[]>([]);
+  const [showSavedPrograms, setShowSavedPrograms] = useState(false);
+  const [unavailableProgram, setUnavailableProgram] = useState<CoachCard | null>(null);
+  const apiGet = useCallback(async (path: string) => {
+    const response = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` } });
+    if (!response.ok) throw new Error('Unable to load programs. Please try again.');
+    return response.json();
+  }, [session?.access_token]);
   const [existingMatches, setExistingMatches] = useState<Map<string, string>>(new Map());
   const [selectedDivision, setSelectedDivision] = useState<Division | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -119,7 +130,7 @@ export default function MatchScreen() {
   const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || swipe.direction === historyFilter);
 
   useEffect(() => {
-    if (athleteLoading || !athlete?.id) return;
+    if (athleteLoading || !athlete?.id || !session?.access_token) return;
 
     async function load() {
       const { data: swiped } = await supabase
@@ -129,15 +140,9 @@ export default function MatchScreen() {
         .eq('swiped_by', 'athlete');
       const swipedIds = (swiped ?? []).map(s => s.coach_id);
 
-      let q = supabase
-        .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score, profile_slug, twitter')
-        .eq('verified', true)
-        .limit(200);
-      if (swipedIds.length > 0) q = q.not('id', 'in', `(${swipedIds.join(',')})`);
-
-      const { data: coaches } = await q;
-      setCoachCards(coaches ?? []);
+      const [programs, saved] = await Promise.all([apiGet('/api/match/programs'), apiGet('/api/match/saved-programs')]);
+      setCoachCards(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)));
+      setSavedPrograms(saved.programIds);
 
       const { data: matches } = await supabase
         .from('mutual_matches')
@@ -148,8 +153,8 @@ export default function MatchScreen() {
 
       setLoading(false);
     }
-    load();
-  }, [athleteLoading, athlete?.id]);
+    load().catch(() => { setSwipeErrorNotif('Unable to load programs. Please return to this screen and try again.'); setLoading(false); });
+  }, [athleteLoading, athlete?.id, apiGet, session?.access_token]);
 
   const athleteScore = athlete?.v1_score ?? 0;
   const athleteLevel = getPrimaryDivisionForScore(athleteScore);
@@ -159,7 +164,7 @@ export default function MatchScreen() {
   );
 
   const activeDivision: Division | null = selectedDivision ?? (!isPremium ? athleteLevel : null);
-  const rawDeck = activeDivision ? coachCards.filter(c => c.division === activeDivision) : [];
+  const rawDeck = activeDivision ? coachCards.filter(c => c.division === activeDivision && (!showSavedPrograms || savedPrograms.includes(c.program_id))) : [];
   const deck = (!isPremium) ? rawDeck.slice(0, FREE_ATHLETE_CARD_LIMIT) : rawDeck;
 
   const current = deck[currentIndex];
@@ -189,6 +194,8 @@ export default function MatchScreen() {
   );
 
   const recordSwipe = async (direction: 'like' | 'pass', coachId: string) => {
+    const target = coachCards.find(c => c.id === coachId);
+    if (target && !target.match_available) { setUnavailableProgram(target); return; }
     setSwiping(true);
     try {
       const res = await fetch(`${API_BASE}/api/match/swipe`, {
@@ -207,6 +214,12 @@ export default function MatchScreen() {
       // and surface it instead.
       if (!res.ok || data.error) {
         setSwiping(false);
+        if (data.code === 'MATCH_UNAVAILABLE' && target) {
+          const unavailable = { ...target, match_available: false };
+          setCoachCards(prev => prev.map(c => c.id === coachId ? unavailable : c));
+          setUnavailableProgram(unavailable);
+          return;
+        }
         setSwipeErrorNotif("That didn't save. Check your connection and try again.");
         return;
       }
@@ -225,6 +238,11 @@ export default function MatchScreen() {
 
   const handleSwipe = (direction: 'like' | 'pass') => {
     if (!current || swiping) return;
+    if (!current.match_available) {
+      if (direction === 'like') setUnavailableProgram(current);
+      else setCurrentIndex(i => i + 1);
+      return;
+    }
 
     if (direction === 'like' && current.division) {
       const div = current.division as Division;
@@ -246,12 +264,8 @@ export default function MatchScreen() {
     if (!athlete || !activeDivision || retrying) return;
     setRetrying(true);
     try {
-      const { data: divisionCoaches } = await supabase
-        .from('coach_accounts')
-        .select('id, full_name, school_name, division, position_coached, position_needs, bio, profile_photo_url, min_score, profile_slug, twitter')
-        .eq('verified', true)
-        .eq('division', activeDivision);
-      const divisionCards = divisionCoaches ?? [];
+      const programs = await apiGet('/api/match/programs');
+      const divisionCards: CoachCard[] = programs.cards.filter((c: CoachCard) => c.division === activeDivision);
       if (divisionCards.length === 0) { setRetrying(false); return; }
 
       const { data: swipedRows } = await supabase
@@ -259,7 +273,7 @@ export default function MatchScreen() {
         .select('coach_id')
         .eq('athlete_id', athlete.id)
         .eq('swiped_by', 'athlete')
-        .in('coach_id', divisionCards.map(c => c.id));
+        .in('coach_id', divisionCards.filter(c => c.match_available).map(c => c.id));
 
       await Promise.all((swipedRows ?? []).map(({ coach_id }) =>
         fetch(`${API_BASE}/api/match/swipe`, {
@@ -274,6 +288,8 @@ export default function MatchScreen() {
 
       setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...divisionCards]);
       setCurrentIndex(0);
+    } catch {
+      setSwipeErrorNotif('Unable to reload programs. Please try again.');
     } finally {
       setRetrying(false);
     }
@@ -420,15 +436,41 @@ export default function MatchScreen() {
     );
   }
 
+  const savedToolbar = <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, paddingHorizontal: 12, paddingTop: insets.top + 8, paddingBottom: 10, backgroundColor: '#000' }}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: !showSavedPrograms }} onPress={() => { setShowSavedPrograms(false); setCurrentIndex(0); }} style={{ padding: 10 }}><Text style={{ color: '#fff', fontFamily: FontFamily.bodyBold }}>Browse programs</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: showSavedPrograms }} onPress={() => { setShowSavedPrograms(true); setCurrentIndex(0); }} style={{ padding: 10 }}><Text style={{ color: '#fff', fontFamily: FontFamily.bodyBold }}>Saved ({savedPrograms.length})</Text></Pressable>
+  </View>;
+  const saveDialog = unavailableProgram && <SaveProgramDialog
+    name={unavailableProgram.school_name || 'This program'}
+    saved={savedPrograms.includes(unavailableProgram.program_id)}
+    onClose={() => setUnavailableProgram(null)}
+    onSave={async () => {
+      const response = await fetch(`${API_BASE}/api/match/saved-programs`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+        body: JSON.stringify({ program_id: unavailableProgram.program_id }),
+      });
+      if (!response.ok) throw new Error('Unable to save program');
+      setSavedPrograms(prev => [...new Set([...prev, unavailableProgram.program_id])]);
+    }}
+  />;
+
   // ── Empty state — fills the screen, same as the deck (header hidden) ──
   if (currentIndex >= totalCards) {
     return (
       <SafeAreaView style={s.deckRoot}>
+        {savedToolbar}
+        {saveDialog}
+        {swipeErrorNotif && <Text accessibilityRole="alert" style={{ color: '#fff', textAlign: 'center' }}>{swipeErrorNotif}</Text>}
         <View style={s.emptyWrap}>
           <View style={s.emptyCard}>
             <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Feather name="target" size={40} color="#fff" />
-            {isPremium ? (
+            {showSavedPrograms ? (
+              <>
+                <Text style={s.emptyCardTitle}>No more saved programs at this level</Text>
+                <Text style={s.emptyCardBody}>Browse programs to save one for later, or choose another level.</Text>
+              </>
+            ) : isPremium ? (
               <>
                 <Text style={s.emptyCardTitle}>You're caught up</Text>
                 <Text style={s.emptyCardBody}>
@@ -474,6 +516,8 @@ export default function MatchScreen() {
   // behind the status bar and home indicator (header hidden above) ──
   return (
     <View style={s.deckRoot}>
+      {savedToolbar}
+      {saveDialog}
       <View style={s.card}>
         <SwipeCardBackground uri={current?.profile_photo_url} />
 
@@ -499,17 +543,17 @@ export default function MatchScreen() {
           <Text style={s.cardCounter}>{Math.min(currentIndex + 1, totalCards)} / {totalCards}</Text>
         </View>
 
-        {/* Every card an athlete sees is already verified (query-guaranteed) */}
+        {/* Only participating coaches receive a verified badge. */}
         <View style={[s.verifiedBadge, { top: insets.top + 56 }]}>
-          <Ionicons name="checkmark" size={13} color={C.success} />
-          <Text style={s.verifiedBadgeText}>Verified</Text>
+          {current.match_available && <Ionicons name="checkmark" size={13} color={C.success} />}
+          <Text style={[s.verifiedBadgeText, !current.match_available && { color: '#fff' }]}>{current.match_available ? 'Verified coach' : 'Save for later'}</Text>
         </View>
 
         <View style={[s.cardBottom, { paddingBottom: insets.bottom + 22 }]}>
           <Text style={s.cardDivision}>{current?.division}</Text>
           <Text style={s.cardSchool}>{current?.school_name ?? 'Unknown Program'}</Text>
           <Text style={s.cardCoach}>
-            {current?.position_coached}{current?.full_name ? ` · Coach ${current.full_name.split(' ').pop()}` : ''}
+            {current.match_available ? [current.position_coached, current.full_name].filter(Boolean).join(' · ') : 'Program directory'}
           </Text>
           {(() => {
             const displayMinScore = current?.min_score ?? (current?.division ? getBandFloorForDivision(current.division as Division) : null);
@@ -560,7 +604,7 @@ export default function MatchScreen() {
             <Pressable
               style={[s.messageBtnCircle, isAlreadyMatched && s.messageBtnCircleMatched]}
               onPress={() => {
-                if (isAlreadyMatched) {
+                if (!current.match_available) { setUnavailableProgram(current); } else if (isAlreadyMatched) {
                   router.push(existingMatchId ? (`/(tabs)/match/${existingMatchId}` as any) : ('/(tabs)/match' as any));
                 } else {
                   handleSwipe('like');

@@ -15,6 +15,9 @@ export interface Coach {
   verified_at: string | null;
   email_verified: boolean | null;
   needs_review: boolean | null;
+  claim_status?: 'pending_email' | 'pending_review' | 'active' | 'needs_information' | 'rejected';
+  review_message?: string | null;
+  claim_response?: string | null;
   position_coached: string | null;
   position_needs: string[] | null;
   level_bands: string[] | null;
@@ -51,7 +54,7 @@ export function useCoachData(): CoachData {
 
     const { data } = await supabase
       .from('coach_accounts')
-      .select('id, user_id, full_name, school_name, school_email, title, division, region, verified, verified_at, email_verified, needs_review, position_coached, position_needs, level_bands, min_score, bio, profile_photo_url, phone, phone_public, twitter, message_to_recruits, years_coaching, previous_stops, program_id, profile_slug, created_at, updated_at')
+      .select('id, user_id, full_name, school_name, school_email, title, division, region, verified, verified_at, email_verified, needs_review, claim_status, review_message, claim_response, position_coached, position_needs, level_bands, min_score, bio, profile_photo_url, phone, phone_public, twitter, message_to_recruits, years_coaching, previous_stops, program_id, profile_slug, created_at, updated_at')
       .eq('user_id', session.user.id)
       .maybeSingle();
 

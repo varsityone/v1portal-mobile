@@ -3,7 +3,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import OnboardingTour from '../../components/OnboardingTour';
 import { useCoachDashboardTour } from '../../hooks/useCoachDashboardTour';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,7 +61,7 @@ export default function CoachDashboard() {
   const C = useColors();
   const { width } = useWindowDimensions();
   const s = useMemo(() => createStyles(C, width), [C, width]);
-  const { coach, loading: coachLoading } = useCoachData();
+  const { coach, loading: coachLoading, refresh } = useCoachData();
 
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
   useEffect(() => {
@@ -86,6 +86,9 @@ export default function CoachDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [claimError, setClaimError] = useState('');
+  const [claimResponse, setClaimResponse] = useState('');
+  const [responding, setResponding] = useState(false);
 
   useEffect(() => {
     if (coachLoading) return;
@@ -169,17 +172,39 @@ export default function CoachDashboard() {
 
   const handleResend = async () => {
     if (!coach || resending || resent) return;
-    setResending(true);
+    setResending(true); setClaimError('');
     try {
-      await fetch('https://v1portal.com/api/coach/send-verification', {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sign in again to confirm your email.');
+      const result = await fetch('https://v1portal.com/api/coach/send-verification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coachId: coach.id, email: coach.school_email, fullName: coach.full_name }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({}),
       });
+      if (!result.ok) throw new Error((await result.json()).error || 'Unable to send confirmation.');
       setResent(true);
+    } catch (error) {
+      setClaimError(error instanceof Error ? error.message : 'Unable to send confirmation.');
     } finally {
       setResending(false);
     }
+  };
+
+  const sendClaimResponse = async () => {
+    if (!claimResponse.trim() || responding) return;
+    setResponding(true); setClaimError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sign in again to submit your response.');
+      const result = await fetch('https://v1portal.com/api/coach/claim-status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ response: claimResponse }),
+      });
+      if (!result.ok) throw new Error((await result.json()).error || 'Unable to save your response.');
+      setClaimResponse(''); await refresh();
+    } catch (error) {
+      setClaimError(error instanceof Error ? error.message : 'Unable to save your response.');
+    } finally { setResponding(false); }
   };
 
   if (coachLoading || (loading && coach?.verified)) {
@@ -213,14 +238,25 @@ export default function CoachDashboard() {
             <Ionicons name="time-outline" size={24} color="#a78bfa" />
           </View>
           <Text style={s.pendingTitle}>
-            {coach.email_verified ? 'Pending Final Review' : 'Verify Your Email'}
+            {coach.claim_status === 'rejected' ? 'Profile Not Approved' : coach.claim_status === 'needs_information' ? 'More Information Needed' : coach.email_verified ? 'Pending Final Review' : 'Verify Your Email'}
           </Text>
           <Text style={s.pendingBody}>
-            {coach.email_verified
-              ? "Your email is confirmed. We're doing a quick manual check on your program — you'll be live within one business day."
-              : `We sent a confirmation link to ${coach.school_email}. Click it to activate your program.`}
+            {(coach.claim_status === 'pending_review' && coach.claim_response ? 'Your response has been saved and sent for review.' : coach.review_message) || (coach.email_verified
+              ? 'Your information is saved. We need to confirm your connection to your program. Your review result will appear here.'
+              : `Confirm ${coach.school_email} to continue verifying your coach profile.`)}
           </Text>
-          {!coach.email_verified && (
+          {coach.claim_status === 'needs_information' && (
+            <View style={{ width: '100%', gap: 12 }}>
+              <TextInput accessibilityLabel="Additional information for your review" multiline maxLength={2000}
+                value={claimResponse} onChangeText={setClaimResponse} placeholder="Provide the requested information"
+                placeholderTextColor={C.textMuted} style={{ minHeight: 100, padding: 12, color: C.text, borderWidth: 1, borderColor: C.textMuted, borderRadius: 10 }} />
+              <Pressable onPress={sendClaimResponse} disabled={responding || !claimResponse.trim()}><Text style={s.pendingBody}>{responding ? 'Sending…' : 'Submit for review'}</Text></Pressable>
+            </View>
+          )}
+          {!!claimError && <Text accessibilityRole="alert" style={s.pendingBody}>{claimError}</Text>}
+          <Pressable onPress={() => { void refresh(); }}><Text style={s.pendingBody}>Check review status</Text></Pressable>
+          <Pressable onPress={() => router.push('/(coach)/profile/edit')}><Text style={s.pendingBody}>Review or update your profile</Text></Pressable>
+          {!coach.email_verified && coach.claim_status !== 'rejected' && (
             <Pressable style={s.resendBtnWrap} onPress={handleResend} disabled={resending || resent}>
               <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
               <Text style={s.resendBtnText}>
