@@ -13,10 +13,11 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PurchasesPackage } from 'react-native-purchases';
-import { getCurrentOffering, purchasePackage, restorePurchases, hasActiveEntitlement } from '../../lib/purchases';
+import { getCurrentOffering, purchasePackage, restorePurchases, hasActiveEntitlement, syncSubscriptionAccess, MATCH_PRODUCT_ID } from '../../lib/purchases';
 import { useAthleteData } from '../../hooks/useAthleteData';
 import { TIER_GRADIENT, ThemeColors } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
@@ -42,68 +43,78 @@ export default function UpgradeScreen() {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [offeringAttempt, setOfferingAttempt] = useState(0);
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     getCurrentOffering()
       .then(offering => {
         if (!mounted) return;
-        setPkg(offering?.availablePackages?.[0] ?? null);
+        setPkg(offering?.availablePackages.find(p => Platform.OS !== 'ios' || p.product.identifier === MATCH_PRODUCT_ID) ?? null);
       })
+      .catch(() => { if (mounted) setPkg(null); })
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };
-  }, []);
+  }, [offeringAttempt]);
 
-  // Poll until the RevenueCat webhook has flipped subscription_status on the
-  // athletes row (usually a second or two), then drop the user back in.
+  // Restore may not emit a new webhook for an already-owned subscription.
+  // Reconcile against RevenueCat on the server before reporting success.
   const waitForUnlock = async () => {
     setActivating(true);
-    for (let i = 0; i < 6; i++) {
-      const a = await refresh();
-      if (a?.subscription_status === 'active') {
-        setActivating(false);
-        router.replace('/(tabs)/match');
-        return;
+    try {
+      for (let i = 0; i < 3; i++) {
+        const active = Platform.OS === 'ios' ? await syncSubscriptionAccess() : true;
+        if (active) {
+          const updated = await refresh();
+          if (updated?.subscription_status === 'active' && updated.subscription_tier === 'pro') {
+            router.replace('/(tabs)/match');
+            return;
+          }
+        }
+        if (i < 2) await new Promise(resolve => setTimeout(resolve, 1500));
       }
-      await new Promise(r => setTimeout(r, 1500));
+      throw new Error('Subscription has not synchronized yet.');
+    } catch {
+      Alert.alert(
+        'Unable to unlock Match+ yet',
+        'We could not confirm your access. Please try Restore Purchases again. You do not need to purchase again.'
+      );
+    } finally {
+      setActivating(false);
     }
-    setActivating(false);
-    router.replace('/(tabs)/match');
-    Alert.alert(
-      "You're all set",
-      "Your purchase went through — it can take a minute to unlock. Pull to refresh if you don't see it right away."
-    );
   };
 
   const handlePurchase = async () => {
-    if (!pkg || purchasing) return;
+    if (!pkg || purchasing || restoring || activating) return;
     setPurchasing(true);
     try {
       const info = await purchasePackage(pkg);
-      setPurchasing(false);
       if (hasActiveEntitlement(info)) await waitForUnlock();
+      else Alert.alert('Subscription not active yet', 'If your purchase is pending approval, wait for approval, then try Restore Purchases.');
     } catch (err: any) {
-      setPurchasing(false);
       if (!err?.userCancelled) {
         Alert.alert('Purchase failed', 'Something went wrong completing your purchase. Please try again.');
       }
+    } finally {
+      setPurchasing(false);
     }
   };
 
   const handleRestore = async () => {
-    if (restoring) return;
+    if (restoring || purchasing || activating) return;
     setRestoring(true);
     try {
       const info = await restorePurchases();
-      setRestoring(false);
       if (hasActiveEntitlement(info)) {
         await waitForUnlock();
       } else {
         Alert.alert('No purchases found', "We couldn't find an active Match+ subscription for this account.");
       }
     } catch {
-      setRestoring(false);
       Alert.alert('Restore failed', 'Something went wrong restoring your purchases. Please try again.');
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -114,9 +125,9 @@ export default function UpgradeScreen() {
   }
 
   // Already subscribed — this screen doubles as "Manage Subscription" from
-  // Settings, so an active/trial member should land on a manage/cancel view,
+  // Settings, so an active member should land on a manage/cancel view,
   // not get re-prompted to buy the plan they already have.
-  const isSubscribed = athlete?.subscription_status === 'active' || athlete?.subscription_status === 'trial';
+  const isSubscribed = athlete?.subscription_status === 'active';
   if (isSubscribed) {
     const storeSubscriptionsUrl = Platform.OS === 'ios'
       ? 'itms-apps://apps.apple.com/account/subscriptions'
@@ -131,7 +142,7 @@ export default function UpgradeScreen() {
 
         <View style={[s.card, { backgroundColor: C.surface }]}>
           <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.badge}>
-            <Text style={s.badgeText}>Match+ {athlete?.subscription_status === 'trial' ? '· Trial' : '· Active'}</Text>
+            <Text style={s.badgeText}>Match+ · Active</Text>
           </LinearGradient>
 
           <Text style={[s.description, { color: C.textMuted, marginTop: 12 }]}>
@@ -145,7 +156,7 @@ export default function UpgradeScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={handleRestore} disabled={restoring} style={{ marginTop: 18 }}>
+        <Pressable onPress={handleRestore} disabled={restoring || purchasing} style={{ marginTop: 18 }}>
           <Text style={s.restoreText}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
         </Pressable>
 
@@ -178,7 +189,17 @@ export default function UpgradeScreen() {
       <Text style={s.title}>
         {score ? `Your V1 Score is ${score}.` : `Hey ${firstName},`}
       </Text>
-      <Text style={s.titleAccent}>Here's how to use it.</Text>
+      <MaskedView
+        style={s.headlineGradient}
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel="Here's how to use it."
+        maskElement={<Text style={s.titleAccent}>Here's how to use it.</Text>}
+      >
+        <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          <Text style={[s.titleAccent, { opacity: 0 }]} accessible={false}>Here's how to use it.</Text>
+        </LinearGradient>
+      </MaskedView>
       {score && levelLabel ? (
         <Text style={s.metaLine}>
           {position && gradYear ? `${position} · Class of ${gradYear} · ` : ''}{levelLabel}
@@ -204,7 +225,12 @@ export default function UpgradeScreen() {
             <Text style={[s.period, { color: C.textDim }]}>per month · cancel anytime</Text>
           </>
         ) : (
-          <Text style={[s.body, { marginVertical: 12 }]}>Subscriptions aren't available right now.</Text>
+          <View>
+            <Text style={[s.body, { marginVertical: 12 }]}>Subscriptions aren't available right now.</Text>
+            <Pressable onPress={() => setOfferingAttempt(value => value + 1)} accessibilityRole="button">
+              <Text style={[s.restoreText, { textAlign: 'center', marginBottom: 16 }]}>Retry</Text>
+            </Pressable>
+          </View>
         )}
 
         <Text style={[s.description, { color: C.textMuted }]}>
@@ -212,10 +238,14 @@ export default function UpgradeScreen() {
         </Text>
 
         {pkg && (
-          <Pressable onPress={handlePurchase} disabled={purchasing}>
-            <LinearGradient colors={TIER_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaBtn}>
-              {purchasing ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>Start Match+</Text>}
-            </LinearGradient>
+          <Pressable
+            onPress={handlePurchase}
+            disabled={purchasing || restoring}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: purchasing || restoring, busy: purchasing }}
+            style={({ pressed }) => [s.ctaBtn, s.purchaseBtn, { opacity: pressed || purchasing ? 0.75 : 1 }]}
+          >
+            {purchasing ? <ActivityIndicator color="#111" /> : <Text style={[s.ctaText, s.purchaseBtnText]}>Start Match+</Text>}
           </Pressable>
         )}
 
@@ -231,14 +261,15 @@ export default function UpgradeScreen() {
         </View>
       </View>
 
-      {pkg && (
-        <>
+      <>
+        {pkg && (
           <Text style={s.fineprint}>
             Renews monthly at {pkg.product.priceString} until canceled. Cancel anytime in your device's
             subscription settings. Payment is charged to your {Platform.OS === 'ios' ? 'App Store' : 'Google Play'} account at confirmation.
           </Text>
+        )}
 
-          <Pressable onPress={handleRestore} disabled={restoring} style={{ marginTop: 18 }}>
+          <Pressable onPress={handleRestore} disabled={restoring || purchasing} style={{ marginTop: 18 }}>
             <Text style={s.restoreText}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
           </Pressable>
 
@@ -251,8 +282,7 @@ export default function UpgradeScreen() {
               <Text style={s.legalLink}>Privacy Policy</Text>
             </Pressable>
           </View>
-        </>
-      )}
+      </>
 
       <Pressable onPress={() => router.push('/(tabs)' as any)} style={{ marginTop: 24 }}>
         <Text style={s.backLink}>← Back to dashboard</Text>
@@ -268,8 +298,9 @@ function createStyles(C: ThemeColors) {
     body: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center' },
 
     eyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 12, textAlign: 'center' },
-    title: { fontFamily: FontFamily.statNumber, fontSize: 28, color: C.text, letterSpacing: -0.8, textAlign: 'center' },
-    titleAccent: { fontFamily: FontFamily.statNumber, fontSize: 28, letterSpacing: -0.8, color: '#C13584', textAlign: 'center' },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 32, color: C.text, letterSpacing: -1.1, textAlign: 'center' },
+    titleAccent: { fontFamily: FontFamily.statNumber, fontSize: 32, letterSpacing: -1.1, color: '#000', textAlign: 'center' },
+    headlineGradient: { width: '100%', maxWidth: 440 },
     metaLine: { fontFamily: FontFamily.body, fontSize: 13, color: C.textDim, marginTop: 8, textAlign: 'center' },
     subtitle: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', lineHeight: 20, marginTop: 8, marginBottom: 32, maxWidth: 340 },
 
@@ -281,6 +312,8 @@ function createStyles(C: ThemeColors) {
     period: { fontFamily: FontFamily.body, fontSize: 11, marginBottom: 16 },
     description: { fontFamily: FontFamily.body, fontSize: 13, lineHeight: 19, marginBottom: 20 },
     ctaBtn: { borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginBottom: 20 },
+    purchaseBtn: { backgroundColor: '#fff' },
+    purchaseBtnText: { color: '#111' },
     ctaText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13, color: '#fff' },
 
     featureList: { gap: 9 },
