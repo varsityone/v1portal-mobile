@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { ThemeColors } from '../../constants/Colors';
 import { useColors } from '../../context/ThemeContext';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   bordered?: boolean;
 }
 
