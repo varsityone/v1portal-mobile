@@ -76,6 +76,7 @@ export default function CoachDrawerLayout() {
         }}
       >
         <Drawer.Screen name="index"                    options={{ title: 'Dashboard' }} />
+        <Drawer.Screen name="interested"                options={{ title: 'Interested In You', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="match"                    options={{ title: 'Find Athletes', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="matches"                  options={{ title: 'My Matches', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="search"                   options={{ title: 'Recruit Search', drawerItemStyle: { display: 'none' } }} />

@@ -22,7 +22,7 @@ type NavItem = {
   href: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
   iconOff: React.ComponentProps<typeof Ionicons>['name'];
-  badgeKey?: 'matches';
+  badgeKey?: 'matches' | 'interested';
 };
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
@@ -35,10 +35,11 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Find Talent',
     items: [
-      { label: 'Discover', href: '/(coach)/match', icon: 'heart' as const, iconOff: 'heart-outline' as const },
+      { label: 'Interested In You', href: '/(coach)/interested', icon: 'heart' as const, iconOff: 'heart-outline' as const, badgeKey: 'interested' as const },
       { label: 'Recruit Search', href: '/(coach)/search', icon: 'search' as const, iconOff: 'search-outline' as const },
       { label: 'Saved', href: '/(coach)/saved', icon: 'bookmark' as const, iconOff: 'bookmark-outline' as const },
       { label: 'My Matches', href: '/(coach)/matches', icon: 'people' as const, iconOff: 'people-outline' as const, badgeKey: 'matches' as const },
+      { label: 'Browse All Prospects', href: '/(coach)/match', icon: 'layers' as const, iconOff: 'layers-outline' as const },
     ],
   },
   {
@@ -152,6 +153,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [unreadMatches, setUnreadMatches] = useState(0);
+  const [interestedCount, setInterestedCount] = useState(0);
 
   // Unread badge for "My Matches" — matches web's CoachShell poll exactly.
   useEffect(() => {
@@ -171,6 +173,37 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
 
     loadUnread();
     const interval = setInterval(loadUnread, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [coach?.id]);
+
+  // Badge for "Interested In You" -- matches web's CoachShell nav badge:
+  // athletes who've liked this program with no mutual match yet.
+  useEffect(() => {
+    const coachId = coach?.id;
+    if (!coachId) return;
+    let cancelled = false;
+
+    const loadInterested = async () => {
+      const { data: matched } = await supabase
+        .from('mutual_matches')
+        .select('athlete_id')
+        .eq('coach_id', coachId);
+      const matchedIds = (matched ?? []).map(m => m.athlete_id);
+
+      let q = supabase
+        .from('swipes')
+        .select('athlete_id', { count: 'exact', head: true })
+        .eq('coach_id', coachId)
+        .eq('swiped_by', 'athlete')
+        .eq('direction', 'like');
+      if (matchedIds.length > 0) q = q.not('athlete_id', 'in', `(${matchedIds.join(',')})`);
+
+      const { count } = await q;
+      if (!cancelled) setInterestedCount(count ?? 0);
+    };
+
+    loadInterested();
+    const interval = setInterval(loadInterested, 30000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [coach?.id]);
 
@@ -255,7 +288,7 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
             <View style={d.navList}>
               {group.items.map(item => {
                 const active = isActive(item.href);
-                const badge = item.badgeKey === 'matches' ? unreadMatches : 0;
+                const badge = item.badgeKey === 'matches' ? unreadMatches : item.badgeKey === 'interested' ? interestedCount : 0;
                 return (
                   <Pressable
                     key={item.href}

@@ -81,6 +81,7 @@ export default function CoachDashboard() {
   const [compliance, setCompliance] = useState<Compliance | null>(null);
   const [matches, setMatches] = useState<RecentMatch[]>([]);
   const [matchCount, setMatchCount] = useState(0);
+  const [interestedCount, setInterestedCount] = useState(0);
   const [swipeCount, setSwipeCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -164,6 +165,24 @@ export default function CoachDashboard() {
           .eq('status', 'sent');
         setUnreadCount(unread ?? 0);
       }
+
+      // Interested-in-you count for the hero CTA -- athletes who've liked
+      // this program and don't have a mutual match yet, same shape as the
+      // nav badge in CoachDrawer.
+      const { data: matchedForInterest } = await supabase
+        .from('mutual_matches')
+        .select('athlete_id')
+        .eq('coach_id', c.id);
+      const matchedIds = (matchedForInterest ?? []).map(m => m.athlete_id);
+      let interestedQuery = supabase
+        .from('swipes')
+        .select('athlete_id', { count: 'exact', head: true })
+        .eq('coach_id', c.id)
+        .eq('swiped_by', 'athlete')
+        .eq('direction', 'like');
+      if (matchedIds.length > 0) interestedQuery = interestedQuery.not('athlete_id', 'in', `(${matchedIds.join(',')})`);
+      const { count: interested } = await interestedQuery;
+      setInterestedCount(interested ?? 0);
 
       setLoading(false);
     }
@@ -319,11 +338,11 @@ export default function CoachDashboard() {
       </View>
 
       {/* Primary CTA + secondary action cards */}
-      <Pressable ref={view => { tour.refs.current.find = view; }} collapsable={false} style={s.ctaWrap} onPress={() => router.push('/(coach)/match' as any)}>
+      <Pressable ref={view => { tour.refs.current.find = view; }} collapsable={false} style={s.ctaWrap} onPress={() => router.push('/(coach)/interested' as any)}>
         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <View>
-          <Text style={s.ctaTitle}>Find Players</Text>
-          <Text style={s.ctaSub}>Swipe & match with athletes who fit your program</Text>
+          <Text style={s.ctaTitle}>{interestedCount > 0 ? `${interestedCount} Athlete${interestedCount === 1 ? '' : 's'} Interested` : 'Interested In You'}</Text>
+          <Text style={s.ctaSub}>Review athletes who've already liked your program — rank, match, or pass in one click</Text>
         </View>
         <Ionicons name="arrow-forward" size={18} color="#fff" />
       </Pressable>
@@ -403,9 +422,9 @@ export default function CoachDashboard() {
 
         {matches.length === 0 ? (
           <View style={s.emptyMatches}>
-            <Text style={s.emptyMatchesText}>No matches yet. Start swiping on players.</Text>
-            <Pressable onPress={() => router.push('/(coach)/match' as any)}>
-              <Text style={s.emptyMatchesLink}>Find Players →</Text>
+            <Text style={s.emptyMatchesText}>No matches yet. Check who's already interested, or browse for new prospects.</Text>
+            <Pressable onPress={() => router.push('/(coach)/interested' as any)}>
+              <Text style={s.emptyMatchesLink}>See Who's Interested →</Text>
             </Pressable>
           </View>
         ) : (

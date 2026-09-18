@@ -6,7 +6,7 @@ import { consumeCoachTourRequest, hasSeenCoachTour, markCoachTourSeen, subscribe
 
 const DASHBOARD_STEPS: TourStep[] = [
   { target: 'welcome', title: 'Your Coach Dashboard', description: 'Start here for your program’s recruiting activity. Use View Profile to see how your program appears to athletes.' },
-  { target: 'find', title: 'Find Players', description: 'Explore athletes and swipe on players who fit your program. Mutual interest creates a match.' },
+  { target: 'find', title: 'Interested In You', description: "Athletes who've already liked your program land here, ranked by fit and how actively they're recruiting. One-click Match or Pass — no swiping required." },
   { target: 'tools', title: 'Your Recruiting Tools', description: 'Use the Recruiting Map to target states, Messages to talk with matched athletes, and Saved Prospects to revisit your shortlist.' },
   { target: 'activity', title: 'Track Your Activity', description: 'Keep an eye on your matches, players reviewed, saved prospects, and unread messages.' },
   { target: 'compliance', title: 'Recruiting Calendar', description: 'Review the displayed recruiting period and open the compliance calendar for more details before planning outreach.' },
