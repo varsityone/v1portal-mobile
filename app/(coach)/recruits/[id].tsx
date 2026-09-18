@@ -297,17 +297,16 @@ export default function RecruitDetailScreen() {
         ) : (
           <>
             <Pressable style={s.swipeBtn} disabled={acting === 'pass'} onPress={() => handleAction('pass')}>
-              <Ionicons name="close" size={18} color="#000" />
+              <Ionicons name="close" size={17} color="#fff" />
             </Pressable>
             <Pressable style={s.swipeBtnMatch} disabled={acting === 'like'} onPress={() => handleAction('like')}>
               <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="add" size={20} color="#fff" />
+              <Ionicons name="add" size={22} color="#fff" />
             </Pressable>
           </>
         )}
-        <Pressable style={s.actionBtn} onPress={() => matchId ? router.push(`/(coach)/match/${matchId}` as any) : startConversation()}>
-          <Ionicons name="chatbubble-outline" size={16} color={C.text} />
-          <Text style={s.actionBtnText}>Message</Text>
+        <Pressable style={[s.swipeBtn, matchId && { backgroundColor: 'rgba(34,197,94,0.16)' }]} onPress={() => matchId ? router.push(`/(coach)/match/${matchId}` as any) : startConversation()}>
+          <Ionicons name="chatbubble-outline" size={17} color={matchId ? '#22c55e' : '#fff'} />
         </Pressable>
         <Pressable style={[s.actionBtn, isSaved && s.actionBtnActive]} onPress={toggleSave}>
           <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#fff' : C.text} />
@@ -463,8 +462,9 @@ function createStyles(C: ThemeColors) {
     actionBtnActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     actionBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
     actionBtnTextActive: { color: '#fff' },
-    swipeBtn: { width: 46, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: C.border },
-    swipeBtnMatch: { width: 46, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    // Same circle treatment as the swipe deck's own card action row.
+    swipeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+    swipeBtnMatch: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
     statusPill: { paddingHorizontal: 14, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
     statusPillText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13 },
 

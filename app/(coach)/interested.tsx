@@ -290,13 +290,13 @@ export default function CoachInterestedScreen() {
                       <Pressable
                         disabled={actingId === a.id}
                         onPress={() => handleAction(a.id, 'pass')}
-                        style={[s.actBtn, { backgroundColor: '#fff' }]}
+                        style={s.actBtn}
                       >
-                        <Ionicons name="close" size={16} color="#000" />
+                        <Ionicons name="close" size={17} color="#fff" />
                       </Pressable>
                       <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'like')} style={s.actBtnMatch}>
                         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                        <Ionicons name="checkmark" size={16} color="#fff" />
+                        <Ionicons name="add" size={22} color="#fff" />
                       </Pressable>
                     </View>
                   </Card>
@@ -343,12 +343,12 @@ export default function CoachInterestedScreen() {
                         <Text style={s.scoreLabel}>V1</Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'pass')} style={[s.actBtn, { backgroundColor: '#fff' }]}>
-                          <Ionicons name="close" size={15} color="#000" />
+                        <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'pass')} style={s.actBtn}>
+                          <Ionicons name="close" size={17} color="#fff" />
                         </Pressable>
                         <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'like')} style={s.actBtnMatch}>
                           <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                          <Ionicons name="checkmark" size={15} color="#fff" />
+                          <Ionicons name="add" size={22} color="#fff" />
                         </Pressable>
                       </View>
                     </View>
@@ -519,12 +519,12 @@ export default function CoachInterestedScreen() {
                 <Pressable style={s.fullToggleBtn} onPress={() => modalLevel === 'quick' ? viewFullProfile() : setModalLevel('quick')}>
                   <Text style={s.fullToggleText}>{modalLevel === 'quick' ? 'View Full Profile' : 'Back to Quick View'}</Text>
                 </Pressable>
-                <Pressable disabled={actingId === quickViewAthlete.id} style={s.modalPassBtn} onPress={() => handleAction(quickViewAthlete.id, 'pass')}>
-                  <Text style={s.modalPassText}>Pass</Text>
+                <Pressable disabled={actingId === quickViewAthlete.id} style={s.actBtn} onPress={() => handleAction(quickViewAthlete.id, 'pass')}>
+                  <Ionicons name="close" size={17} color="#fff" />
                 </Pressable>
-                <Pressable disabled={actingId === quickViewAthlete.id} style={s.modalMatchBtn} onPress={() => handleAction(quickViewAthlete.id, 'like')}>
+                <Pressable disabled={actingId === quickViewAthlete.id} style={s.actBtnMatch} onPress={() => handleAction(quickViewAthlete.id, 'like')}>
                   <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                  <Text style={s.modalMatchText}>Match</Text>
+                  <Ionicons name="add" size={22} color="#fff" />
                 </Pressable>
               </View>
             </ScrollView>
@@ -587,8 +587,11 @@ function createStyles(C: ThemeColors) {
     intentChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     intentText: { fontFamily: FontFamily.bodyBold, fontSize: 11.5, color: '#edff00' },
     intentCold: { fontFamily: FontFamily.bodyBold, fontSize: 11.5, color: C.textDim },
-    actBtn: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border2 },
-    actBtnMatch: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    // Same circle treatment as the swipe deck's own card action row
+    // (app/(coach)/match/index.tsx) -- translucent glass for Pass/Message,
+    // gradient circle for Match -- reused everywhere these actions appear.
+    actBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+    actBtnMatch: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 
     belowToggle: { marginTop: 16, padding: 12, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border2, alignItems: 'center' },
     belowToggleText: { fontFamily: FontFamily.bodyBold, fontSize: 12.5, color: C.textMuted },
@@ -629,12 +632,8 @@ function createStyles(C: ThemeColors) {
     filmBtn: { borderRadius: 12, paddingVertical: 13, paddingHorizontal: 16, marginBottom: 6, alignSelf: 'stretch', overflow: 'hidden' },
     filmBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12.5, color: '#fff' },
 
-    modalFoot: { flexDirection: 'row', gap: 10, marginTop: 10, alignSelf: 'stretch' },
+    modalFoot: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, alignSelf: 'stretch' },
     fullToggleBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border2 },
     fullToggleText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.textMuted },
-    modalPassBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: C.border2 },
-    modalPassText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 12, color: '#000' },
-    modalMatchBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center', overflow: 'hidden' },
-    modalMatchText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 12, color: '#fff' },
   });
 }
