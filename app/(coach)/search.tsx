@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
-import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
+import { GRADIENT, FLAME_GRADIENT, SIGNAL_GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { starsForScore, POSITIONS, GRAD_YEARS, STATES, RECRUITING_LEVEL_BANDS, RecruitingLevelBand, getRecruitingLevelBand } from '../../lib/recruitingLevels';
@@ -16,6 +16,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
 import { BottomSheetModal } from '../../components/ui/BottomSheetModal';
 import { ScoreRing } from '../../components/ui/ScoreRing';
+import { GradientCheck } from '../../components/ui/GradientCheck';
 
 interface Prospect {
   id: string;
@@ -398,11 +399,7 @@ export default function CoachSearchScreen() {
 
                   <View style={s.nameRow}>
                     <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name || 'Unknown'}</Text>
-                    {verified && (
-                      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.verifiedDot}>
-                        <Ionicons name="checkmark" size={9} color="#0a0a0a" />
-                      </LinearGradient>
-                    )}
+                    {verified && <GradientCheck id={`gc-grid-${prospect.id}`} />}
                   </View>
                   <Text style={s.prospectMeta} numberOfLines={1}>
                     {[prospect.position, prospect.height, prospect.weight ? `${prospect.weight} lbs` : null, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null].filter(Boolean).join(' · ')}
@@ -452,11 +449,7 @@ export default function CoachSearchScreen() {
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.nameRow}>
                       <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name || 'Unknown'}</Text>
-                      {verified && (
-                        <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.verifiedDot}>
-                          <Ionicons name="checkmark" size={9} color="#0a0a0a" />
-                        </LinearGradient>
-                      )}
+                      {verified && <GradientCheck id={`gc-list-${prospect.id}`} />}
                     </View>
                     <Text style={s.prospectMeta} numberOfLines={1}>
                       {[prospect.position, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null, prospect.state].filter(Boolean).join(' · ')}
@@ -579,36 +572,57 @@ export default function CoachSearchScreen() {
       </BottomSheetModal>
 
       <BottomSheetModal visible={showLevelModal} onClose={() => chosenLevel && setShowLevelModal(false)}>
-        <Text style={s.sheetTitle}>Choose Your Level</Text>
-        <Text style={s.levelModalSub}>Pick which pool of athletes to browse. Levels above your program&rsquo;s typical range are flagged as a reach.</Text>
-        <View style={{ gap: 8, alignSelf: 'stretch', marginTop: 14 }}>
+        <View style={s.scoreChip}>
+          <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
+            <Ionicons name="school" size={13} color="#fff" />
+          </LinearGradient>
+          <Text style={s.scoreChipText}>
+            Your program typically recruits <Text style={s.scoreChipBold}>{myRangeBand.level}</Text> &mdash; pick a level below
+          </Text>
+        </View>
+
+        <Text style={s.pickerTitle}>Choose Your Level</Text>
+        <Text style={s.pickerSub}>
+          Pick a level to browse. You can browse any level &mdash; athletes above your usual range just come with a heads-up before you reach out.
+        </Text>
+
+        <View style={{ alignSelf: 'stretch' }}>
           {RECRUITING_LEVEL_BANDS.map(band => {
             const isMine = band.key === myRangeBand.key;
             const isReach = band.minScore > myRangeFloor;
-            const isChosen = band.key === chosenLevelKey;
-            return (
-              <Pressable
-                key={band.key}
-                style={[s.levelRow, isChosen && s.levelRowChosen]}
-                onPress={() => chooseLevel(band)}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <Text style={s.levelRowTitle}>{band.level}</Text>
+            const rangeText = band.minScore > 0 ? `Typically ${band.minScore}+ V1 Score` : 'Open to any V1 Score';
+
+            const rowContent = (
+              <>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <Text style={s.pickerDivLabel}>{band.level}</Text>
                     {isMine && (
-                      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.levelBadge}>
-                        <Text style={s.levelBadgeText}>YOUR RANGE</Text>
+                      <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                        <Text style={s.pickerTagGradText}>YOUR RANGE</Text>
                       </LinearGradient>
                     )}
                     {isReach && (
-                      <View style={[s.levelBadge, { backgroundColor: 'rgba(245,158,11,0.16)' }]}>
-                        <Text style={[s.levelBadgeText, { color: '#f59e0b' }]}>REACH</Text>
-                      </View>
+                      <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                        <Text style={s.pickerTagGradText}>REACH</Text>
+                      </LinearGradient>
                     )}
                   </View>
-                  <Text style={s.levelRowSub}>Typically {band.minScore}+ V1 Score</Text>
+                  <Text style={s.pickerRange}>{rangeText}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+              </>
+            );
+
+            return (
+              <Pressable key={band.key} onPress={() => chooseLevel(band)}>
+                {isMine ? (
+                  <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
+                    <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
+                  </LinearGradient>
+                ) : (
+                  <View style={s.pickerRow}>{rowContent}</View>
+                )}
               </Pressable>
             );
           })}
@@ -668,7 +682,6 @@ function createStyles(C: ThemeColors) {
 
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: 0 },
     prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, flexShrink: 1 },
-    verifiedDot: { width: 15, height: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     prospectMeta: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, marginTop: 2 },
     prospectLoc: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 1 },
     starRow: { flexDirection: 'row', gap: 2, marginTop: 5 },
@@ -700,12 +713,24 @@ function createStyles(C: ThemeColors) {
     levelPillChange: { borderRadius: 100, paddingVertical: 5, paddingHorizontal: 10, overflow: 'hidden' },
     levelPillChangeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: '#fff' },
 
-    levelModalSub: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 4, alignSelf: 'stretch' },
-    levelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 14 },
-    levelRowChosen: { borderColor: PINK_RED, backgroundColor: C.surfaceAlt },
-    levelRowTitle: { fontFamily: FontFamily.bodyBold, fontSize: 13.5, color: C.text },
-    levelRowSub: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 2 },
-    levelBadge: { borderRadius: 100, paddingVertical: 3, paddingHorizontal: 8 },
-    levelBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 9.5, letterSpacing: 0.4, color: '#fff' },
+    // Choose Your Level picker -- same names/values as the original swipe
+    // deck picker (app/(coach)/match/index.tsx) so the two read as one design.
+    scoreChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+      backgroundColor: C.surfaceAlt, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 12, paddingLeft: 6,
+      marginBottom: 18,
+    },
+    scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },
+    scoreChipBold: { fontFamily: FontFamily.bodyBold, color: C.text },
+    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text, marginBottom: 8, alignSelf: 'flex-start' },
+    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 16, alignSelf: 'flex-start' },
+    pickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 10 },
+    pickerRowGradientBorder: { borderRadius: 17, padding: 1.5, marginBottom: 10 },
+    pickerRowActiveInner: { marginBottom: 0, borderRadius: 15.5 },
+    pickerDivLabel: { fontFamily: FontFamily.headline, fontSize: 16, color: C.text },
+    pickerRange: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 5 },
+    pickerTagGrad: { borderRadius: 100, paddingHorizontal: 8, paddingVertical: 3 },
+    pickerTagGradText: { fontFamily: FontFamily.mono, fontSize: 9, fontWeight: '700', color: '#fff', letterSpacing: 0.5, textTransform: 'uppercase' },
   });
 }
