@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
 import { useCoachData } from '../../../hooks/useCoachData';
-import { ThemeColors, PINK_RED } from '../../../constants/Colors';
+import { useAuth } from '../../../hooks/useAuth';
+import { logInterestCompliance, recordInterestAction } from '../../../hooks/useCoachInterested';
+import { GRADIENT, ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { Card } from '../../../components/ui/Card';
@@ -58,6 +60,7 @@ export default function RecruitDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { coach, loading: coachLoading } = useCoachData();
+  const { session } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [athlete, setAthlete] = useState<RecruitAthlete | null>(null);
@@ -67,6 +70,11 @@ export default function RecruitDetailScreen() {
   const [notes, setNotes] = useState<ProspectNote[]>([]);
   const [newNote, setNewNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [matchId, setMatchId] = useState<string | null>(null);
+  const [myDirection, setMyDirection] = useState<'like' | 'pass' | null>(null);
+  const [acting, setActing] = useState<'like' | 'pass' | null>(null);
+  const [matchNotif, setMatchNotif] = useState<string | null>(null);
+  const [errorNotif, setErrorNotif] = useState<string | null>(null);
 
   useEffect(() => {
     if (coachLoading || !coach?.id || !id) return;
@@ -128,6 +136,23 @@ export default function RecruitDetailScreen() {
           .order('created_at', { ascending: false });
 
         setNotes((notesData as ProspectNote[]) ?? []);
+
+        const { data: existingMatch } = await supabase
+          .from('mutual_matches')
+          .select('id')
+          .eq('coach_id', coachId)
+          .eq('athlete_id', id as string)
+          .maybeSingle();
+        setMatchId(existingMatch?.id ?? null);
+
+        const { data: existingSwipe } = await supabase
+          .from('swipes')
+          .select('direction')
+          .eq('coach_id', coachId)
+          .eq('athlete_id', id as string)
+          .eq('swiped_by', 'coach')
+          .maybeSingle();
+        setMyDirection((existingSwipe?.direction as 'like' | 'pass') ?? null);
       } catch (e) {
         console.error('Recruit detail load error:', e);
       } finally {
@@ -137,6 +162,17 @@ export default function RecruitDetailScreen() {
 
     load();
   }, [coachLoading, coach?.id, id]);
+
+  useEffect(() => {
+    if (!matchNotif) return;
+    const t = setTimeout(() => setMatchNotif(null), 4000);
+    return () => clearTimeout(t);
+  }, [matchNotif]);
+  useEffect(() => {
+    if (!errorNotif) return;
+    const t = setTimeout(() => setErrorNotif(null), 4000);
+    return () => clearTimeout(t);
+  }, [errorNotif]);
 
   const toggleSave = async () => {
     if (!coach?.id || !athlete) return;
@@ -155,6 +191,26 @@ export default function RecruitDetailScreen() {
         setSavedId(data.id);
       }
     }
+  };
+
+  const handleAction = async (direction: 'like' | 'pass') => {
+    if (!coach?.id || !athlete || acting) return;
+    setActing(direction);
+    await logInterestCompliance(coach.id, coach.division, coach.region, athlete.id);
+    const result = await recordInterestAction({
+      athleteId: athlete.id, coachId: coach.id, direction, accessToken: session?.access_token,
+    });
+    if (!result.ok) {
+      setErrorNotif("That didn't save. Check your connection and try again.");
+      setActing(null);
+      return;
+    }
+    setMyDirection(direction);
+    if (result.matched && result.matchId) {
+      setMatchId(result.matchId);
+      setMatchNotif(`Matched with ${athlete.full_name ?? 'this athlete'}.`);
+    }
+    setActing(null);
   };
 
   const startConversation = async () => {
@@ -214,8 +270,42 @@ export default function RecruitDetailScreen() {
         <Text style={s.backLinkText}>Back to Recruiting</Text>
       </Pressable>
 
+      {matchNotif && (
+        <View style={s.toastWrap} pointerEvents="none">
+          <LinearGradient colors={['#501af0', '#a855f7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.toast}>
+            <Text style={s.toastText}>{matchNotif}</Text>
+          </LinearGradient>
+        </View>
+      )}
+      {errorNotif && (
+        <View style={s.toastWrap} pointerEvents="none">
+          <View style={[s.toast, { backgroundColor: C.surfaceAlt }]}>
+            <Text style={[s.toastText, { color: C.text }]}>{errorNotif}</Text>
+          </View>
+        </View>
+      )}
+
       <View style={s.actionsRow}>
-        <Pressable style={s.actionBtn} onPress={startConversation}>
+        {matchId ? (
+          <View style={[s.statusPill, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
+            <Text style={[s.statusPillText, { color: '#22c55e' }]}>Matched</Text>
+          </View>
+        ) : myDirection === 'pass' ? (
+          <View style={[s.statusPill, { backgroundColor: C.surfaceAlt }]}>
+            <Text style={[s.statusPillText, { color: C.textDim }]}>Passed</Text>
+          </View>
+        ) : (
+          <>
+            <Pressable style={s.swipeBtn} disabled={acting === 'pass'} onPress={() => handleAction('pass')}>
+              <Ionicons name="close" size={18} color="#000" />
+            </Pressable>
+            <Pressable style={s.swipeBtnMatch} disabled={acting === 'like'} onPress={() => handleAction('like')}>
+              <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <Ionicons name="add" size={20} color="#fff" />
+            </Pressable>
+          </>
+        )}
+        <Pressable style={s.actionBtn} onPress={() => matchId ? router.push(`/(coach)/match/${matchId}` as any) : startConversation()}>
           <Ionicons name="chatbubble-outline" size={16} color={C.text} />
           <Text style={s.actionBtnText}>Message</Text>
         </Pressable>
@@ -368,11 +458,19 @@ function createStyles(C: ThemeColors) {
     backLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: -4 },
     backLinkText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#fff' },
 
-    actionsRow: { flexDirection: 'row', gap: 10 },
+    actionsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
     actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border },
     actionBtnActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     actionBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
     actionBtnTextActive: { color: '#fff' },
+    swipeBtn: { width: 46, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: C.border },
+    swipeBtnMatch: { width: 46, height: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    statusPill: { paddingHorizontal: 14, paddingVertical: 13, borderRadius: 10, alignItems: 'center' },
+    statusPillText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13 },
+
+    toastWrap: { position: 'absolute', top: 50, left: 0, right: 0, alignItems: 'center', zIndex: 20 },
+    toast: { paddingHorizontal: 18, paddingVertical: 11, borderRadius: 100 },
+    toastText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 13, color: '#fff' },
 
     header: { flexDirection: 'row', alignItems: 'center', gap: 16 },
     name: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text },
