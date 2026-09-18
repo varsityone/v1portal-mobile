@@ -49,6 +49,7 @@ export default function CoachInterestedScreen() {
   const [sortBy, setSortBy] = useState<InterestSort>('recommended');
   const [openSheet, setOpenSheet] = useState<FilterSheet>(null);
   const [showAllLevels, setShowAllLevels] = useState(false);
+  const [view, setView] = useState<'list' | 'grid'>('list');
 
   const [actingId, setActingId] = useState<string | null>(null);
   const [matchNotif, setMatchNotif] = useState<{ name: string } | null>(null);
@@ -167,45 +168,56 @@ export default function CoachInterestedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.background }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={s.container}>
-        {/* Header */}
-        <View style={s.header}>
-          <Text style={s.eyebrow}>COACH PORTAL &middot; FIND TALENT</Text>
-          <Text style={s.title}>Interested In You</Text>
-          <Text style={s.subtitle}>Athletes who&rsquo;ve already liked your program, ranked by fit and how actively they&rsquo;re recruiting.</Text>
-        </View>
-
-        {/* Sort */}
-        <View style={s.sortRow}>
+        {/* Header — title/subtitle left, live count right, matching web's header row */}
+        <View style={s.headerRow}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={s.eyebrow}>COACH PORTAL &middot; FIND TALENT</Text>
+            <Text style={s.title}>Interested In You</Text>
+            <Text style={s.subtitle}>Athletes who&rsquo;ve already liked your program, ranked by fit and how actively they&rsquo;re recruiting.</Text>
+          </View>
           <Text style={s.countLabel}><Text style={{ color: C.text, fontFamily: FontFamily.bodyBold }}>{visibleInRange.length}</Text> interested</Text>
-          <Pressable
-            style={s.sortBtn}
-            onPress={() => setSortBy(prev => SORTS[(SORTS.findIndex(x => x.key === prev) + 1) % SORTS.length].key)}
-          >
-            <Ionicons name="swap-vertical" size={16} color={C.text} />
-            <Text style={s.sortBtnText}>{SORTS.find(x => x.key === sortBy)?.label}</Text>
-          </Pressable>
         </View>
 
-        {/* Filters */}
-        <View style={s.filterRow}>
-          <Pressable style={[s.filterPill, filters.positions.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('position')}>
-            <Text style={[s.filterPillText, filters.positions.length > 0 && s.filterPillTextActive]}>
-              Position {filters.positions.length > 0 ? `(${filters.positions.length})` : ''}
-            </Text>
-            <Ionicons name="chevron-down" size={12} color={filters.positions.length > 0 ? C.text : C.textDim} />
-          </Pressable>
-          <Pressable style={[s.filterPill, filters.gradYears.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('class')}>
-            <Text style={[s.filterPillText, filters.gradYears.length > 0 && s.filterPillTextActive]}>
-              Class {filters.gradYears.length > 0 ? `(${filters.gradYears.length})` : ''}
-            </Text>
-            <Ionicons name="chevron-down" size={12} color={filters.gradYears.length > 0 ? C.text : C.textDim} />
-          </Pressable>
-          <Pressable style={[s.filterPill, filters.states.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('state')}>
-            <Text style={[s.filterPillText, filters.states.length > 0 && s.filterPillTextActive]}>
-              State {filters.states.length > 0 ? `(${filters.states.length})` : ''}
-            </Text>
-            <Ionicons name="chevron-down" size={12} color={filters.states.length > 0 ? C.text : C.textDim} />
-          </Pressable>
+        {/* Filters (left) + view toggle & sort (right) — one row, matching web's layout */}
+        <View style={s.controlsRow}>
+          <View style={s.filterRow}>
+            <Pressable style={[s.filterPill, filters.positions.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('position')}>
+              <Text style={[s.filterPillText, filters.positions.length > 0 && s.filterPillTextActive]}>
+                Position {filters.positions.length > 0 ? `(${filters.positions.length})` : ''}
+              </Text>
+              <Ionicons name="chevron-down" size={12} color={filters.positions.length > 0 ? C.text : C.textDim} />
+            </Pressable>
+            <Pressable style={[s.filterPill, filters.gradYears.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('class')}>
+              <Text style={[s.filterPillText, filters.gradYears.length > 0 && s.filterPillTextActive]}>
+                Class {filters.gradYears.length > 0 ? `(${filters.gradYears.length})` : ''}
+              </Text>
+              <Ionicons name="chevron-down" size={12} color={filters.gradYears.length > 0 ? C.text : C.textDim} />
+            </Pressable>
+            <Pressable style={[s.filterPill, filters.states.length > 0 && s.filterPillActive]} onPress={() => setOpenSheet('state')}>
+              <Text style={[s.filterPillText, filters.states.length > 0 && s.filterPillTextActive]}>
+                State {filters.states.length > 0 ? `(${filters.states.length})` : ''}
+              </Text>
+              <Ionicons name="chevron-down" size={12} color={filters.states.length > 0 ? C.text : C.textDim} />
+            </Pressable>
+          </View>
+
+          <View style={s.rightControls}>
+            <View style={s.viewToggle}>
+              <Pressable style={[s.viewBtn, view === 'list' && s.viewBtnActive]} onPress={() => setView('list')}>
+                <Ionicons name="list" size={15} color={view === 'list' ? C.text : C.textDim} />
+              </Pressable>
+              <Pressable style={[s.viewBtn, view === 'grid' && s.viewBtnActive]} onPress={() => setView('grid')}>
+                <Ionicons name="grid" size={14} color={view === 'grid' ? C.text : C.textDim} />
+              </Pressable>
+            </View>
+            <Pressable
+              style={s.sortBtn}
+              onPress={() => setSortBy(prev => SORTS[(SORTS.findIndex(x => x.key === prev) + 1) % SORTS.length].key)}
+            >
+              <Ionicons name="swap-vertical" size={16} color={C.text} />
+              <Text style={s.sortBtnText}>{SORTS.find(x => x.key === sortBy)?.label}</Text>
+            </Pressable>
+          </View>
         </View>
 
         {activeFilterChips.length > 0 && (
@@ -233,7 +245,7 @@ export default function CoachInterestedScreen() {
           />
         ) : displayed.length === 0 ? (
           <EmptyState icon="funnel-outline" title="No recruits match these filters" body="Try widening your search." />
-        ) : (
+        ) : view === 'list' ? (
           <View style={{ gap: 10 }}>
             {displayed.map((a, i) => {
               const level = levelForScore(a.v1_score);
@@ -256,6 +268,7 @@ export default function CoachInterestedScreen() {
                           {Array.from({ length: 5 }).map((_, si) => (
                             <Ionicons key={si} name={si < starsForScore(a.v1_score) ? 'star' : 'star-outline'} size={11} color="#f6ba00" />
                           ))}
+                          {a.v1_score != null && <Text style={s.starScoreText}>{a.v1_score} V1</Text>}
                         </View>
                       </View>
                       <View style={{ alignItems: 'center' }}>
@@ -285,6 +298,59 @@ export default function CoachInterestedScreen() {
                         <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
                         <Ionicons name="checkmark" size={16} color="#fff" />
                       </Pressable>
+                    </View>
+                  </Card>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={s.gridWrap}>
+            {displayed.map((a, i) => {
+              const level = levelForScore(a.v1_score);
+              return (
+                <Pressable key={a.id} onPress={() => openQuickView(a.id)} style={s.gridCardWrap}>
+                  <Card style={s.gridCard}>
+                    <View style={s.gridTop}>
+                      <Avatar uri={a.profile_photo_url} name={a.full_name} size={44} />
+                      <Text style={s.rank}>{i + 1}</Text>
+                    </View>
+                    <Text style={s.name} numberOfLines={1}>{a.full_name ?? 'Unknown'}</Text>
+                    <View style={[s.nameLine, { marginTop: 3 }]}>
+                      {abbreviatePosition(a.position) ? <View style={s.miniBadge}><Text style={s.miniBadgeText}>{abbreviatePosition(a.position)}</Text></View> : null}
+                      <View style={[s.miniBadge, { backgroundColor: `${level.color ?? PINK_RED}22` }]}>
+                        <Text style={[s.miniBadgeText, { color: level.color ?? PINK_RED }]}>{level.label}</Text>
+                      </View>
+                    </View>
+                    <Text style={s.meta}>{a.graduation_year ? `Class of ${a.graduation_year}` : ''}{a.graduation_year && a.state ? ' · ' : ''}{a.state ?? ''}</Text>
+                    <View style={s.starRow}>
+                      {Array.from({ length: 5 }).map((_, si) => (
+                        <Ionicons key={si} name={si < starsForScore(a.v1_score) ? 'star' : 'star-outline'} size={11} color="#f6ba00" />
+                      ))}
+                      {a.v1_score != null && <Text style={s.starScoreText}>{a.v1_score} V1</Text>}
+                    </View>
+                    {a.likesLast14d > 0 ? (
+                      <View style={[s.intentChip, { marginTop: 8 }]}>
+                        <Ionicons name="flash" size={12} color="#edff00" />
+                        <Text style={s.intentText}>{a.likesLast14d} / 14d</Text>
+                      </View>
+                    ) : (
+                      <Text style={[s.intentCold, { marginTop: 8 }]}>Only liked you</Text>
+                    )}
+                    <View style={s.gridBottom}>
+                      <View>
+                        <Text style={s.scoreNum}>{a.v1_score ?? '—'}</Text>
+                        <Text style={s.scoreLabel}>V1</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'pass')} style={[s.actBtn, { backgroundColor: '#fff' }]}>
+                          <Ionicons name="close" size={15} color="#000" />
+                        </Pressable>
+                        <Pressable disabled={actingId === a.id} onPress={() => handleAction(a.id, 'like')} style={s.actBtnMatch}>
+                          <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                          <Ionicons name="checkmark" size={15} color="#fff" />
+                        </Pressable>
+                      </View>
                     </View>
                   </Card>
                 </Pressable>
@@ -392,6 +458,7 @@ export default function CoachInterestedScreen() {
                       {Array.from({ length: 5 }).map((_, si) => (
                         <Ionicons key={si} name={si < starsForScore(quickViewAthlete.v1_score) ? 'star' : 'star-outline'} size={13} color="#f6ba00" />
                       ))}
+                      {quickViewAthlete.v1_score != null && <Text style={s.starScoreText}>{quickViewAthlete.v1_score} V1</Text>}
                     </View>
                     {quickViewAthlete.likesLast14d > 0 ? (
                       <View style={s.intentChip}>
@@ -472,17 +539,21 @@ function createStyles(C: ThemeColors) {
   return StyleSheet.create({
     container: { padding: 20, paddingBottom: 48 },
 
-    header: { marginBottom: 18 },
+    headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 18 },
     eyebrow: { fontFamily: FontFamily.mono, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: C.textDim, marginBottom: 6 },
     title: { fontFamily: FontFamily.headline, fontSize: 26, fontWeight: '900', color: C.text },
     subtitle: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted, marginTop: 6, lineHeight: 18 },
+    countLabel: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted, flexShrink: 0 },
 
-    sortRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-    countLabel: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted },
+    controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8, marginBottom: 12 },
+    rightControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, borderWidth: 1, borderColor: C.border },
     sortBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text },
+    viewToggle: { flexDirection: 'row', gap: 2, padding: 3, backgroundColor: C.surface, borderRadius: 10, borderWidth: 1, borderColor: C.border },
+    viewBtn: { width: 30, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+    viewBtnActive: { backgroundColor: C.surfaceAlt },
 
-    filterRow: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
+    filterRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     filterPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, borderWidth: 1, borderColor: C.border },
     filterPillActive: { backgroundColor: PINK_RED + '20', borderColor: PINK_RED },
     filterPillText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted },
@@ -498,6 +569,13 @@ function createStyles(C: ThemeColors) {
     rank: { width: 16, fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, textAlign: 'center' },
     nameLine: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 14.5, color: C.text, flexShrink: 1 },
+    starScoreText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.textMuted, marginLeft: 4 },
+
+    gridWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    gridCardWrap: { width: '48%' },
+    gridCard: { gap: 4 },
+    gridTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+    gridBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border },
     miniBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, backgroundColor: C.surfaceAlt },
     miniBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: C.textMuted },
     meta: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim, marginTop: 2 },
