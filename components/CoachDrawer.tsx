@@ -39,7 +39,6 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { label: 'Recruit Search', href: '/(coach)/search', icon: 'search' as const, iconOff: 'search-outline' as const },
       { label: 'Saved', href: '/(coach)/saved', icon: 'bookmark' as const, iconOff: 'bookmark-outline' as const },
       { label: 'My Matches', href: '/(coach)/matches', icon: 'people' as const, iconOff: 'people-outline' as const, badgeKey: 'matches' as const },
-      { label: 'Browse All Prospects', href: '/(coach)/match', icon: 'layers' as const, iconOff: 'layers-outline' as const },
     ],
   },
   {

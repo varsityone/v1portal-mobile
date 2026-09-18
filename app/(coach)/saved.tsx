@@ -57,10 +57,10 @@ export default function SavedProspectsScreen() {
         <View style={s.emptyWrap}>
           <Ionicons name="bookmark" size={44} color="#fff" style={{ marginBottom: 16 }} />
           <Text style={s.emptyTitle}>No saved prospects yet</Text>
-          <Text style={s.emptyBody}>Save prospects as you swipe to build your watchlist.</Text>
-          <Pressable style={s.emptyBtn} onPress={() => router.push('/(coach)/match' as any)}>
+          <Text style={s.emptyBody}>Save prospects as you search to build your watchlist.</Text>
+          <Pressable style={s.emptyBtn} onPress={() => router.push('/(coach)/search' as any)}>
             <LinearGradient colors={['#EA0C5F', '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Text style={s.emptyBtnText}>Start Swiping</Text>
+            <Text style={s.emptyBtnText}>Search Prospects</Text>
           </Pressable>
         </View>
       ) : (

@@ -149,9 +149,9 @@ export default function CoachMatchesScreen() {
           <Ionicons name="people-outline" size={48} color={C.textDim} style={{ marginBottom: 16, opacity: 0.5 }} />
           <Text style={s.emptyTitle}>{filter === 'all' ? 'No matches yet' : `No ${filter} matches`}</Text>
           <Text style={s.emptyBody}>
-            {filter === 'all' ? 'Start swiping on athletes to build your board.' : 'Try viewing all positions or keep swiping.'}
+            {filter === 'all' ? 'Review athletes interested in you or search for prospects to build your board.' : 'Try viewing all positions or keep searching.'}
           </Text>
-          <Pressable style={s.emptyBtnWrap} onPress={() => router.push('/(coach)/match' as any)}>
+          <Pressable style={s.emptyBtnWrap} onPress={() => router.push('/(coach)/interested' as any)}>
             <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <Text style={s.emptyBtnText}>Find Players</Text>
           </Pressable>
@@ -200,7 +200,7 @@ export default function CoachMatchesScreen() {
       )}
 
       {filtered.length > 0 && (
-        <Pressable style={{ marginTop: 24, alignItems: 'center' }} onPress={() => router.push('/(coach)/match' as any)}>
+        <Pressable style={{ marginTop: 24, alignItems: 'center' }} onPress={() => router.push('/(coach)/interested' as any)}>
           <Text style={s.findMore}>Find more players →</Text>
         </Pressable>
       )}
