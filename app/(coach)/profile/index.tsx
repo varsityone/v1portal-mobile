@@ -1,13 +1,13 @@
 import { DEFAULT_PROFILE_IMAGE } from '../../../constants/ProfileImage';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useProfilePhoto } from '../../../lib/profilePhotos';
-import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../../hooks/useCoachData';
-import { GRADIENT, ThemeColors } from '../../../constants/Colors';
+import { GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 
@@ -25,6 +25,27 @@ const TABS = [
   { id: 'contact', label: 'Contact' },
 ];
 
+const PERIOD_CONFIG: Record<string, { label: string; color: string }> = {
+  dead:       { label: 'Dead Period',       color: '#ef4444' },
+  quiet:      { label: 'Quiet Period',      color: '#f59e0b' },
+  evaluation: { label: 'Evaluation Period', color: '#3b82f6' },
+  contact:    { label: 'Contact Period',    color: '#22c55e' },
+  signing:    { label: 'Signing Period',    color: '#8b5cf6' },
+  open:       { label: 'Open Recruiting',   color: '#22c55e' },
+  unknown:    { label: 'Unknown',           color: '#6b7280' },
+};
+
+interface ProfileCompliance {
+  periodType: string;
+  description: string | null;
+  canRespond: boolean;
+  nextRespondableDate: string | null;
+}
+
+function formatComplianceDate(iso: string) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export default function CoachProfileScreen() {
   const router = useRouter();
   const C = useColors();
@@ -32,9 +53,31 @@ export default function CoachProfileScreen() {
   const { coach, loading } = useCoachData();
   const photoUrl = useProfilePhoto('coach_accounts', coach?.id, coach?.profile_photo_url);
   const [tab, setTab] = useState<'overview' | 'contact'>('overview');
+  const [compliance, setCompliance] = useState<ProfileCompliance | null>(null);
+  const [showComplianceModal, setShowComplianceModal] = useState(false);
+
+  // Same compliance the public profile page shows athletes/parents ("can
+  // this coach currently respond to messages") -- reuses that same public
+  // endpoint by this coach's own slug rather than recomputing the rule here.
+  useEffect(() => {
+    if (!coach?.profile_slug) return;
+    let cancelled = false;
+    fetch(`https://v1portal.com/api/coach-profile/${coach.profile_slug}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (!cancelled && data?.compliance) setCompliance(data.compliance); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [coach?.profile_slug]);
 
   if (loading) return <LoadingScreen />;
   if (!coach) return null;
+
+  const complianceCfg = compliance ? (PERIOD_CONFIG[compliance.periodType] ?? PERIOD_CONFIG.unknown) : null;
+  const complianceMessagingNote = compliance
+    ? compliance.canRespond
+      ? `${coach.school_name} can send and receive messages on V1Portal right now.`
+      : `Athletes can always send ${coach.school_name} a message on V1Portal — but NCAA, NAIA, and NJCAA rules mean coaches cannot respond during a ${complianceCfg!.label.toLowerCase()}.${compliance.nextRespondableDate ? ` They'll be able to reply again starting ${formatComplianceDate(compliance.nextRespondableDate)}.` : ''}`
+    : null;
 
   const divisionLabel = coach.division ? (DIVISION_LABELS[coach.division] ?? coach.division) : null;
   const twitterHandle = coach.twitter ? `@${coach.twitter.replace(/^@/, '')}` : null;
@@ -63,6 +106,7 @@ export default function CoachProfileScreen() {
   ].filter(f => f.value);
 
   return (
+    <>
     <ScrollView style={{ flex: 1, backgroundColor: '#09090B' }} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={s.hero}>
         <Image source={photoUrl ? { uri: photoUrl } : DEFAULT_PROFILE_IMAGE} resizeMode="cover" style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} />
@@ -181,6 +225,23 @@ export default function CoachProfileScreen() {
                 )}
               </View>
             )}
+
+            {complianceCfg && (
+              <View style={s.focusCard}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: complianceCfg.color }} />
+                  <Text style={s.h2}>Recruiting Compliance</Text>
+                </View>
+                <Text style={[s.focusLabel, { color: complianceCfg.color, fontSize: 13, fontFamily: FontFamily.bodyExtraBold, marginBottom: 8 }]}>{complianceCfg.label}</Text>
+                {compliance?.description ? <Text style={s.bodyTextSmall}>{compliance.description}</Text> : null}
+                {complianceMessagingNote ? (
+                  <Text style={[s.bodyTextSmall, { color: C.text, fontFamily: FontFamily.bodySemi, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border }]}>{complianceMessagingNote}</Text>
+                ) : null}
+                <Pressable onPress={() => setShowComplianceModal(true)}>
+                  <Text style={s.complianceLink}>View full compliance details →</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         ) : (
           <View style={{ marginTop: 20, gap: 12 }}>
@@ -209,6 +270,28 @@ export default function CoachProfileScreen() {
         )}
       </View>
     </ScrollView>
+
+    {showComplianceModal && complianceCfg && (
+      <Modal transparent visible animationType="fade" onRequestClose={() => setShowComplianceModal(false)}>
+        <View style={s.complianceBackdrop}>
+          <View style={s.complianceModal}>
+            <Ionicons name="shield-checkmark" size={40} color={complianceCfg.color} style={{ alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={[s.complianceModalEyebrow, { color: complianceCfg.color }]}>RECRUITING COMPLIANCE</Text>
+            <Text style={s.complianceModalTitle}>{complianceCfg.label}</Text>
+            {compliance?.description ? <Text style={s.complianceModalBody}>{compliance.description}</Text> : null}
+            {complianceMessagingNote ? (
+              <View style={s.complianceModalNote}>
+                <Text style={s.complianceModalNoteText}>{complianceMessagingNote}</Text>
+              </View>
+            ) : null}
+            <Pressable style={s.complianceModalBtn} onPress={() => setShowComplianceModal(false)}>
+              <Text style={s.complianceModalBtnText}>Got it →</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    )}
+    </>
   );
 }
 
@@ -266,5 +349,16 @@ function createStyles(C: ThemeColors) {
     contactRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 14 },
     contactLabel: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: C.textDim, textTransform: 'uppercase', letterSpacing: 0.5 },
     contactValue: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.text },
+
+    complianceLink: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: PINK_RED, marginTop: 14 },
+    complianceBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+    complianceModal: { width: '100%', maxWidth: 380, backgroundColor: '#fff', borderRadius: 20, padding: 24 },
+    complianceModalEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, letterSpacing: 1.2, textAlign: 'center', marginBottom: 6 },
+    complianceModalTitle: { fontFamily: FontFamily.headline, fontSize: 20, color: '#000', textAlign: 'center', marginBottom: 10 },
+    complianceModalBody: { fontFamily: FontFamily.body, fontSize: 13, color: '#3f3f46', lineHeight: 19, textAlign: 'center', marginBottom: 16 },
+    complianceModalNote: { backgroundColor: '#f4f4f5', borderRadius: 10, padding: 14, marginBottom: 20 },
+    complianceModalNoteText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: '#18181b', lineHeight: 19 },
+    complianceModalBtn: { backgroundColor: '#0a0a0a', borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+    complianceModalBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
   });
 }
