@@ -1,4 +1,3 @@
-import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -59,8 +58,9 @@ export default function SavedProspectsScreen() {
           <Ionicons name="bookmark" size={44} color="#fff" style={{ marginBottom: 16 }} />
           <Text style={s.emptyTitle}>No saved prospects yet</Text>
           <Text style={s.emptyBody}>Save prospects as you swipe to build your watchlist.</Text>
-          <Pressable onPress={() => router.push('/(coach)/match' as any)}>
-            <Text style={s.emptyLink}>Start Swiping →</Text>
+          <Pressable style={s.emptyBtn} onPress={() => router.push('/(coach)/match' as any)}>
+            <LinearGradient colors={['#EA0C5F', '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <Text style={s.emptyBtnText}>Start Swiping</Text>
           </Pressable>
         </View>
       ) : (
@@ -74,7 +74,11 @@ export default function SavedProspectsScreen() {
                 style={s.row}
                 onPress={() => router.push(`/(coach)/recruits/${row.athlete_id}` as any)}
               >
-                <Image source={athlete?.profile_photo_url ? { uri: athlete?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.photo} />
+                {athlete?.profile_photo_url ? (
+                  <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
+                ) : (
+                  <LinearGradient colors={['#EA0C5F', '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.photo} />
+                )}
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.name} numberOfLines={1}>{athlete.full_name ?? 'Unknown'}</Text>
                   <Text style={s.meta} numberOfLines={1}>
@@ -126,7 +130,8 @@ function createStyles(C: ThemeColors) {
     emptyWrap: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
     emptyTitle: { fontFamily: FontFamily.headline, fontSize: 17, color: C.text, marginBottom: 6 },
     emptyBody: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 16 },
-    emptyLink: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
+    emptyBtn: { borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, overflow: 'hidden' },
+    emptyBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#fff' },
 
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: C.border },
     photo: { width: 60, height: 60, borderRadius: 10 },
