@@ -10,6 +10,7 @@ import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { starsForScore, POSITIONS, GRAD_YEARS, STATES } from '../../lib/recruitingLevels';
+import { getBandFloorForDivision, Division } from '../../constants/RecruitingLevels';
 import { Avatar } from '../../components/ui/Avatar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
@@ -61,6 +62,17 @@ export default function CoachSearchScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [openSheet, setOpenSheet] = useState<FilterSheet>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [defaultLevelApplied, setDefaultLevelApplied] = useState(false);
+
+  // Land already scoped to this coach's own recruiting level (once, not on
+  // every screen focus, so it doesn't stomp a filter the coach cleared on
+  // purpose) -- matches web's same default.
+  useEffect(() => {
+    if (!coach || defaultLevelApplied) return;
+    const floor = coach.min_score ?? (coach.division ? getBandFloorForDivision(coach.division as Division) : 0) ?? 0;
+    if (floor > 0) setFilters(prev => ({ ...prev, minScore: floor }));
+    setDefaultLevelApplied(true);
+  }, [coach, defaultLevelApplied]);
 
   useFocusEffect(
     useCallback(() => {
