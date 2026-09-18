@@ -576,9 +576,10 @@ export default function CoachSearchScreen() {
           <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
             <Ionicons name="school" size={13} color="#fff" />
           </LinearGradient>
-          <Text style={s.scoreChipText}>
-            Your program typically recruits <Text style={s.scoreChipBold}>{myRangeBand.level}</Text> &mdash; pick a level below
-          </Text>
+          <View>
+            <Text style={s.scoreChipText}>Your program typically recruits <Text style={s.scoreChipBold}>{myRangeBand.level}</Text></Text>
+            <Text style={s.scoreChipText}>pick a level below</Text>
+          </View>
         </View>
 
         <Text style={s.pickerTitle}>Choose Your Level</Text>
@@ -717,7 +718,7 @@ function createStyles(C: ThemeColors) {
     // deck picker (app/(coach)/match/index.tsx) so the two read as one design.
     scoreChip: {
       flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
-      backgroundColor: C.surfaceAlt, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 12, paddingLeft: 6,
+      backgroundColor: C.surfaceAlt, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, paddingLeft: 6,
       marginBottom: 18,
     },
     scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
