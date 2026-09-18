@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   useCoachInterested,
   levelForScore,
+  abbreviatePosition,
   sortCandidates,
   recordInterestAction,
   logInterestCompliance,
@@ -245,7 +246,7 @@ export default function CoachInterestedScreen() {
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <View style={s.nameLine}>
                           <Text style={s.name} numberOfLines={1}>{a.full_name ?? 'Unknown'}</Text>
-                          {a.position ? <View style={s.miniBadge}><Text style={s.miniBadgeText}>{a.position}</Text></View> : null}
+                          {abbreviatePosition(a.position) ? <View style={s.miniBadge}><Text style={s.miniBadgeText}>{abbreviatePosition(a.position)}</Text></View> : null}
                           <View style={[s.miniBadge, { backgroundColor: `${level.color ?? PINK_RED}22` }]}>
                             <Text style={[s.miniBadgeText, { color: level.color ?? PINK_RED }]}>{level.label}</Text>
                           </View>
@@ -375,7 +376,7 @@ export default function CoachInterestedScreen() {
                     </View>
                   </View>
                   <Text style={s.meta}>
-                    {[quickViewAthlete.position, quickViewAthlete.graduation_year ? `Class of ${quickViewAthlete.graduation_year}` : null, [quickViewAthlete.high_school, quickViewAthlete.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                    {[abbreviatePosition(quickViewAthlete.position), quickViewAthlete.graduation_year ? `Class of ${quickViewAthlete.graduation_year}` : null, [quickViewAthlete.high_school, quickViewAthlete.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
               </View>

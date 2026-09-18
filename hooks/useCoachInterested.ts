@@ -48,6 +48,19 @@ export function levelForScore(score: number | null): { label: string; division: 
   return { label, division, color: RECRUITING_LEVEL_COLORS[label] ?? '#9a9da2' };
 }
 
+// Some athlete rows store a full position name ("Wide Receiver") instead of
+// the standard code -- normalize so it fits inline next to the name instead
+// of wrapping, matching the same fix on web.
+const POSITION_ABBREVIATIONS: Record<string, string> = {
+  Quarterback: 'QB', 'Running Back': 'RB', 'Wide Receiver': 'WR', 'Tight End': 'TE',
+  'Offensive Line': 'OL', 'Offensive Lineman': 'OL', 'Defensive Line': 'DL', 'Defensive Lineman': 'DL',
+  Linebacker: 'LB', Cornerback: 'CB', Safety: 'S', Kicker: 'K', Punter: 'P', 'Long Snapper': 'LS',
+};
+export function abbreviatePosition(position: string | null): string | null {
+  if (!position) return null;
+  return POSITION_ABBREVIATIONS[position] ?? position;
+}
+
 export function sortCandidates(list: InterestedCandidate[], sort: InterestSort): InterestedCandidate[] {
   if (sort === 'v1') return [...list].sort((x, y) => (y.v1_score ?? 0) - (x.v1_score ?? 0));
   if (sort === 'recent') return [...list].sort((x, y) => new Date(y.likedAt).getTime() - new Date(x.likedAt).getTime());
