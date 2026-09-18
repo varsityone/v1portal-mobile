@@ -25,7 +25,7 @@ const FAQS = [
   { q: 'How do I message an athlete?', a: 'Once you have a mutual match, go to My Matches or Messages and open the conversation. You can also use Bulk Message with a saved Template to reach multiple recruits at once.' },
   { q: 'What is the Recruiting Board / Pipeline for?', a: 'Pipeline tracks recruits through your stages (e.g. Watching → Contacted → Offered → Committed). Recruiting Board gives you a visual, drag-and-drop view of the same pipeline.' },
   { q: 'Why does Compliance show contact restrictions?', a: 'Compliance reflects NCAA/NJCAA recruiting calendar rules for your division and updates automatically through the recruiting year. It shows your current contact period and days remaining — check it before reaching out during a quiet or dead period.' },
-  { q: 'How do I update my program profile?', a: 'Go to Profile + Settings → Edit Profile to update your school, division, coaching staff, and program details. Program Profile shows how athletes see your listing.' },
+  { q: 'How do I update my coach profile?', a: 'Go to Profile + Settings → Edit Profile to update your school, division, coaching staff, and program details. Coach Profile shows how athletes see your listing.' },
   { q: 'Is the coach portal free?', a: "Yes — coach accounts are free for the 2026 season. We'll notify you well in advance before any coach pricing changes." },
   { q: 'How do I verify my coach account?', a: 'Submit a ticket below with your school email and title/role — we verify coaches manually to keep the platform trustworthy for athletes and typically confirm within 24 hours.' },
 ];
@@ -37,7 +37,7 @@ const SUBJECTS = [
   'Messaging / Bulk Message Issue',
   'Pipeline / Recruiting Board Issue',
   'Compliance Question',
-  'Program Profile Update',
+  'Coach Profile Update',
   'Bug Report',
   'Feedback / Suggestion',
   'Other',

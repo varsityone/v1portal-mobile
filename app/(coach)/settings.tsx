@@ -55,7 +55,7 @@ export default function CoachSettingsScreen() {
 
         <View style={s.rowLast}>
           <View>
-            <Text style={[s.rowLabel, { color: C.text }]}>Program Profile</Text>
+            <Text style={[s.rowLabel, { color: C.text }]}>Coach Profile</Text>
             <Text style={[s.rowSub, { color: C.textDim }]}>{coach?.school_name ?? 'Not set'}</Text>
           </View>
           <Pressable style={[s.pillBtnOutline, { borderColor: C.border2 }]} onPress={() => router.push('/(coach)/profile/edit' as any)}>

@@ -1,6 +1,7 @@
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
@@ -302,6 +303,7 @@ export default function RecruitDetailScreen() {
 
       {athlete.hudl_link && (
         <Pressable style={s.filmCard} onPress={() => Linking.openURL(athlete.hudl_link!)}>
+          <LinearGradient colors={['#EA0C5F', '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <View>
             <Text style={s.filmTitle}>Film (Hudl)</Text>
             <Text style={s.filmSub}>Watch game film →</Text>
@@ -325,6 +327,7 @@ export default function RecruitDetailScreen() {
           onPress={saveNote}
           disabled={!newNote.trim() || savingNote}
         >
+          <LinearGradient colors={['#EA0C5F', '#FF8820']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.noteSaveBtnText}>{savingNote ? 'Saving...' : 'Save Note'}</Text>
         </Pressable>
 
@@ -397,12 +400,12 @@ function createStyles(C: ThemeColors) {
     emptyText: { fontFamily: FontFamily.body, fontSize: 12, color: C.textDim },
     bioText: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 20 },
 
-    filmCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: PINK_RED, borderRadius: 12, padding: 18 },
+    filmCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, padding: 18, overflow: 'hidden' },
     filmTitle: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff', marginBottom: 2 },
     filmSub: { fontFamily: FontFamily.body, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
 
     noteInput: { borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, minHeight: 90, textAlignVertical: 'top', color: C.text, backgroundColor: C.surfaceAlt, fontFamily: FontFamily.body, fontSize: 13, marginBottom: 10 },
-    noteSaveBtn: { backgroundColor: PINK_RED, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+    noteSaveBtn: { borderRadius: 8, paddingVertical: 10, alignItems: 'center', overflow: 'hidden' },
     noteSaveBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
     noteRow: { backgroundColor: C.surfaceAlt, borderRadius: 8, padding: 12 },
     noteContent: { fontFamily: FontFamily.body, fontSize: 13, color: C.text, lineHeight: 19, marginBottom: 6 },

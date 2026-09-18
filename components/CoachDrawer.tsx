@@ -70,7 +70,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 // Profile + Settings sub-items — matches web CoachShell exactly
 const PROFILE_SUB_ITEMS = [
   { label: 'Edit Profile',      href: '/(coach)/profile/edit' },
-  { label: 'Program Profile',   href: '/(coach)/profile'      },
+  { label: 'Coach Profile',     href: '/(coach)/profile'      },
   { label: 'Notifications',     href: '/(coach)/notifications-settings' },
   { label: 'Settings',          href: '/(coach)/settings'     },
 ];
