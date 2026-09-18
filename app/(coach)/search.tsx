@@ -9,7 +9,7 @@ import { useCoachData } from '../../hooks/useCoachData';
 import { GRADIENT, ThemeColors, PINK_RED } from '../../constants/Colors';
 import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
-import { starsForScore, POSITIONS, GRAD_YEARS, STATES } from '../../lib/recruitingLevels';
+import { starsForScore, POSITIONS, GRAD_YEARS, STATES, RECRUITING_LEVEL_BANDS, RecruitingLevelBand, getRecruitingLevelBand } from '../../lib/recruitingLevels';
 import { getBandFloorForDivision, Division } from '../../constants/RecruitingLevels';
 import { Avatar } from '../../components/ui/Avatar';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -62,17 +62,32 @@ export default function CoachSearchScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [openSheet, setOpenSheet] = useState<FilterSheet>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [defaultLevelApplied, setDefaultLevelApplied] = useState(false);
 
-  // Land already scoped to this coach's own recruiting level (once, not on
-  // every screen focus, so it doesn't stomp a filter the coach cleared on
-  // purpose) -- matches web's same default.
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [chosenLevelKey, setChosenLevelKey] = useState<string | null>(null);
+  const [myRangeFloor, setMyRangeFloor] = useState(0);
+  const [levelModalOffered, setLevelModalOffered] = useState(false);
+
+  // Ask which level to view, rather than silently pre-filtering -- matches
+  // the old swipe deck's "Choose Your Level" step so a coach always knows
+  // which pool they're browsing. Their own floor is pre-highlighted as
+  // "Your Range." Offered once per screen mount, not on every focus.
   useEffect(() => {
-    if (!coach || defaultLevelApplied) return;
+    if (!coach || levelModalOffered) return;
     const floor = coach.min_score ?? (coach.division ? getBandFloorForDivision(coach.division as Division) : 0) ?? 0;
-    if (floor > 0) setFilters(prev => ({ ...prev, minScore: floor }));
-    setDefaultLevelApplied(true);
-  }, [coach, defaultLevelApplied]);
+    setMyRangeFloor(floor);
+    setShowLevelModal(true);
+    setLevelModalOffered(true);
+  }, [coach, levelModalOffered]);
+
+  const chosenLevel = RECRUITING_LEVEL_BANDS.find(b => b.key === chosenLevelKey) ?? null;
+  const myRangeBand = getRecruitingLevelBand(myRangeFloor);
+
+  const chooseLevel = (band: RecruitingLevelBand) => {
+    setChosenLevelKey(band.key);
+    setFilters(prev => ({ ...prev, minScore: band.minScore }));
+    setShowLevelModal(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -245,6 +260,17 @@ export default function CoachSearchScreen() {
           </View>
         </View>
       </View>
+
+      {/* Level indicator */}
+      {chosenLevel && (
+        <Pressable style={s.levelPill} onPress={() => setShowLevelModal(true)}>
+          <Text style={s.levelPillLabel}>Viewing: <Text style={s.levelPillValue}>{chosenLevel.level}</Text></Text>
+          <View style={s.levelPillChange}>
+            <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            <Text style={s.levelPillChangeText}>Change</Text>
+          </View>
+        </Pressable>
+      )}
 
       {/* Search + Sort + View */}
       <View style={s.searchRow}>
@@ -551,6 +577,43 @@ export default function CoachSearchScreen() {
           <Text style={s.sheetDoneBtnText}>Done</Text>
         </Pressable>
       </BottomSheetModal>
+
+      <BottomSheetModal visible={showLevelModal} onClose={() => chosenLevel && setShowLevelModal(false)}>
+        <Text style={s.sheetTitle}>Choose Your Level</Text>
+        <Text style={s.levelModalSub}>Pick which pool of athletes to browse. Levels above your program&rsquo;s typical range are flagged as a reach.</Text>
+        <View style={{ gap: 8, alignSelf: 'stretch', marginTop: 14 }}>
+          {RECRUITING_LEVEL_BANDS.map(band => {
+            const isMine = band.key === myRangeBand.key;
+            const isReach = band.minScore > myRangeFloor;
+            const isChosen = band.key === chosenLevelKey;
+            return (
+              <Pressable
+                key={band.key}
+                style={[s.levelRow, isChosen && s.levelRowChosen]}
+                onPress={() => chooseLevel(band)}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={s.levelRowTitle}>{band.level}</Text>
+                    {isMine && (
+                      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.levelBadge}>
+                        <Text style={s.levelBadgeText}>YOUR RANGE</Text>
+                      </LinearGradient>
+                    )}
+                    {isReach && (
+                      <View style={[s.levelBadge, { backgroundColor: 'rgba(245,158,11,0.16)' }]}>
+                        <Text style={[s.levelBadgeText, { color: '#f59e0b' }]}>REACH</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={s.levelRowSub}>Typically {band.minScore}+ V1 Score</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </BottomSheetModal>
     </ScrollView>
   );
 }
@@ -630,5 +693,19 @@ function createStyles(C: ThemeColors) {
     sheetToggleLabel: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.text },
     sheetDoneBtn: { backgroundColor: PINK_RED, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 40, marginTop: 20, alignSelf: 'stretch', alignItems: 'center' },
     sheetDoneBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
+
+    levelPill: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border2, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 6, paddingLeft: 14, marginBottom: 16 },
+    levelPillLabel: { fontFamily: FontFamily.body, fontSize: 12, color: C.textMuted },
+    levelPillValue: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: C.text },
+    levelPillChange: { borderRadius: 100, paddingVertical: 5, paddingHorizontal: 10, overflow: 'hidden' },
+    levelPillChangeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: '#fff' },
+
+    levelModalSub: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 4, alignSelf: 'stretch' },
+    levelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 12, padding: 14 },
+    levelRowChosen: { borderColor: PINK_RED, backgroundColor: C.surfaceAlt },
+    levelRowTitle: { fontFamily: FontFamily.bodyBold, fontSize: 13.5, color: C.text },
+    levelRowSub: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 2 },
+    levelBadge: { borderRadius: 100, paddingVertical: 3, paddingHorizontal: 8 },
+    levelBadgeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 9.5, letterSpacing: 0.4, color: '#fff' },
   });
 }
