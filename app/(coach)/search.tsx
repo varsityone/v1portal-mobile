@@ -717,15 +717,15 @@ function createStyles(C: ThemeColors) {
     // Choose Your Level picker -- same names/values as the original swipe
     // deck picker (app/(coach)/match/index.tsx) so the two read as one design.
     scoreChip: {
-      flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+      flexDirection: 'row', alignItems: 'center', gap: 8,
       backgroundColor: C.surfaceAlt, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, paddingLeft: 6,
       marginBottom: 18,
     },
     scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
     scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },
     scoreChipBold: { fontFamily: FontFamily.bodyBold, color: C.text },
-    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text, marginBottom: 8, alignSelf: 'flex-start' },
-    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 16, alignSelf: 'flex-start' },
+    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 22, color: C.text, marginBottom: 8, textAlign: 'center' },
+    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 16, textAlign: 'center' },
     pickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16, padding: 16, marginBottom: 10 },
     pickerRowGradientBorder: { borderRadius: 17, padding: 1.5, marginBottom: 10 },
     pickerRowActiveInner: { marginBottom: 0, borderRadius: 15.5 },
