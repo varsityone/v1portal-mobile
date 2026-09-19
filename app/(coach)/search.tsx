@@ -418,14 +418,14 @@ export default function CoachSearchScreen() {
                   <ScoreRing score={prospect.v1_score} size={48} />
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
-                      <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : C.textMuted} />
+                      <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : '#fff'} />
                     </Pressable>
                     <Pressable
                       style={s.iconBtn}
                       disabled={pendingAthleteId === prospect.id}
                       onPress={() => messageAthlete(prospect.id)}
                     >
-                      <Ionicons name="chatbubble-outline" size={15} color={C.textMuted} />
+                      <Ionicons name="chatbubble-outline" size={15} color="#fff" />
                     </Pressable>
                   </View>
                 </View>
@@ -464,10 +464,10 @@ export default function CoachSearchScreen() {
                 <ScoreRing score={prospect.v1_score} size={42} />
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
-                    <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : C.textMuted} />
+                    <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : '#fff'} />
                   </Pressable>
                   <Pressable style={s.iconBtn} disabled={pendingAthleteId === prospect.id} onPress={() => messageAthlete(prospect.id)}>
-                    <Ionicons name="chatbubble-outline" size={15} color={C.textMuted} />
+                    <Ionicons name="chatbubble-outline" size={15} color="#fff" />
                   </Pressable>
                 </View>
               </Card>
@@ -688,8 +688,10 @@ function createStyles(C: ThemeColors) {
     starRow: { flexDirection: 'row', gap: 2, marginTop: 5 },
 
     cardBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border },
-    iconBtn: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border },
-    iconBtnSaved: { backgroundColor: 'rgba(246,186,0,0.12)', borderColor: 'rgba(246,186,0,0.4)' },
+    // Same circle treatment as the swipe deck's card action row -- used
+    // everywhere an icon action appears in the coach portal.
+    iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+    iconBtnSaved: { backgroundColor: 'rgba(246,186,0,0.16)' },
 
     listRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
 
