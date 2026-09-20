@@ -312,20 +312,6 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
                   </Pressable>
                 );
               })}
-              {group.label === 'Overview' && (
-          <Pressable
-            style={d.navItem}
-            accessibilityRole="button"
-            onPress={async () => {
-              props.navigation.closeDrawer();
-              await requestCoachTour();
-              router.push('/(coach)' as any);
-            }}
-          >
-            <Ionicons name="play-outline" size={17} color="rgb(254, 31, 2)" />
-            <Text style={[d.navLabel, { color: 'rgb(254, 31, 2)' }]}>Dashboard Tour</Text>
-          </Pressable>
-              )}
             </View>
           </View>
         ))}
@@ -369,6 +355,21 @@ export default function CoachDrawer(props: DrawerContentComponentProps) {
             </View>
           )}
 
+        </View>
+
+        <View style={d.navList}>
+          <Pressable
+            style={d.navItem}
+            accessibilityRole="button"
+            onPress={async () => {
+              props.navigation.closeDrawer();
+              await requestCoachTour();
+              router.push('/(coach)' as any);
+            }}
+          >
+            <Ionicons name="play-outline" size={17} color="rgb(254, 31, 2)" />
+            <Text style={[d.navLabel, { color: 'rgb(254, 31, 2)' }]}>Dashboard Tour</Text>
+          </Pressable>
         </View>
 
         {/* Our Socials */}

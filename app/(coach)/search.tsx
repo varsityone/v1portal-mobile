@@ -1,6 +1,6 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -11,12 +11,19 @@ import { FontFamily } from '../../constants/Fonts';
 import { useColors } from '../../context/ThemeContext';
 import { starsForScore, POSITIONS, GRAD_YEARS, STATES, RECRUITING_LEVEL_BANDS, RecruitingLevelBand, getRecruitingLevelBand } from '../../lib/recruitingLevels';
 import { getBandFloorForDivision, Division } from '../../constants/RecruitingLevels';
-import { Avatar } from '../../components/ui/Avatar';
+import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
 import { BottomSheetModal } from '../../components/ui/BottomSheetModal';
 import { ScoreRing } from '../../components/ui/ScoreRing';
 import { GradientCheck } from '../../components/ui/GradientCheck';
+
+// Same map as web's lib/positionColors.ts.
+const POSITION_COLORS: Record<string, string> = {
+  QB: '#f59e0b', RB: '#22c55e', WR: '#3b82f6', TE: '#8b5cf6',
+  OL: '#ef4444', DL: '#ec4899', LB: '#f97316', CB: '#06b6d4',
+  S: '#14b8a6', K: '#a855f7', P: '#a855f7', LS: '#6b7280',
+};
 
 interface Prospect {
   id: string;
@@ -42,8 +49,7 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { positions: [], gradYears: [], states: [], minScore: 0, verifiedOnly: false };
 const PAGE_SIZE = 24;
-const MIN_SCORE_OPTIONS = [0, 50, 60, 70, 80, 90];
-type FilterSheet = 'position' | 'class' | 'state' | 'more' | null;
+type FilterSheet = 'position' | 'class' | 'state' | null;
 
 export default function CoachSearchScreen() {
   const router = useRouter();
@@ -331,14 +337,6 @@ export default function CoachSearchScreen() {
           </Text>
           <Ionicons name="chevron-down" size={12} color={filters.states.length > 0 ? C.text : C.textDim} />
         </Pressable>
-
-        <Pressable
-          style={[s.filterPill, (filters.minScore > 0 || filters.verifiedOnly) && s.filterPillActive]}
-          onPress={() => setOpenSheet('more')}
-        >
-          <Ionicons name="options" size={12} color={(filters.minScore > 0 || filters.verifiedOnly) ? C.text : C.textDim} />
-          <Text style={[s.filterPillText, (filters.minScore > 0 || filters.verifiedOnly) && s.filterPillTextActive]}>More</Text>
-        </Pressable>
       </View>
 
       {/* Active filter chips */}
@@ -388,45 +386,50 @@ export default function CoachSearchScreen() {
             const isSelected = selected.has(prospect.id);
             const isSaved = savedIds.has(prospect.id);
             const verified = prospect.v1_score != null;
+            const posColor = prospect.position ? POSITION_COLORS[prospect.position] : undefined;
+            const restMeta = [prospect.height, prospect.weight ? `${prospect.weight} lbs` : null, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null].filter(Boolean).join(' · ');
             return (
               <Card key={prospect.id} style={[s.prospectCard, isSelected && s.prospectCardSelected]}>
-                <Pressable disabled={!prospect.profile_slug} onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)}>
-                  <View style={s.cardTopRow}>
-                    <Avatar uri={prospect.profile_photo_url} name={prospect.full_name} size={48} />
-                    <Pressable hitSlop={8} onPress={() => toggleSelected(prospect.id)} style={s.checkbox}>
-                      <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={19} color={isSelected ? PINK_RED : C.textDim} />
-                    </Pressable>
-                  </View>
-
-                  <View style={s.nameRow}>
-                    <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name || 'Unknown'}</Text>
-                    {verified && <GradientCheck id={`gc-grid-${prospect.id}`} />}
-                  </View>
-                  <Text style={s.prospectMeta} numberOfLines={1}>
-                    {[prospect.position, prospect.height, prospect.weight ? `${prospect.weight} lbs` : null, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null].filter(Boolean).join(' · ')}
-                  </Text>
-                  {(prospect.city || prospect.state) && (
-                    <Text style={s.prospectLoc} numberOfLines={1}>{[prospect.city, prospect.state].filter(Boolean).join(', ')}</Text>
-                  )}
-                  <View style={s.starRow}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Ionicons key={i} name={i < starsForScore(prospect.v1_score) ? 'star' : 'star-outline'} size={11} color="#f6ba00" />
-                    ))}
-                  </View>
-                </Pressable>
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                  <Pressable disabled={!prospect.profile_slug} onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)} style={{ flex: 1, minWidth: 0, flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                    <Image source={prospect.profile_photo_url ? { uri: prospect.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatarSquare} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <View style={s.nameRow}>
+                        <Text style={[s.prospectName, { fontSize: 13 }]} numberOfLines={1}>{prospect.full_name || 'Unknown'}</Text>
+                        {verified && <GradientCheck id={`gc-grid-${prospect.id}`} size={12} />}
+                      </View>
+                      <Text style={[s.prospectMeta, { fontSize: 10.5 }]} numberOfLines={2}>
+                        {posColor && <Text style={[s.prospectPosition, { fontSize: 10.5, color: posColor }]}>{prospect.position}</Text>}
+                        {posColor && restMeta ? '  ' : ''}
+                        {restMeta}
+                      </Text>
+                      {(prospect.city || prospect.state) && (
+                        <Text style={[s.prospectLoc, { fontSize: 10 }]} numberOfLines={1}>{[prospect.city, prospect.state].filter(Boolean).join(', ')}</Text>
+                      )}
+                      <View style={s.starRow}>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Ionicons key={i} name={i < starsForScore(prospect.v1_score) ? 'star' : 'star-outline'} size={9} color="#f6ba00" />
+                        ))}
+                      </View>
+                    </View>
+                  </Pressable>
+                  <Pressable hitSlop={8} onPress={() => toggleSelected(prospect.id)} style={s.checkbox}>
+                    <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={18} color={isSelected ? PINK_RED : C.textDim} />
+                  </Pressable>
+                </View>
 
                 <View style={s.cardBottomRow}>
-                  <ScoreRing score={prospect.v1_score} size={48} />
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
-                      <Ionicons name={isSaved ? 'checkmark' : 'add'} size={18} color={isSaved ? '#f6ba00' : '#fff'} />
+                  <ScoreRing score={prospect.v1_score} size={40} />
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <Pressable style={[s.iconBtnSm, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
+                      <Ionicons name={isSaved ? 'checkmark' : 'add'} size={15} color={isSaved ? '#f6ba00' : '#fff'} />
                     </Pressable>
                     <Pressable
-                      style={s.iconBtn}
+                      style={s.iconBtnSm}
                       disabled={pendingAthleteId === prospect.id}
                       onPress={() => messageAthlete(prospect.id)}
                     >
-                      <Ionicons name="chatbubble-outline" size={15} color="#fff" />
+                      <Ionicons name="chatbubble-outline" size={13} color="#fff" />
                     </Pressable>
                   </View>
                 </View>
@@ -440,29 +443,36 @@ export default function CoachSearchScreen() {
             const isSelected = selected.has(prospect.id);
             const isSaved = savedIds.has(prospect.id);
             const verified = prospect.v1_score != null;
+            const posColor = prospect.position ? POSITION_COLORS[prospect.position] : undefined;
+            const restMeta = [prospect.height, prospect.weight ? `${prospect.weight} lbs` : null, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null].filter(Boolean).join(' · ');
             return (
               <Card key={prospect.id} style={[s.listRow, isSelected && s.prospectCardSelected]}>
                 <Pressable hitSlop={8} onPress={() => toggleSelected(prospect.id)}>
-                  <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={19} color={isSelected ? PINK_RED : C.textDim} />
+                  <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={18} color={isSelected ? PINK_RED : C.textDim} />
                 </Pressable>
                 <Pressable style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }} disabled={!prospect.profile_slug} onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)}>
-                  <Avatar uri={prospect.profile_photo_url} name={prospect.full_name} size={44} />
+                  <Image source={prospect.profile_photo_url ? { uri: prospect.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatarSquareList} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.nameRow}>
                       <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name || 'Unknown'}</Text>
                       {verified && <GradientCheck id={`gc-list-${prospect.id}`} />}
                     </View>
-                    <Text style={s.prospectMeta} numberOfLines={1}>
-                      {[prospect.position, prospect.graduation_year ? `Class of ${prospect.graduation_year}` : null, prospect.state].filter(Boolean).join(' · ')}
+                    <Text style={s.prospectMeta} numberOfLines={2}>
+                      {posColor && <Text style={[s.prospectPosition, { color: posColor }]}>{prospect.position}</Text>}
+                      {posColor && restMeta ? '  ' : ''}
+                      {restMeta}
                     </Text>
-                    <View style={s.starRow}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < starsForScore(prospect.v1_score) ? 'star' : 'star-outline'} size={11} color="#f6ba00" />
-                      ))}
-                    </View>
+                    {(prospect.city || prospect.state) && (
+                      <Text style={s.prospectLoc} numberOfLines={1}>{[prospect.city, prospect.state].filter(Boolean).join(', ')}</Text>
+                    )}
                   </View>
                 </Pressable>
-                <ScoreRing score={prospect.v1_score} size={42} />
+                <View style={s.starRow}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Ionicons key={i} name={i < starsForScore(prospect.v1_score) ? 'star' : 'star-outline'} size={11} color="#f6ba00" />
+                  ))}
+                </View>
+                <ScoreRing score={prospect.v1_score} size={46} />
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
                     <Ionicons name={isSaved ? 'checkmark' : 'add'} size={18} color={isSaved ? '#f6ba00' : '#fff'} />
@@ -535,38 +545,6 @@ export default function CoachSearchScreen() {
             ))}
           </View>
         </ScrollView>
-        <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
-          <Text style={s.sheetDoneBtnText}>Done</Text>
-        </Pressable>
-      </BottomSheetModal>
-
-      <BottomSheetModal visible={openSheet === 'more'} onClose={() => setOpenSheet(null)}>
-        <Text style={s.sheetTitle}>More Filters</Text>
-        <Text style={s.sheetSectionLabel}>Min V1 Score</Text>
-        <View style={s.sheetChipWrap}>
-          {MIN_SCORE_OPTIONS.map(score => (
-            <Pressable
-              key={score}
-              style={[s.sheetChip, filters.minScore === score && s.sheetChipActive]}
-              onPress={() => setFilters(prev => ({ ...prev, minScore: score }))}
-            >
-              <Text style={[s.sheetChipText, filters.minScore === score && s.sheetChipTextActive]}>
-                {score === 0 ? 'Any' : `${score}+`}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Pressable
-          style={s.sheetToggleRow}
-          onPress={() => setFilters(prev => ({ ...prev, verifiedOnly: !prev.verifiedOnly }))}
-        >
-          <Text style={s.sheetToggleLabel}>Verified only</Text>
-          <Ionicons
-            name={filters.verifiedOnly ? 'checkbox' : 'square-outline'}
-            size={20}
-            color={filters.verifiedOnly ? PINK_RED : C.textDim}
-          />
-        </Pressable>
         <Pressable style={s.sheetDoneBtn} onPress={() => setOpenSheet(null)}>
           <Text style={s.sheetDoneBtnText}>Done</Text>
         </Pressable>
@@ -678,21 +656,24 @@ function createStyles(C: ThemeColors) {
     bulkMessageText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
     resultGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    prospectCard: { width: '47%', gap: 8 },
+    prospectCard: { width: '47%', gap: 10 },
     prospectCardSelected: { borderWidth: 1, borderColor: C.border2 },
-    cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
     checkbox: { padding: 2 },
+    avatarSquare: { width: 40, height: 40, borderRadius: 10, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, flexShrink: 0 },
+    avatarSquareList: { width: 56, height: 56, borderRadius: 12, backgroundColor: C.surfaceAlt, borderWidth: 1, borderColor: C.border, flexShrink: 0 },
 
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: 0 },
-    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: C.text, flexShrink: 1 },
-    prospectMeta: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, marginTop: 2 },
-    prospectLoc: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 1 },
-    starRow: { flexDirection: 'row', gap: 2, marginTop: 5 },
+    prospectName: { fontFamily: FontFamily.bodyBold, fontSize: 15, color: C.text, flexShrink: 1 },
+    prospectPosition: { fontFamily: FontFamily.bodyBold, fontSize: 12.5 },
+    prospectMeta: { fontFamily: FontFamily.body, fontSize: 12.5, color: C.textMuted, marginTop: 3 },
+    prospectLoc: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textDim, marginTop: 2 },
+    starRow: { flexDirection: 'row', gap: 2, marginTop: 6 },
 
     cardBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border },
     // Same circle treatment as the swipe deck's card action row -- used
     // everywhere an icon action appears in the coach portal.
     iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+    iconBtnSm: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
     iconBtnSaved: { backgroundColor: 'rgba(246,186,0,0.16)' },
 
     listRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -707,8 +688,6 @@ function createStyles(C: ThemeColors) {
     sheetChipActive: { backgroundColor: PINK_RED, borderColor: PINK_RED },
     sheetChipText: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: C.textMuted },
     sheetChipTextActive: { color: '#fff' },
-    sheetToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 12, marginTop: 8, borderTopWidth: 1, borderTopColor: C.border },
-    sheetToggleLabel: { fontFamily: FontFamily.bodySemi, fontSize: 14, color: C.text },
     sheetDoneBtn: { backgroundColor: PINK_RED, borderRadius: 100, paddingVertical: 12, paddingHorizontal: 40, marginTop: 20, alignSelf: 'stretch', alignItems: 'center' },
     sheetDoneBtnText: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#fff' },
 
