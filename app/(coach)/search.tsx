@@ -1,6 +1,6 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -29,6 +29,7 @@ interface Prospect {
   graduation_year: number | null;
   height: string | null;
   weight: string | number | null;
+  profile_slug: string | null;
 }
 
 interface Filters {
@@ -115,7 +116,7 @@ export default function CoachSearchScreen() {
   const runSearch = useCallback(async () => {
     setLoading(true);
     try {
-      let q = supabase.from('athletes').select('id, full_name, profile_photo_url, position, state, city, v1_score, graduation_year, height, weight');
+      let q = supabase.from('athletes').select('id, full_name, profile_photo_url, position, state, city, v1_score, graduation_year, height, weight, profile_slug');
 
       const term = searchText.trim();
       if (term) q = q.ilike('full_name', `%${term}%`);
@@ -389,7 +390,7 @@ export default function CoachSearchScreen() {
             const verified = prospect.v1_score != null;
             return (
               <Card key={prospect.id} style={[s.prospectCard, isSelected && s.prospectCardSelected]}>
-                <Pressable onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}>
+                <Pressable disabled={!prospect.profile_slug} onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)}>
                   <View style={s.cardTopRow}>
                     <Avatar uri={prospect.profile_photo_url} name={prospect.full_name} size={48} />
                     <Pressable hitSlop={8} onPress={() => toggleSelected(prospect.id)} style={s.checkbox}>
@@ -418,7 +419,7 @@ export default function CoachSearchScreen() {
                   <ScoreRing score={prospect.v1_score} size={48} />
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
-                      <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : '#fff'} />
+                      <Ionicons name={isSaved ? 'checkmark' : 'add'} size={18} color={isSaved ? '#f6ba00' : '#fff'} />
                     </Pressable>
                     <Pressable
                       style={s.iconBtn}
@@ -444,7 +445,7 @@ export default function CoachSearchScreen() {
                 <Pressable hitSlop={8} onPress={() => toggleSelected(prospect.id)}>
                   <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={19} color={isSelected ? PINK_RED : C.textDim} />
                 </Pressable>
-                <Pressable style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}>
+                <Pressable style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 }} disabled={!prospect.profile_slug} onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)}>
                   <Avatar uri={prospect.profile_photo_url} name={prospect.full_name} size={44} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={s.nameRow}>
@@ -464,7 +465,7 @@ export default function CoachSearchScreen() {
                 <ScoreRing score={prospect.v1_score} size={42} />
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <Pressable style={[s.iconBtn, isSaved && s.iconBtnSaved]} onPress={() => toggleSaved(prospect.id)}>
-                    <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={16} color={isSaved ? '#f6ba00' : '#fff'} />
+                    <Ionicons name={isSaved ? 'checkmark' : 'add'} size={18} color={isSaved ? '#f6ba00' : '#fff'} />
                   </Pressable>
                   <Pressable style={s.iconBtn} disabled={pendingAthleteId === prospect.id} onPress={() => messageAthlete(prospect.id)}>
                     <Ionicons name="chatbubble-outline" size={15} color="#fff" />
@@ -571,64 +572,65 @@ export default function CoachSearchScreen() {
         </Pressable>
       </BottomSheetModal>
 
-      <BottomSheetModal visible={showLevelModal} onClose={() => chosenLevel && setShowLevelModal(false)}>
-        <View style={s.scoreChip}>
-          <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
-            <Ionicons name="school" size={13} color="#fff" />
-          </LinearGradient>
-          <View>
-            <Text style={s.scoreChipText}>Your program typically recruits <Text style={s.scoreChipBold}>{myRangeBand.level}</Text></Text>
-            <Text style={s.scoreChipText}>pick a level below</Text>
-          </View>
-        </View>
+      <Modal visible={showLevelModal} transparent animationType="fade" onRequestClose={() => chosenLevel && setShowLevelModal(false)}>
+        <Pressable style={s.levelModalOverlay} onPress={() => chosenLevel && setShowLevelModal(false)}>
+          <Pressable style={s.levelModalCard} onPress={() => {}}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={s.scoreChip}>
+                <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreChipBadge}>
+                  <Ionicons name="school" size={13} color="#fff" />
+                </LinearGradient>
+                <Text style={s.scoreChipText}>Your program typically recruits <Text style={s.scoreChipBold}>{myRangeBand.level}</Text></Text>
+              </View>
 
-        <Text style={s.pickerTitle}>Choose Your Level</Text>
-        <Text style={s.pickerSub}>
-          Pick a level to browse. You can browse any level &mdash; athletes above your usual range just come with a heads-up before you reach out.
-        </Text>
+              <Text style={s.pickerTitle}>Choose Your Level</Text>
+              <Text style={s.pickerSub}>Athletes outside your range come with a heads-up alert.</Text>
 
-        <View style={{ alignSelf: 'stretch' }}>
-          {RECRUITING_LEVEL_BANDS.map(band => {
-            const isMine = band.key === myRangeBand.key;
-            const isReach = band.minScore > myRangeFloor;
-            const rangeText = band.minScore > 0 ? `Typically ${band.minScore}+ V1 Score` : 'Open to any V1 Score';
+              <View style={{ alignSelf: 'stretch' }}>
+                {RECRUITING_LEVEL_BANDS.map(band => {
+                  const isMine = band.key === myRangeBand.key;
+                  const isReach = band.minScore > myRangeFloor;
+                  const rangeText = band.minScore > 0 ? `Typically ${band.minScore}+ V1 Score` : 'Open to any V1 Score';
 
-            const rowContent = (
-              <>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <Text style={s.pickerDivLabel}>{band.level}</Text>
-                    {isMine && (
-                      <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
-                        <Text style={s.pickerTagGradText}>YOUR RANGE</Text>
-                      </LinearGradient>
-                    )}
-                    {isReach && (
-                      <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
-                        <Text style={s.pickerTagGradText}>REACH</Text>
-                      </LinearGradient>
-                    )}
-                  </View>
-                  <Text style={s.pickerRange}>{rangeText}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={C.textDim} />
-              </>
-            );
+                  const rowContent = (
+                    <>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <Text style={s.pickerDivLabel}>{band.level}</Text>
+                          {isMine && (
+                            <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                              <Text style={s.pickerTagGradText}>Your Level</Text>
+                            </LinearGradient>
+                          )}
+                          {isReach && (
+                            <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerTagGrad}>
+                              <Text style={s.pickerTagGradText}>Reach</Text>
+                            </LinearGradient>
+                          )}
+                        </View>
+                        <Text style={s.pickerRange}>{rangeText}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={C.textDim} />
+                    </>
+                  );
 
-            return (
-              <Pressable key={band.key} onPress={() => chooseLevel(band)}>
-                {isMine ? (
-                  <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
-                    <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
-                  </LinearGradient>
-                ) : (
-                  <View style={s.pickerRow}>{rowContent}</View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-      </BottomSheetModal>
+                  return (
+                    <Pressable key={band.key} onPress={() => chooseLevel(band)}>
+                      {isMine ? (
+                        <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.pickerRowGradientBorder}>
+                          <View style={[s.pickerRow, s.pickerRowActiveInner]}>{rowContent}</View>
+                        </LinearGradient>
+                      ) : (
+                        <View style={s.pickerRow}>{rowContent}</View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -716,12 +718,14 @@ function createStyles(C: ThemeColors) {
     levelPillChange: { borderRadius: 100, paddingVertical: 5, paddingHorizontal: 10, overflow: 'hidden' },
     levelPillChangeText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 11, color: '#fff' },
 
-    // Choose Your Level picker -- same names/values as the original swipe
-    // deck picker (app/(coach)/match/index.tsx) so the two read as one design.
+    // Choose Your Level picker -- same visual treatment as web's centered
+    // popup modal (app/coach/search/page.tsx), not a bottom sheet.
+    levelModalOverlay: { flex: 1, backgroundColor: 'rgba(8,8,10,0.72)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+    levelModalCard: { width: '100%', maxWidth: 480, maxHeight: '85%', backgroundColor: C.background, borderRadius: 20, padding: 24 },
     scoreChip: {
-      flexDirection: 'row', alignItems: 'center', gap: 8,
+      flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center',
       backgroundColor: C.surfaceAlt, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 12, paddingLeft: 6,
-      marginBottom: 18,
+      marginBottom: 18, maxWidth: '100%',
     },
     scoreChipBadge: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
     scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },

@@ -20,6 +20,7 @@ export interface PipelineProspect {
     state: string | null;
     v1_score: number | null;
     profile_photo_url: string | null;
+    profile_slug: string | null;
   };
 }
 
@@ -45,7 +46,7 @@ export function useCoachPipeline(): UseCoachPipelineResult {
         .from('coach_recruit_pipeline')
         .select(`
           id, athlete_id, coach_id, status, offer_scholarship_amount, committed_at, signed_at, created_at,
-          athlete:athletes(id, full_name, position, state, v1_score, profile_photo_url)
+          athlete:athletes(id, full_name, position, state, v1_score, profile_photo_url, profile_slug)
         `)
         .eq('coach_id', coach.id)
         .order('created_at', { ascending: false });

@@ -83,6 +83,7 @@ export default function CoachDrawerLayout() {
         <Drawer.Screen name="saved"                    options={{ title: 'Saved Prospects', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="recruiting"               options={{ title: 'Recruiting', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="recruits/[id]"            options={{ title: 'Recruit', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="athlete/[slug]"           options={{ title: 'Athlete Profile', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="pipeline"                 options={{ title: 'Pipeline', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="messages"                 options={{ title: 'Messages', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="templates"                options={{ title: 'Templates', drawerItemStyle: { display: 'none' } }} />

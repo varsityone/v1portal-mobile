@@ -91,7 +91,8 @@ export default function RecruitingScreen() {
                 <Pressable
                   key={prospect.id}
                   style={s.prospectCard}
-                  onPress={() => router.push(`/(coach)/recruits/${prospect.id}` as any)}
+                  disabled={!prospect.profile_slug}
+                  onPress={() => prospect.profile_slug && router.push(`/(coach)/athlete/${prospect.profile_slug}` as any)}
                 >
                   <Image source={prospect?.profile_photo_url ? { uri: prospect?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.prospectPhoto} />
                   <Text style={s.prospectName} numberOfLines={1}>{prospect.full_name ?? 'Unknown'}</Text>

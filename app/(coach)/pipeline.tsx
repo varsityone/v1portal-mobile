@@ -99,7 +99,8 @@ export default function PipelineScreen() {
               <View key={prospect.id} style={[s.row, idx > 0 && s.rowBorder]}>
                 <Pressable
                   style={s.rowTapArea}
-                  onPress={() => router.push(`/(coach)/recruits/${prospect.athlete_id}` as any)}
+                  disabled={!prospect.athlete?.profile_slug}
+                  onPress={() => prospect.athlete?.profile_slug && router.push(`/(coach)/athlete/${prospect.athlete.profile_slug}` as any)}
                 >
                   <Avatar uri={prospect.athlete?.profile_photo_url} name={prospect.athlete?.full_name} size={40} />
                   <View style={{ flex: 1, minWidth: 0 }}>

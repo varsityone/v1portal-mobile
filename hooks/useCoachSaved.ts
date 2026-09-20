@@ -14,6 +14,7 @@ export interface SavedProspect {
     v1_score: number | null;
     graduation_year: number | null;
     profile_photo_url: string | null;
+    profile_slug: string | null;
   } | null;
 }
 
@@ -39,7 +40,7 @@ export function useCoachSaved(): UseCoachSavedResult {
     try {
       const { data, error } = await supabase
         .from('coach_saved_prospects')
-        .select('id, athlete_id, saved_at, notes, athlete:athletes(full_name, position, state, v1_score, graduation_year, profile_photo_url)')
+        .select('id, athlete_id, saved_at, notes, athlete:athletes(full_name, position, state, v1_score, graduation_year, profile_photo_url, profile_slug)')
         .eq('coach_id', coach.id);
 
       if (error) throw error;

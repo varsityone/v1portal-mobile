@@ -11,6 +11,7 @@ export interface TargetedProspect {
   v1_score: number | null;
   profile_photo_url: string | null;
   graduation_year: number | string | null;
+  profile_slug: string | null;
 }
 
 export interface ProspectAnalytics {
@@ -96,7 +97,7 @@ export function useCoachTargeting(): UseCoachTargetingResult {
     }
     const { data, error } = await supabase
       .from('athletes')
-      .select('id, full_name, position, state, city, v1_score, profile_photo_url, graduation_year')
+      .select('id, full_name, position, state, city, v1_score, profile_photo_url, graduation_year, profile_slug')
       .in('state', Array.from(states))
       .order('v1_score', { ascending: false });
 

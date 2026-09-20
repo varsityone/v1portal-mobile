@@ -72,7 +72,8 @@ export default function SavedProspectsScreen() {
               <Pressable
                 key={row.id}
                 style={s.row}
-                onPress={() => router.push(`/(coach)/recruits/${row.athlete_id}` as any)}
+                disabled={!athlete.profile_slug}
+                onPress={() => athlete.profile_slug && router.push(`/(coach)/athlete/${athlete.profile_slug}` as any)}
               >
                 {athlete?.profile_photo_url ? (
                   <Image source={{ uri: athlete.profile_photo_url }} style={s.photo} />
