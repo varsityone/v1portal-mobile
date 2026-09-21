@@ -76,7 +76,6 @@ export interface AthleteData {
   assessment: Assessment | null;
   percentile: number | null;
   isPremium: boolean;
-  isTrial27: boolean;
   loading: boolean;
   refresh: () => Promise<Athlete | null>;
 }
@@ -137,7 +136,5 @@ export function useAthleteData(): AthleteData {
     (athlete?.subscription_status === 'trial' &&
       (!athlete.trial_ends_at || new Date(athlete.trial_ends_at) > now))
   );
-  const isTrial27 = athlete?.subscription_tier === 'trial_27';
-
-  return { athlete, assessment, percentile, isPremium, isTrial27, loading, refresh: fetchData };
+  return { athlete, assessment, percentile, isPremium, loading, refresh: fetchData };
 }

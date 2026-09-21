@@ -67,7 +67,7 @@ export default function UpgradeScreen() {
         const active = Platform.OS === 'ios' ? await syncSubscriptionAccess() : true;
         if (active) {
           const updated = await refresh();
-          if (updated?.subscription_status === 'active' && updated.subscription_tier === 'pro') {
+          if (updated?.subscription_status === 'active' && updated.subscription_tier === 'match_plus') {
             router.replace('/(tabs)/match');
             return;
           }
