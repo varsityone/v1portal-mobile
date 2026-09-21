@@ -132,6 +132,7 @@ export function useAthleteData(): AthleteData {
 
   const now = new Date();
   const isPremium = !!(
+    athlete?.is_admin || athlete?.manual_access ||
     athlete?.subscription_status === 'active' ||
     (athlete?.subscription_status === 'trial' &&
       (!athlete.trial_ends_at || new Date(athlete.trial_ends_at) > now))

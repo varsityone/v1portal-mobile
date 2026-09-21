@@ -7,9 +7,10 @@ export const TIER_COLORS: Record<TierName, string> = {
   'Free':         '#101010',
 };
 
-type AthleteRef = { subscription_status?: string | null; subscription_tier?: string | null } | null | undefined;
+type AthleteRef = { subscription_status?: string | null; subscription_tier?: string | null; is_admin?: boolean | null; manual_access?: boolean | null } | null | undefined;
 
 export function getTierFromAthlete(athlete: AthleteRef): TierName {
+  if (athlete?.is_admin || athlete?.manual_access) return 'Match+';
   if (athlete?.subscription_status === 'active') return 'Match+';
   if (athlete?.subscription_status === 'trial') return 'Match+ Trial';
   return 'Free';

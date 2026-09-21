@@ -180,25 +180,3 @@ export function scoreNumColor(score: number): string {
 }
 
 export type ColorKey = keyof typeof Colors;
-
-// ─── Tier color system ────────────────────────────────────────────────────────
-
-export const TIER_COLORS = {
-  'Match+':        'rgb(255, 148, 0)',
-  'Match+ Trial':  'rgb(255, 148, 0)',
-  'Scout':         '#9900ff',
-  'Free':          '#101010',
-} as const;
-
-export type TierName = keyof typeof TIER_COLORS;
-
-export function getTierFromAthlete(
-  status: string | null | undefined,
-  tier: string | null | undefined,
-  hasAthlete: boolean,
-): TierName {
-  if (status === 'active') return 'Match+';
-  if (status === 'trial') return 'Match+ Trial';
-  if (hasAthlete) return 'Scout';
-  return 'Free';
-}
