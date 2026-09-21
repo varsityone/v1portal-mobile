@@ -449,7 +449,7 @@ export default function AthletePublicProfileScreen() {
                       return (
                         <View key={p.id} style={s.fitRow}>
                           {p.logoUrl ? (
-                            <Image source={{ uri: p.logoUrl }} style={[s.fitLogo, { backgroundColor: '#fff' }]} resizeMode="contain" />
+                            <Image source={{ uri: p.logoUrl }} style={s.fitLogo} resizeMode="contain" />
                           ) : (
                             <View style={[s.fitLogo, { backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }]}>
                               <Text style={{ fontFamily: FontFamily.headlineBold, fontSize: 12, color: colors.text }}>{initials}</Text>

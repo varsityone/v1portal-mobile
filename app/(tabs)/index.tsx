@@ -48,6 +48,22 @@ const TOUR_STEPS = [
 // as web's translateX(0) -> translateX(-50%) over a duplicated track.
 const MARQUEE_SPEED = 18; // px/sec, matches web's ~32s loop for typical item widths
 
+function SpotLogo({ uri, initials, s }: { uri: string | null; initials: string; s: ReturnType<typeof createStyles> }) {
+  const [failed, setFailed] = useState(false);
+  if (uri && !failed) {
+    return (
+      <View style={s.spotLogoImgWrap}>
+        <Image source={{ uri }} style={s.spotLogoImg} resizeMode="contain" onError={() => setFailed(true)} />
+      </View>
+    );
+  }
+  return (
+    <View style={s.spotLogoWrap}>
+      <Text style={s.spotLogoInitials}>{initials}</Text>
+    </View>
+  );
+}
+
 function SpotRestMarquee({ programs, C, s }: { programs: TopFitProgram[]; C: ThemeColors; s: ReturnType<typeof createStyles> }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const [setWidth, setSetWidth] = useState(0);
@@ -516,11 +532,11 @@ export default function DashboardScreen() {
           {topFitPrograms.length > 0 ? (
             <View style={s.spotHero}>
               <View ref={programsRef} collapsable={false} style={s.spotCard}>
-                <View style={s.spotLogoWrap}>
-                  <Text style={s.spotLogoInitials}>
-                    {topFitPrograms[0].name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </Text>
-                </View>
+                <SpotLogo
+                  uri={topFitPrograms[0].logoUrl}
+                  initials={topFitPrograms[0].name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  s={s}
+                />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={s.spotBestFitRow}>
                     <Ionicons name="star" size={11} color={C.success} />
@@ -686,6 +702,8 @@ function createStyles(C: ThemeColors) {
     spotCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: 20, padding: 20 },
     spotLogoWrap: { width: 64, height: 64, borderRadius: 14, backgroundColor: C.surfaceAlt, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     spotLogoInitials: { fontFamily: FontFamily.bodyExtraBold, fontSize: 18, color: C.textMuted },
+    spotLogoImgWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    spotLogoImg: { width: 64, height: 64 },
     spotBestFitRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
     spotBestFitText: { fontFamily: FontFamily.mono, fontSize: 9, color: C.success, letterSpacing: 0.8 },
     spotName: { fontFamily: FontFamily.headline, fontSize: 19, color: C.text, letterSpacing: -0.2 },
