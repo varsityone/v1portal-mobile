@@ -95,7 +95,8 @@ export default function MatchScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [swipeHistory, setSwipeHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState<'all' | 'like' | 'pass'>('all');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'like' | 'pass' | 'saved'>('all');
+  const [unsavingId, setUnsavingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!swipeErrorNotif) return;
@@ -127,7 +128,34 @@ export default function MatchScreen() {
     return () => { cancelled = true; };
   }, [historyOpen, athlete?.id]);
 
-  const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || swipe.direction === historyFilter);
+  const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || historyFilter === 'saved' || swipe.direction === historyFilter);
+  const savedCards = coachCards.filter(c => savedPrograms.includes(c.program_id));
+
+  const unsaveProgram = async (programId: string) => {
+    setUnsavingId(programId);
+    try {
+      const response = await fetch(`${API_BASE}/api/match/saved-programs`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+        body: JSON.stringify({ program_id: programId }),
+      });
+      if (response.ok) setSavedPrograms(prev => prev.filter(id => id !== programId));
+    } catch (err) {
+      console.error('Failed to remove saved program:', err);
+    } finally {
+      setUnsavingId(null);
+    }
+  };
+
+  // Jump straight to a saved program in the deck so the athlete can decide
+  // on it, rather than just listing it read-only.
+  const goToSavedProgram = (card: CoachCard) => {
+    setHistoryOpen(false);
+    setSelectedDivision(card.division as Division);
+    const divCards = coachCards.filter(c => c.division === card.division);
+    const idx = divCards.findIndex(c => c.id === card.id);
+    setCurrentIndex(idx >= 0 ? idx : 0);
+  };
 
   useEffect(() => {
     if (athleteLoading || !athlete?.id || !session?.access_token) return;
@@ -159,7 +187,7 @@ export default function MatchScreen() {
   const athleteScore = athlete?.v1_score ?? 0;
   const athleteLevel = getPrimaryDivisionForScore(athleteScore);
   const isPremium = !!athlete && (
-    (athlete.subscription_status === 'active' && athlete.subscription_tier === 'pro')
+    (athlete.subscription_status === 'active' && athlete.subscription_tier === 'match_plus')
     || !!athlete.is_admin || !!athlete.manual_access
   );
 
@@ -436,10 +464,14 @@ export default function MatchScreen() {
     );
   }
 
-  const savedToolbar = <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, paddingHorizontal: 12, paddingTop: insets.top + 8, paddingBottom: 10, backgroundColor: '#000' }}>
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: !showSavedPrograms }} onPress={() => { setShowSavedPrograms(false); setCurrentIndex(0); }} style={{ padding: 10 }}><Text style={{ color: '#fff', fontFamily: FontFamily.bodyBold }}>Browse programs</Text></Pressable>
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: showSavedPrograms }} onPress={() => { setShowSavedPrograms(true); setCurrentIndex(0); }} style={{ padding: 10 }}><Text style={{ color: '#fff', fontFamily: FontFamily.bodyBold }}>Saved ({savedPrograms.length})</Text></Pressable>
-  </View>;
+  // Always-visible close button, back to Choose Your Level (Match+ athletes
+  // only -- free athletes are locked to one level and have no picker to
+  // return to).
+  const closeToLevelPicker = isPremium && (
+    <Pressable style={[s.backChevron, { position: 'absolute', top: insets.top + 18, left: 18, zIndex: 10 }]} onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }} hitSlop={8}>
+      <Ionicons name="close" size={18} color="#fff" />
+    </Pressable>
+  );
   const saveDialog = unavailableProgram && <SaveProgramDialog
     name={unavailableProgram.school_name || 'This program'}
     saved={savedPrograms.includes(unavailableProgram.program_id)}
@@ -458,7 +490,7 @@ export default function MatchScreen() {
   if (currentIndex >= totalCards) {
     return (
       <SafeAreaView style={s.deckRoot}>
-        {savedToolbar}
+        {closeToLevelPicker}
         {saveDialog}
         {swipeErrorNotif && <Text accessibilityRole="alert" style={{ color: '#fff', textAlign: 'center' }}>{swipeErrorNotif}</Text>}
         <View style={s.emptyWrap}>
@@ -506,6 +538,10 @@ export default function MatchScreen() {
           filter={historyFilter}
           onFilterChange={setHistoryFilter}
           history={filteredHistory}
+          savedCards={savedCards}
+          unsavingId={unsavingId}
+          onUnsave={unsaveProgram}
+          onSelectSaved={goToSavedProgram}
           C={C}
         />
       </SafeAreaView>
@@ -516,7 +552,6 @@ export default function MatchScreen() {
   // behind the status bar and home indicator (header hidden above) ──
   return (
     <View style={s.deckRoot}>
-      {savedToolbar}
       {saveDialog}
       <View style={s.card}>
         <SwipeCardBackground uri={current?.profile_photo_url} />
@@ -534,7 +569,7 @@ export default function MatchScreen() {
               onPress={() => { setSelectedDivision(null); setCurrentIndex(0); }}
               hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={18} color="#fff" />
+              <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           )}
           <View style={s.progressTrack}>
@@ -626,6 +661,10 @@ export default function MatchScreen() {
         filter={historyFilter}
         onFilterChange={setHistoryFilter}
         history={filteredHistory}
+        savedCards={savedCards}
+        unsavingId={unsavingId}
+        onUnsave={unsaveProgram}
+        onSelectSaved={goToSavedProgram}
         C={C}
       />
     </View>
@@ -712,21 +751,26 @@ const historyTabStyles = StyleSheet.create({
 });
 
 function SwipeHistoryDrawer({
-  visible, onClose, loading, filter, onFilterChange, history, C,
+  visible, onClose, loading, filter, onFilterChange, history, savedCards, unsavingId, onUnsave, onSelectSaved, C,
 }: {
   visible: boolean;
   onClose: () => void;
   loading: boolean;
-  filter: 'all' | 'like' | 'pass';
-  onFilterChange: (f: 'all' | 'like' | 'pass') => void;
+  filter: 'all' | 'like' | 'pass' | 'saved';
+  onFilterChange: (f: 'all' | 'like' | 'pass' | 'saved') => void;
   history: any[];
+  savedCards: CoachCard[];
+  unsavingId: string | null;
+  onUnsave: (programId: string) => void;
+  onSelectSaved: (card: CoachCard) => void;
   C: ThemeColors;
 }) {
   const s = useMemo(() => historyStyles(C), [C]);
-  const FILTERS: { key: 'all' | 'like' | 'pass'; label: string }[] = [
+  const FILTERS: { key: 'all' | 'like' | 'pass' | 'saved'; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'like', label: 'Liked' },
     { key: 'pass', label: 'Passed' },
+    { key: 'saved', label: 'Saved' },
   ];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -741,8 +785,8 @@ function SwipeHistoryDrawer({
         <View style={s.filters}>
           {FILTERS.map(({ key, label }) => {
             const active = filter === key;
-            const activeBg = key === 'like' ? 'rgba(113,255,126,0.2)' : key === 'pass' ? 'rgba(234,12,95,0.2)' : C.text;
-            const activeColor = key === 'like' ? BRAND_GREEN : key === 'pass' ? PINK_RED : C.background;
+            const activeBg = key === 'like' ? 'rgba(113,255,126,0.2)' : key === 'pass' ? 'rgba(234,12,95,0.2)' : key === 'saved' ? 'rgba(246,186,0,0.2)' : C.text;
+            const activeColor = key === 'like' ? BRAND_GREEN : key === 'pass' ? PINK_RED : key === 'saved' ? '#f6ba00' : C.background;
             return (
               <Pressable
                 key={key}
@@ -755,7 +799,28 @@ function SwipeHistoryDrawer({
           })}
         </View>
         <ScrollView style={{ flex: 1 }}>
-          {loading ? (
+          {filter === 'saved' ? (
+            savedCards.length === 0 ? (
+              <View style={s.centerMsg}><Text style={s.centerMsgText}>No saved programs yet</Text></View>
+            ) : (
+              savedCards.map(card => (
+                <Pressable key={card.program_id} style={s.row} onPress={() => onSelectSaved(card)}>
+                  <Image source={card.profile_photo_url ? { uri: card.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.name} numberOfLines={1}>{card.school_name ?? 'Unknown'}</Text>
+                    <Text style={s.meta}>{DIVISION_LABELS[card.division as Division] ?? card.division}</Text>
+                  </View>
+                  <Pressable
+                    hitSlop={8}
+                    disabled={unsavingId === card.program_id}
+                    onPress={(e) => { e.stopPropagation(); onUnsave(card.program_id); }}
+                  >
+                    <Ionicons name="bookmark" size={18} color={unsavingId === card.program_id ? C.textDim : '#f6ba00'} />
+                  </Pressable>
+                </Pressable>
+              ))
+            )
+          ) : loading ? (
             <View style={s.centerMsg}><Text style={s.centerMsgText}>Loading history...</Text></View>
           ) : history.length === 0 ? (
             <View style={s.centerMsg}><Text style={s.centerMsgText}>No swipes yet</Text></View>

@@ -14,7 +14,7 @@ export default function SaveProgramDialog({ name, saved, onSave, onClose }: {
         <Ionicons name="bookmark" size={64} color="#fff" accessible={false} style={{ marginBottom: 20 }} />
         <Text accessibilityRole="header" style={styles.title}>Matching isn’t available yet</Text>
         <Text style={styles.body}>{name} isn’t available for matching right now. Save this program to revisit later. Saving won’t send a message or create a match.</Text>
-        {saved && <Text accessibilityLiveRegion="polite" style={[styles.body, { color: '#fff', marginTop: 16 }]}>Saved! You can find it under Saved programs.</Text>}
+        {saved && <Text accessibilityLiveRegion="polite" style={[styles.body, { color: '#fff', marginTop: 16 }]}>Saved! Find it under Swipe History → Saved.</Text>}
         {!!error && <Text accessibilityRole="alert" style={[styles.body, { color: '#fca5a5', marginTop: 16 }]}>{error}</Text>}
         <View style={styles.actions}>
           {!saved && <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving, busy: saving }} disabled={saving} style={[styles.primary, saving && { opacity: 0.6 }]} onPress={async () => {
