@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useAudioRecorder, useAudioPlayer, useAudioPlayerStatus, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { supabase } from '../../../lib/supabase';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
@@ -14,7 +13,6 @@ import { useColors } from '../../../context/ThemeContext';
 
 const PRESENCE_TOUCH_INTERVAL_MS = 60_000;
 const ONLINE_WINDOW_MIN = 2;
-const WAVE_PATTERN = [6, 12, 8, 16, 10, 14, 7, 11, 15, 9, 13, 6];
 
 interface Message {
   id: string;
@@ -47,12 +45,6 @@ function isOnline(lastActiveAt: string | null): boolean {
   return (Date.now() - new Date(lastActiveAt).getTime()) / 60000 < ONLINE_WINDOW_MIN;
 }
 
-function formatDuration(sec: number) {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
 async function uploadAttachment(uri: string, ext: string, folder: string): Promise<string> {
   const res = await fetch(uri);
   const blob = await res.blob();
@@ -79,14 +71,9 @@ export default function AthleteMessageThreadScreen() {
   const [coachLastActive, setCoachLastActive] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordElapsed, setRecordElapsed] = useState(0);
   const [, setPresenceTick] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const recordStartRef = useRef(0);
-  const recordTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   useEffect(() => {
     const t = setInterval(() => setPresenceTick(v => v + 1), 30_000);
@@ -150,10 +137,9 @@ export default function AthleteMessageThreadScreen() {
 
   const appendAndSend = async (opts: {
     content: string;
-    message_type?: 'text' | 'image' | 'voice';
+    message_type?: 'text' | 'image';
     attachment_url?: string;
     attachment_name?: string;
-    attachment_duration?: number;
   }) => {
     if (!athlete?.id || !coachId || !conversationId) return;
     setSending(true);
@@ -166,7 +152,7 @@ export default function AthleteMessageThreadScreen() {
         p_message_type: opts.message_type ?? 'text',
         p_attachment_url: opts.attachment_url ?? null,
         p_attachment_name: opts.attachment_name ?? null,
-        p_attachment_duration: opts.attachment_duration ?? null,
+        p_attachment_duration: null,
       });
       if (error) throw error;
       if (msg) {
@@ -200,38 +186,6 @@ export default function AthleteMessageThreadScreen() {
       await appendAndSend({ content: asset.fileName ?? 'Photo', message_type: 'image', attachment_url: url, attachment_name: asset.fileName ?? 'Photo' });
     } catch (e) {
       console.error('Image upload error:', e);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const startRecording = async () => {
-    const perm = await requestRecordingPermissionsAsync();
-    if (!perm.granted) return;
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-    recordStartRef.current = Date.now();
-    setRecording(true);
-    setRecordElapsed(0);
-    recordTickRef.current = setInterval(() => {
-      setRecordElapsed(Math.floor((Date.now() - recordStartRef.current) / 1000));
-    }, 250);
-  };
-
-  const stopRecording = async () => {
-    if (recordTickRef.current) clearInterval(recordTickRef.current);
-    setRecording(false);
-    const duration = (Date.now() - recordStartRef.current) / 1000;
-    await recorder.stop();
-    const uri = recorder.uri;
-    if (!uri) return;
-    setSending(true);
-    try {
-      const url = await uploadAttachment(uri, 'm4a', 'voice');
-      await appendAndSend({ content: 'Voice message', message_type: 'voice', attachment_url: url, attachment_duration: duration });
-    } catch (e) {
-      console.error('Voice upload error:', e);
     } finally {
       setSending(false);
     }
@@ -283,24 +237,20 @@ export default function AthleteMessageThreadScreen() {
         <View style={s.inputWrap}>
           <TextInput
             style={s.input}
-            placeholder={recording ? `Recording… ${formatDuration(recordElapsed)}` : 'Send a message…'}
+            placeholder="Send a message…"
             placeholderTextColor={C.textDim}
             value={text}
             onChangeText={setText}
-            editable={!recording}
             multiline
           />
-          <Pressable onPress={recording ? stopRecording : startRecording} hitSlop={8} style={[s.iconBtn, recording && s.iconBtnRecording]}>
-            <Ionicons name={recording ? 'stop' : 'mic'} size={18} color="#fff" />
-          </Pressable>
-          <Pressable onPress={handleAttachImage} disabled={recording} hitSlop={8} style={[s.iconBtn, recording && { opacity: 0.4 }]}>
+          <Pressable onPress={handleAttachImage} disabled={sending} hitSlop={8} style={s.iconBtn}>
             <Ionicons name="image" size={18} color="#fff" />
           </Pressable>
-          <Pressable onPress={handleSend} disabled={!text.trim() || sending || recording} hitSlop={8}>
+          <Pressable onPress={handleSend} disabled={!text.trim() || sending} hitSlop={8}>
             <LinearGradient
               colors={FLAME_GRADIENT}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={[s.sendBtn, (!text.trim() || sending || recording) && { opacity: 0.5 }]}
+              style={[s.sendBtn, (!text.trim() || sending) && { opacity: 0.5 }]}
             >
               <Ionicons name="send" size={17} color="#fff" />
             </LinearGradient>
@@ -331,16 +281,15 @@ function MessageRow({ item, initials, C, s }: { item: Message; initials: string;
               </View>
             )}
           </Pressable>
-        ) : item.message_type === 'voice' ? (
-          <VoiceBubble item={item} isMe={isMe} s={s} C={C} />
+
         ) : (
           isMe ? (
             <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.bubble, s.bubbleMe]}>
-              <Text style={s.bubbleTextMe}>{item.content}</Text>
+              <Text style={s.bubbleTextMe}>{item.message_type === 'voice' ? 'Voice messages are no longer supported.' : item.content}</Text>
             </LinearGradient>
           ) : (
             <View style={[s.bubble, s.bubbleCoach]}>
-              <Text style={s.bubbleTextCoach}>{item.content}</Text>
+              <Text style={s.bubbleTextCoach}>{item.message_type === 'voice' ? 'Voice messages are no longer supported.' : item.content}</Text>
             </View>
           )
         )}
@@ -359,42 +308,6 @@ function ImageBubbleContent({ url, name, tint }: { url: string | null; name: str
       {url ? <Image source={{ uri: url }} style={{ width: 36, height: 36, borderRadius: 9 }} /> : null}
       <Text style={{ fontFamily: FontFamily.bodyBold, fontSize: 12.5, color: tint, flexShrink: 1 }} numberOfLines={1}>{name || 'Photo'}</Text>
     </>
-  );
-}
-
-function VoiceBubble({ item, isMe, s, C }: { item: Message; isMe: boolean; s: ReturnType<typeof createStyles>; C: ThemeColors }) {
-  const player = useAudioPlayer(item.attachment_url ?? undefined);
-  const status = useAudioPlayerStatus(player);
-
-  const toggle = () => {
-    if (status.playing) player.pause();
-    else { player.seekTo(0); player.play(); }
-  };
-
-  const waveColor = isMe ? '#fff' : C.text;
-
-  const inner = (
-    <>
-      <Pressable onPress={toggle} style={[s.voicePlayBtn, isMe && s.voicePlayBtnMe]}>
-        <Ionicons name={status.playing ? 'pause' : 'play'} size={13} color={isMe ? '#fff' : '#18191d'} />
-      </Pressable>
-      <View style={s.voiceWave}>
-        {WAVE_PATTERN.map((h, i) => (
-          <View key={i} style={[s.voiceWaveBar, { height: h, backgroundColor: waveColor }]} />
-        ))}
-      </View>
-      <Text style={[s.voiceDur, isMe && { color: '#fff' }]}>{formatDuration(item.attachment_duration ?? 0)}</Text>
-    </>
-  );
-
-  return isMe ? (
-    <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.bubble, s.bubbleMe, s.voiceBubble]}>
-      {inner}
-    </LinearGradient>
-  ) : (
-    <View style={[s.bubble, s.bubbleCoach, s.voiceBubble]}>
-      {inner}
-    </View>
   );
 }
 
@@ -433,12 +346,6 @@ function createStyles(C: ThemeColors) {
 
     imageBubble: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
-    voiceBubble: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    voicePlayBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-    voicePlayBtnMe: { backgroundColor: 'rgba(255,255,255,0.22)' },
-    voiceWave: { flexDirection: 'row', alignItems: 'center', gap: 2.5, height: 20 },
-    voiceWaveBar: { width: 2.5, borderRadius: 2, opacity: 0.9 },
-    voiceDur: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textMuted },
 
     msgFoot: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingHorizontal: 3 },
     msgTime: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim },
@@ -446,7 +353,6 @@ function createStyles(C: ThemeColors) {
     inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, paddingBottom: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
     input: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, maxHeight: 100, fontFamily: FontFamily.body, fontSize: 14, color: C.text },
     iconBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surfaceAlt },
-    iconBtnRecording: { backgroundColor: '#e63535' },
     sendBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   });
 }
