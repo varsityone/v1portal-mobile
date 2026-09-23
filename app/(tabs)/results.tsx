@@ -47,12 +47,12 @@ export default function ResultsScreen() {
 
   useEffect(() => {
     const fetchPercentile = async () => {
-      if (!athlete?.v1_score) return;
-      const { data } = await supabase.rpc('get_score_percentile', { p_score: Math.round(athlete.v1_score) });
+      if (assessment?.v1_score == null) return;
+      const { data } = await supabase.rpc('get_score_percentile', { p_score: Math.round(assessment.v1_score) });
       if (data !== null && data !== undefined) setPercentile(data as number);
     };
     fetchPercentile();
-  }, [athlete?.v1_score]);
+  }, [assessment?.v1_score]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -71,7 +71,7 @@ export default function ResultsScreen() {
   }
 
   const isPremium = isAthletePremium(athlete);
-  const currentScore = Math.round(athlete.v1_score ?? 0);
+  const currentScore = Math.round(assessment.v1_score ?? 0);
   const tier = assessment.recruiting_level as any;
   const tierLabel = typeof tier === 'string' ? tier : (tier?.level ?? '');
   const scoreBreakdown = assessment.score_breakdown as Record<string, unknown> | null;

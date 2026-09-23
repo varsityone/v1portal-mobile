@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
@@ -20,7 +21,7 @@ const whiteCardStyles = StyleSheet.create({
 
 const TIMEFRAMES = [
   { label: 'Last 7 days', value: 'week' },
-  { label: 'Last 30 days', value: 'month' },
+  { label: 'Last month', value: 'month' },
   { label: 'All time', value: 'all' },
 ] as const;
 
@@ -33,6 +34,8 @@ export default function AnalyticsScreen() {
   if (coachLoading || loading) {
     return <LoadingScreen />;
   }
+
+  if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   if (!kpis) {
     return <View style={s.center}><Text style={s.errorText}>Unable to load analytics</Text></View>;

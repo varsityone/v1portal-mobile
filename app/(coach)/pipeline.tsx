@@ -1,6 +1,7 @@
+import { Redirect } from 'expo-router';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachPipeline, PipelineProspect, PipelineStatus } from '../../hooks/useCoachPipeline';
@@ -26,7 +27,7 @@ export default function PipelineScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const router = useRouter();
-  const { loading: coachLoading } = useCoachData();
+  const { coach, loading: coachLoading } = useCoachData();
   const { prospects, loading, updateStatus } = useCoachPipeline();
   const [filter, setFilter] = useState<'all' | PipelineStatus>('all');
   const [activeProspect, setActiveProspect] = useState<PipelineProspect | null>(null);
@@ -41,7 +42,7 @@ export default function PipelineScreen() {
     try {
       await updateStatus(activeProspect.id, status);
     } catch (e) {
-      console.error('Pipeline status update error:', e);
+      Alert.alert('Could not update status', 'The change was not saved. Please try again.');
     } finally {
       setUpdating(false);
       setActiveProspect(null);
@@ -51,6 +52,8 @@ export default function PipelineScreen() {
   if (coachLoading || loading) {
     return <LoadingScreen />;
   }
+
+  if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   const filtered = filter === 'all' ? prospects : prospects.filter(p => p.status === filter);
 

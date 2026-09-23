@@ -23,6 +23,7 @@ export interface Athlete {
   state: string | null;
   hudl_link: string | null;
   hudl_video_link: string | null;
+  youtube_link: string | null;
   phone: string | null;
   bio: string | null;
   ncaa_id: string | null;
@@ -95,7 +96,7 @@ export function useAthleteData(): AthleteData {
 
     const { data: ath } = await supabase
       .from('athletes')
-      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info, is_admin, manual_access, assessment_completed, email_notifications, weekly_pulse, score_update_notifications, invite_token, invite_claimed, invited_athlete_email, account_role')
+      .select('id, full_name, email, profile_photo_url, v1_score, recruiting_tier, recruiting_level, subscription_status, subscription_tier, trial_ends_at, height, weight, gpa, position, graduation_year, high_school, city, state, hudl_link, hudl_video_link, youtube_link, phone, bio, ncaa_id, sat_score, act_score, test_scores_not_taken, guardian_name, guardian_relationship, guardian_phone, guardian_email, target_list_saved_at, profile_slug, is_profile_public, coach_info, is_admin, manual_access, assessment_completed, email_notifications, weekly_pulse, score_update_notifications, invite_token, invite_claimed, invited_athlete_email, account_role')
       .or(`user_id.eq.${userId},linked_user_id.eq.${userId}`)
       .maybeSingle();
 
@@ -107,7 +108,7 @@ export function useAthleteData(): AthleteData {
         .select('id, v1_score, score_breakdown, gate_results, development_potential, development_pathway, completed_at, created_at, responses, recruiting_level')
         .eq('athlete_id', ath.id)
         .not('v1_score', 'is', null)
-        .order('completed_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
         .limit(1);
 
       const latest = (rows?.[0] as Assessment) ?? null;

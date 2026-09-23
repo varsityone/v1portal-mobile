@@ -48,7 +48,7 @@ export function useCoachSearch(): UseCoachSearchResult {
   });
   const [currentSort, setCurrentSort] = useState<'score' | 'year'>('score');
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const search = useCallback(
     async (f: SearchFilters, l: number, sort: 'score' | 'year') => {

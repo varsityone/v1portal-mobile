@@ -151,11 +151,12 @@ export default function CoachMatchScreen() {
       const { data } = await q;
       setAllAthletes((data ?? []) as AthleteCard[]);
 
+      // No status filter -- matches web's dashboard/match/page.tsx (coach
+      // branch) exactly. See (tabs)/match/index.tsx's identical fix.
       const { data: matches } = await supabase
         .from('mutual_matches')
         .select('id, athlete_id')
-        .eq('coach_id', coach!.id)
-        .eq('status', 'active');
+        .eq('coach_id', coach!.id);
       setExistingMatches(new Map((matches ?? []).map(m => [m.athlete_id, m.id])));
 
       setLoading(false);

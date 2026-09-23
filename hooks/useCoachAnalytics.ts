@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
 
-const TIMEFRAMES = { week: 7, month: 30, all: 999999 } as const;
 
 export interface AnalyticsKPIs {
   viewed: number;
@@ -33,26 +32,28 @@ export function useCoachAnalytics(): UseCoachAnalyticsResult {
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'all'>('month');
 
   const fetch = useCallback(async () => {
-    if (!coach?.id) return;
+    if (!coach?.id || !coach.verified) { setLoading(false); return; }
     setLoading(true);
 
     try {
-      const days = TIMEFRAMES[timeframe];
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+      if (timeframe === 'week') startDate.setDate(startDate.getDate() - 7);
+      else if (timeframe === 'month') startDate.setMonth(startDate.getMonth() - 1);
+      else startDate.setTime(0);
 
       const { data: swipes } = await supabase
         .from('swipes')
         .select('athlete_id, direction, created_at')
+        .eq('swiped_by', 'coach')
         .eq('coach_id', coach.id)
         .gte('created_at', startDate.toISOString());
 
+      // No status filter -- matches web's coach/analytics/page.tsx exactly.
       const { data: matches } = await supabase
         .from('mutual_matches')
         .select('id')
         .eq('coach_id', coach.id)
-        .eq('status', 'active')
-        .gte('matched_at', startDate.toISOString());
+        .gte('created_at', startDate.toISOString());
 
       const { data: saved } = await supabase
         .from('coach_saved_prospects')
@@ -68,7 +69,7 @@ export function useCoachAnalytics(): UseCoachAnalyticsResult {
         .gte('created_at', startDate.toISOString());
 
       const viewed = swipes?.length ?? 0;
-      const liked = swipes?.filter(s => s.direction === 'right').length ?? 0;
+      const liked = swipes?.filter(s => s.direction === 'like').length ?? 0;
       const matched = matches?.length ?? 0;
       const savedCount = saved?.length ?? 0;
       const messagedCount = messaged?.length ?? 0;
@@ -95,7 +96,7 @@ export function useCoachAnalytics(): UseCoachAnalyticsResult {
       // Build breakdowns
       const positionCounts: Record<string, { count: number; scores: number[] }> = {};
       const stateCounts: Record<string, number> = {};
-      const likedAthletesSet = new Set(swipes?.filter(s => s.direction === 'right').map(s => s.athlete_id));
+      const likedAthletesSet = new Set(swipes?.filter(s => s.direction === 'like').map(s => s.athlete_id));
 
       (athletes ?? []).forEach(a => {
         if (a.position) {
@@ -135,7 +136,7 @@ export function useCoachAnalytics(): UseCoachAnalyticsResult {
     } finally {
       setLoading(false);
     }
-  }, [coach?.id, timeframe]);
+  }, [coach?.id, coach?.verified, timeframe]);
 
   useEffect(() => {
     fetch();

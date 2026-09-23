@@ -1,6 +1,8 @@
+import { MonthCalendar } from '../../components/MonthCalendar';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -269,24 +271,30 @@ export default function CalendarScreen() {
   const handleSave = async () => {
     if (!formTitle.trim() || !athlete?.id) return;
     setSaving(true);
-    const dateStr = toDateStr(formDate);
-    if (editingId) {
-      await supabase.from('events').update({ title: formTitle.trim(), event_type: formType, event_date: dateStr }).eq('id', editingId);
-    } else {
-      await supabase.from('events').insert({ athlete_id: athlete.id, title: formTitle.trim(), event_type: formType, event_date: dateStr });
-    }
-    await fetchCustomEvents();
-    setModalVisible(false);
-    setSaving(false);
+    try {
+      const values = { title: formTitle.trim(), event_type: formType, event_date: toDateStr(formDate) };
+      const { error } = editingId
+        ? await supabase.from('events').update(values).eq('id', editingId)
+        : await supabase.from('events').insert({ athlete_id: athlete.id, ...values });
+      if (error) throw error;
+      await fetchCustomEvents();
+      setModalVisible(false);
+    } catch {
+      Alert.alert('Could not save event', 'Your details are still here. Please try again.');
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     if (!editingId) return;
     setSaving(true);
-    await supabase.from('events').delete().eq('id', editingId);
-    await fetchCustomEvents();
-    setModalVisible(false);
-    setSaving(false);
+    try {
+      const { error } = await supabase.from('events').delete().eq('id', editingId);
+      if (error) throw error;
+      await fetchCustomEvents();
+      setModalVisible(false);
+    } catch {
+      Alert.alert('Could not delete event', 'Please try again.');
+    } finally { setSaving(false); }
   };
 
   const allItems: TimelineItem[] = useMemo(() => [
@@ -393,6 +401,16 @@ export default function CalendarScreen() {
             <Ionicons name="add" size={22} color="#fff" />
           </GradientButton>
         </View>
+
+        <MonthCalendar events={customEvents} onSelectDate={(date, dayEvents) => {
+          if (dayEvents.length) {
+            const event = customEvents.find(item => item.id === dayEvents[0].id);
+            if (event) openEdit(event);
+          } else {
+            openAdd();
+            setFormDate(date);
+          }
+        }} />
 
         {/* Legend */}
         <View style={s.legend}>

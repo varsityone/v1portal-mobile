@@ -3,18 +3,14 @@ import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
 
 const API_BASE = 'https://v1portal.com';
-const CONTACT_INFO_PATTERN = /(?:phone|number|call|text|contact)[:\s]+\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|[0-9]{10}|\d{3}-\d{3}-\d{4}/gi;
+const CONTACT_INFO_PATTERN = /(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 
-export interface BulkMessageProgress {
-  total: number;
-  sent: number;
-  failed: number;
-}
-
+export interface BulkMessageProgress { total: number; sent: number; failed: number; }
+export interface BulkMessageResult { sent: number; failedIds: string[]; }
 export interface UseCoachBulkMessageResult {
   sending: boolean;
   progress: BulkMessageProgress;
-  send: (athleteIds: string[], templateId: string, customContent: string) => Promise<void>;
+  send: (athleteIds: string[], templateId: string, customContent: string) => Promise<BulkMessageResult>;
 }
 
 export function useCoachBulkMessage(): UseCoachBulkMessageResult {
@@ -22,124 +18,62 @@ export function useCoachBulkMessage(): UseCoachBulkMessageResult {
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState<BulkMessageProgress>({ total: 0, sent: 0, failed: 0 });
 
-  // Mirrors the resilience posture of (coach)/match/[matchId].tsx's compliance
-  // check: only a thrown network error fails open (a blip shouldn't silently
-  // block every bulk send). The /api/compliance/check contract requires
-  // `action` and `athlete_id` — the period it evaluates is coach-level
-  // (division/region), so one check against the first recipient covers the
-  // whole batch rather than round-tripping once per athlete.
-  const checkCompliance = useCallback(async (athleteId: string): Promise<boolean> => {
-    if (!coach?.id) return true;
-
+  const send = useCallback(async (athleteIds: string[], templateId: string, customContent: string) => {
+    if (!coach?.id || !coach.verified) throw new Error('A verified coach account is required.');
+    const recipients = [...new Set(athleteIds)];
+    if (!recipients.length) throw new Error('Select at least one prospect.');
+    setSending(true);
+    setProgress({ total: recipients.length, sent: 0, failed: 0 });
     try {
-      const res = await fetch(`${API_BASE}/api/compliance/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          coach_id: coach.id,
-          division: coach.division,
-          region: coach.region ?? undefined,
-          action: 'message',
-          athlete_id: athleteId,
-        }),
+      let content = customContent.trim();
+      if (!content && templateId) {
+        const { data, error } = await supabase.from('coach_message_templates')
+          .select('content').eq('id', templateId).eq('coach_id', coach.id).single();
+        if (error) throw error;
+        content = data?.content?.trim() ?? '';
+      }
+      if (!content) throw new Error('Enter a message before sending.');
+      if (CONTACT_INFO_PATTERN.test(content)) throw new Error('Remove phone numbers and email addresses before sending.');
+
+      const response = await fetch(`${API_BASE}/api/compliance/check`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coach_id: coach.id, division: coach.division, region: coach.region ?? undefined, action: 'message', athlete_id: recipients[0] }),
       });
+      if (!response.ok) throw new Error('Could not check the recruiting contact period. Please try again.');
+      const compliance = await response.json();
+      if (compliance.allowed !== true) throw new Error('Messaging is not allowed during the current recruiting period.');
 
-      const result = await res.json();
-      return result.allowed ?? true;
-    } catch (e) {
-      console.error('Compliance check error:', e);
-      return true;
-    }
-  }, [coach]);
-
-  const send = useCallback(
-    async (athleteIds: string[], templateId: string, customContent: string) => {
-      if (!coach?.id || athleteIds.length === 0) return;
-
-      setSending(true);
-      setProgress({ total: athleteIds.length, sent: 0, failed: 0 });
-
-      const allowed = await checkCompliance(athleteIds[0]);
-      if (!allowed) {
-        alert('Messaging is blocked during a dead or quiet period');
-        setSending(false);
-        return;
-      }
-
-      const content = customContent || (templateId ? await fetchTemplateContent(templateId) : '');
-
-      if (CONTACT_INFO_PATTERN.test(content)) {
-        alert('Message contains contact information. Please remove phone numbers or email addresses.');
-        setSending(false);
-        return;
-      }
-
-      for (let i = 0; i < athleteIds.length; i++) {
+      const result: BulkMessageResult = { sent: 0, failedIds: [] };
+      for (const athleteId of recipients) {
         try {
-          // Find or create conversation — mirrors (coach)/search.tsx's messageAthlete
-          const { data: existing } = await supabase
-            .from('coach_athlete_conversations')
-            .select('id')
-            .eq('coach_id', coach.id)
-            .eq('athlete_id', athleteIds[i])
-            .single();
-
+          const { data: existing, error: lookupError } = await supabase.from('coach_athlete_conversations')
+            .select('id').eq('coach_id', coach.id).eq('athlete_id', athleteId).maybeSingle();
+          if (lookupError) throw lookupError;
           let conversationId = existing?.id;
           if (!conversationId) {
-            const { data: created } = await supabase
-              .from('coach_athlete_conversations')
-              .insert({ coach_id: coach.id, athlete_id: athleteIds[i] })
-              .select()
-              .single();
+            const { data: created, error } = await supabase.from('coach_athlete_conversations')
+              .insert({ coach_id: coach.id, athlete_id: athleteId }).select().single();
+            if (error) throw error;
             conversationId = created?.id;
           }
-          if (!conversationId) throw new Error('Conversation creation failed');
-
-          // Send via RPC if available
-          try {
-            await supabase.rpc('send_coach_message', {
-              p_conversation_id: conversationId,
-              p_coach_id: coach.id,
-              p_athlete_id: athleteIds[i],
-              p_content: content,
-            });
-          } catch (rpcErr) {
-            // Fallback to direct insert if RPC unavailable
-            await supabase.from('coach_athlete_messages').insert({
-              conversation_id: conversationId,
-              coach_id: coach.id,
-              athlete_id: athleteIds[i],
-              sender_type: 'coach',
-              content,
-            });
-
-            await supabase
-              .from('coach_athlete_conversations')
-              .update({ last_message_at: new Date().toISOString(), last_message_from: 'coach' })
-              .eq('id', conversationId);
-          }
-
-          setProgress(prev => ({ ...prev, sent: prev.sent + 1 }));
-        } catch (e) {
-          console.error('Bulk message send error:', e);
-          setProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
+          if (!conversationId) throw new Error('Conversation could not be created.');
+          // This RPC inserts the message and updates the conversation atomically.
+          // A returned error is a failed send, never a reason to bypass the RPC.
+          const { error } = await supabase.rpc('send_coach_message', {
+            p_conversation_id: conversationId, p_coach_id: coach.id,
+            p_athlete_id: athleteId, p_content: content,
+          });
+          if (error) throw error;
+          result.sent += 1;
+        } catch {
+          result.failedIds.push(athleteId);
         }
+        setProgress({ total: recipients.length, sent: result.sent, failed: result.failedIds.length });
       }
-
+      return result;
+    } finally {
       setSending(false);
-    },
-    [coach, checkCompliance],
-  );
-
+    }
+  }, [coach]);
   return { sending, progress, send };
-}
-
-async function fetchTemplateContent(templateId: string): Promise<string> {
-  const { data } = await supabase
-    .from('coach_message_templates')
-    .select('content')
-    .eq('id', templateId)
-    .single();
-
-  return data?.content ?? '';
 }

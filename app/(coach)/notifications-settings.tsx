@@ -1,6 +1,6 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useCoachData } from '../../hooks/useCoachData';
 import { ThemeColors, PINK_RED } from '../../constants/Colors';
@@ -31,7 +31,7 @@ export default function NotificationsSettingsScreen() {
 
     async function load() {
       setLoading(true);
-      const coachId = coach.id!;
+      const coachId = coach!.id;
       try {
         let { data } = await supabase
           .from('coach_notification_settings')
@@ -64,14 +64,15 @@ export default function NotificationsSettingsScreen() {
     setSaving(true);
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('coach_notification_settings')
         .update({ [field]: value })
         .eq('id', settings.id);
 
+      if (error) throw error;
       setSettings({ ...settings, [field]: value });
     } catch (e) {
-      console.error('Update error:', e);
+      Alert.alert('Could not save preference', 'Please try again.');
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,7 @@
+import { Redirect } from 'expo-router';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +24,7 @@ export default function TemplatesScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { loading: coachLoading } = useCoachData();
+  const { coach, loading: coachLoading } = useCoachData();
   const { templates, loading, create, update, delete: deleteTemplate } = useCoachTemplates();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,6 +47,8 @@ export default function TemplatesScreen() {
         await create(form.title, form.category, form.content);
       }
       resetForm();
+    } catch {
+      Alert.alert('Could not save template', 'Your text is still here. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -60,6 +63,8 @@ export default function TemplatesScreen() {
   if (coachLoading || loading) {
     return <LoadingScreen />;
   }
+
+  if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
@@ -155,7 +160,7 @@ export default function TemplatesScreen() {
                 <Pressable style={s.actionBtn} onPress={() => handleEdit(t)}>
                   <Text style={s.actionBtnText}>Edit</Text>
                 </Pressable>
-                <Pressable style={s.actionBtn} onPress={() => deleteTemplate(t.id)}>
+                <Pressable style={s.actionBtn} onPress={() => deleteTemplate(t.id).catch(() => Alert.alert('Could not delete template', 'Please try again.'))}>
                   <Text style={[s.actionBtnText, s.deleteText]}>Delete</Text>
                 </Pressable>
               </View>

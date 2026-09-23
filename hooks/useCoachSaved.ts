@@ -45,7 +45,7 @@ export function useCoachSaved(): UseCoachSavedResult {
 
       if (error) throw error;
 
-      let sorted = (data as SavedProspect[]) ?? [];
+      let sorted = (data ?? []).map(row => ({ ...row, athlete: Array.isArray(row.athlete) ? row.athlete[0] ?? null : row.athlete })) as SavedProspect[];
       if (sort === 'score') {
         sorted.sort((a, b) => (b.athlete?.v1_score ?? 0) - (a.athlete?.v1_score ?? 0));
       } else {

@@ -5,7 +5,6 @@ export default function MessagesLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
         animation: 'slide_from_right',
       }}
     >

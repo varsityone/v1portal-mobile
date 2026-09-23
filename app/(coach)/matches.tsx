@@ -60,11 +60,11 @@ export default function CoachMatchesScreen() {
     if (!coach.verified) { setLoading(false); return; }
 
     async function load() {
+      // Match the web list: include all statuses. Dashboard badges still count active matches.
       const { data: matchData } = await supabase
         .from('mutual_matches')
-        .select('id, matched_at, athlete_id')
+        .select('id, matched_at, athlete_id, status')
         .eq('coach_id', coach!.id)
-        .eq('status', 'active')
         .order('matched_at', { ascending: false });
 
       if (!matchData || matchData.length === 0) { setLoading(false); return; }

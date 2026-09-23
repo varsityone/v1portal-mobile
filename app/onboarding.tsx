@@ -886,12 +886,8 @@ export default function OnboardingScreen() {
     let cancelled = false;
     async function loadRole() {
       if (!session?.user?.id) { if (!cancelled) setRole('athlete'); return; }
-      const { data } = await supabase
-        .from('athletes')
-        .select('account_role')
-        .or(`user_id.eq.${session.user.id},linked_user_id.eq.${session.user.id}`)
-        .maybeSingle();
-      if (!cancelled) setRole(data?.account_role === 'coach' ? 'coach' : 'athlete');
+      const destination = await resolveHomeRoute(session.user.id);
+      if (!cancelled) setRole(destination === '/(coach)' || destination === '/coach-setup' ? 'coach' : 'athlete');
     }
     loadRole();
     return () => { cancelled = true; };

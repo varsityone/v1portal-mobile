@@ -38,39 +38,41 @@ export function useCoachPipeline(): UseCoachPipelineResult {
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
-    if (!coach?.id) return;
+    if (!coach?.id || !coach.verified) { setLoading(false); return; }
     setLoading(true);
 
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('coach_recruit_pipeline')
         .select(`
           id, athlete_id, coach_id, status, offer_scholarship_amount, committed_at, signed_at, created_at,
           athlete:athletes(id, full_name, position, state, v1_score, profile_photo_url, profile_slug)
         `)
         .eq('coach_id', coach.id)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
-      setProspects((data ?? []) as PipelineProspect[]);
+      if (error) throw error;
+      setProspects((data ?? []).map(row => ({ ...row, athlete: Array.isArray(row.athlete) ? row.athlete[0] : row.athlete })) as PipelineProspect[]);
     } catch (e) {
       console.error('Pipeline fetch error:', e);
     } finally {
       setLoading(false);
     }
-  }, [coach?.id]);
+  }, [coach?.id, coach?.verified]);
 
   const add = useCallback(
     async (athleteId: string) => {
-      if (!coach?.id) return;
+      if (!coach?.id || !coach.verified) throw new Error('A verified coach account is required.');
 
       try {
-        await supabase.from('coach_recruit_pipeline').insert([
+        const { error } = await supabase.from('coach_recruit_pipeline').insert([
           { coach_id: coach.id, athlete_id: athleteId, status: 'interested' },
         ]);
+        if (error && error.code !== '23505') throw error;
         await fetch();
       } catch (e) {
         console.error('Pipeline add error:', e);
-        if (!e.message?.includes('duplicate')) throw e;
+        throw e;
       }
     },
     [coach?.id, fetch],
@@ -79,15 +81,17 @@ export function useCoachPipeline(): UseCoachPipelineResult {
   const updateStatus = useCallback(
     async (prospectId: string, status: PipelineStatus) => {
       try {
-        const update: any = { status };
-        if (status === 'committed') update.committed_at = new Date().toISOString();
-        if (status === 'signed') update.signed_at = new Date().toISOString();
+        const update = {
+          status,
+          committed_at: status === 'committed' ? new Date().toISOString() : null,
+          signed_at: status === 'signed' ? new Date().toISOString() : null,
+        };
 
-        await supabase
+        const { error } = await supabase
           .from('coach_recruit_pipeline')
           .update(update)
           .eq('id', prospectId);
-
+        if (error) throw error;
         await fetch();
       } catch (e) {
         console.error('Pipeline status update error:', e);

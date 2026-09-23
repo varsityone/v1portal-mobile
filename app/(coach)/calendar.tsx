@@ -1,7 +1,9 @@
+import { MonthCalendar } from '../../components/MonthCalendar';
+import { Redirect } from 'expo-router';
 import CoachRecruitingDates from '../../components/CoachRecruitingDates';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,13 +48,17 @@ export default function CalendarScreen() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim() || !date || !athleteId) return;
+    if (!title.trim() || !date) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) {
+      Alert.alert('Invalid date', 'Enter a valid date as YYYY-MM-DD.');
+      return;
+    }
     setCreating(true);
     try {
       await create(title, type, date, athleteId, notes || undefined);
       resetForm();
     } catch (e) {
-      console.error('Create event error:', e);
+      Alert.alert('Could not save event', 'Your event was not saved. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -61,6 +67,8 @@ export default function CalendarScreen() {
   if (coachLoading || loading) {
     return <LoadingScreen />;
   }
+
+  if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   const groupedByMonth = events.reduce(
     (acc, e) => {
@@ -95,14 +103,13 @@ export default function CalendarScreen() {
 
       {showForm && (
         <View style={s.formCard}>
-          {saved.length === 0 ? (
-            <Text style={s.noAthletesText}>
-              Save a prospect first. Every calendar event needs to be linked to an athlete.
-            </Text>
-          ) : (
-            <>
-              <Text style={s.label}>Athlete</Text>
+          <>
+              <Text style={s.noAthletesText}>Athlete is optional for general recruiting events.</Text>
+              <Text style={s.label}>Athlete (optional)</Text>
               <View style={s.chips}>
+                <Pressable style={[s.chip, !athleteId && s.chipActive]} onPress={() => setAthleteId(null)}>
+                  <Text style={[s.chipText, !athleteId && s.chipTextActive]}>General event</Text>
+                </Pressable>
                 {saved.map(p => (
                   <Pressable
                     key={p.athlete_id}
@@ -154,7 +161,7 @@ export default function CalendarScreen() {
               />
 
               <View style={s.buttonRow}>
-                <Pressable style={s.saveBtn} onPress={handleCreate} disabled={creating || !title.trim() || !athleteId}>
+                <Pressable style={s.saveBtn} onPress={handleCreate} disabled={creating || !title.trim() || !date}>
                   <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.saveBtnFill}>
                     <Text style={s.saveBtnText}>{creating ? 'Adding...' : 'Add Event'}</Text>
                   </LinearGradient>
@@ -163,10 +170,11 @@ export default function CalendarScreen() {
                   <Text style={s.cancelBtnText}>Cancel</Text>
                 </Pressable>
               </View>
-            </>
-          )}
+          </>
         </View>
       )}
+
+      <MonthCalendar events={events} />
 
       {events.length === 0 && !showForm ? (
         <View style={s.emptyCard}>
@@ -185,9 +193,9 @@ export default function CalendarScreen() {
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={s.eventTitle}>{event.title}</Text>
                       <Text style={s.eventMeta}>{event.event_date} · {info?.label ?? event.event_type}</Text>
-                      {event.notes && <Text style={s.eventNotes}>{event.notes}</Text>}
+                      {event.description && <Text style={s.eventNotes}>{event.description}</Text>}
                     </View>
-                    <Pressable onPress={() => deleteEvent(event.id)} hitSlop={8}>
+                    <Pressable onPress={() => deleteEvent(event.id).catch(() => Alert.alert('Could not delete event', 'Please try again.'))} hitSlop={8}>
                       <Ionicons name="trash-outline" size={16} color={C.error} />
                     </Pressable>
                   </View>

@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -388,7 +389,7 @@ type P2Fields = {
   position: string; height: string; weight: string; graduation_year: string;
   gpa: string; sat_score: string; act_score: string; ncaa_id: string;
   high_school: string; city: string; state: string;
-  hudl_link: string;
+  hudl_link: string; hudl_video_link: string; youtube_link: string;
   guardian_name: string; guardian_relationship: string; guardian_phone: string; guardian_email: string;
 };
 
@@ -397,7 +398,7 @@ const P2_EMPTY: P2Fields = {
   position: '', height: '', weight: '', graduation_year: '',
   gpa: '', sat_score: '', act_score: '', ncaa_id: '',
   high_school: '', city: '', state: '',
-  hudl_link: '',
+  hudl_link: '', hudl_video_link: '', youtube_link: '',
   guardian_name: '', guardian_relationship: '', guardian_phone: '', guardian_email: '',
 };
 
@@ -435,6 +436,8 @@ const P2_SECTIONS: { title: string; icon: React.ComponentProps<typeof Ionicons>[
   { title: 'Film', icon: 'videocam', rows: [
     { label: 'Hudl Film Link', key: 'hudl_link', keyboardType: 'url',
       hint: 'Your highlight reel URL from hudl.com' },
+    { label: 'Hudl Video Link', key: 'hudl_video_link', keyboardType: 'url' },
+    { label: 'YouTube Link', key: 'youtube_link', keyboardType: 'url' },
   ]},
   { title: 'Guardian', icon: 'shield', rows: [
     { label: 'Guardian Name', key: 'guardian_name' },
@@ -487,6 +490,8 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
       city:                  String(a.city                  ?? ''),
       state:                 String(a.state                 ?? ''),
       hudl_link:       String(a.hudl_link       ?? ''),
+      hudl_video_link: String(a.hudl_video_link ?? ''),
+      youtube_link: String(a.youtube_link ?? ''),
       guardian_name:         String(a.guardian_name         ?? ''),
       guardian_relationship: String(a.guardian_relationship ?? ''),
       guardian_phone:        String(a.guardian_phone        ?? ''),
@@ -809,6 +814,8 @@ export default function PhaseDetailScreen() {
   const onBack = () => router.back();
 
   if (athleteData.loading) return <LoadingScreen />;
+  if (phaseNumber === 4) return <Redirect href="/(tabs)/calendar" />;
+  if (gp.phaseLocked[phaseNumber - 1]) return <Redirect href={`/(tabs)/gameplan/${gp.activePhaseIdx + 1}` as any} />;
 
   if (!phase) {
     return (

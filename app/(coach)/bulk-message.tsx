@@ -1,6 +1,7 @@
+import { Redirect } from 'expo-router';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ export default function BulkMessageScreen() {
   const router = useRouter();
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
-  const { loading: coachLoading } = useCoachData();
+  const { coach, loading: coachLoading } = useCoachData();
   const { saved, loading: savedLoading } = useCoachSaved();
   const { templates, loading: templatesLoading } = useCoachTemplates();
   const { sending, progress, send } = useCoachBulkMessage();
@@ -41,15 +42,26 @@ export default function BulkMessageScreen() {
 
   const handleSend = async () => {
     if (!canSend) return;
-    await send(Array.from(selectedIds), templateId || '', message);
-    setMessage('');
-    setSelectedIds(new Set());
-    setTemplateId(null);
+    try {
+      const result = await send(Array.from(selectedIds), templateId || '', message);
+      setSelectedIds(new Set(result.failedIds));
+      if (result.failedIds.length) {
+        Alert.alert('Some messages were not sent', `${result.sent} sent, ${result.failedIds.length} failed. Your message and failed recipients are kept for retry.`);
+      } else {
+        setMessage('');
+        setTemplateId(null);
+        Alert.alert('Messages sent', `Sent to ${result.sent} prospect${result.sent === 1 ? '' : 's'}.`);
+      }
+    } catch (error) {
+      Alert.alert('Messages not sent', error instanceof Error ? error.message : 'Please try again. Your message has been kept.');
+    }
   };
 
   if (coachLoading || savedLoading || templatesLoading) {
     return <LoadingScreen />;
   }
+
+  if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.background }} contentContainerStyle={s.container}>
@@ -137,7 +149,7 @@ export default function BulkMessageScreen() {
         <Text style={s.warningText}>Contact info (phone, email) is not allowed in bulk messages.</Text>
       </View>
 
-      {sending && progress.total > 0 && (
+      {progress.total > 0 && (
         <View style={s.card}>
           <View style={s.progressRow}>
             <Text style={s.progressLabel}>Progress</Text>

@@ -180,11 +180,12 @@ export default function MatchScreen() {
       setCoachCards(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)));
       setSavedPrograms(saved.programIds);
 
+      // No status filter -- matches web's dashboard/match/page.tsx exactly
+      // (see the same fix and reasoning in (coach)/matches.tsx).
       const { data: matches } = await supabase
         .from('mutual_matches')
         .select('id, coach_id')
-        .eq('athlete_id', athlete!.id)
-        .eq('status', 'active');
+        .eq('athlete_id', athlete!.id);
       setExistingMatches(new Map((matches ?? []).map(m => [m.coach_id, m.id])));
 
       setLoading(false);

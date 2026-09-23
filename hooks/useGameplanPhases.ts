@@ -34,20 +34,24 @@ export function useGameplanPhases(
 ): GameplanPhases {
   return useMemo(() => {
     const phaseComplete = [
-      !!assessment?.v1_score,
+      (assessment?.v1_score ?? athlete?.v1_score) != null,
       isProfileComplete(athlete),
       matchCount >= 1,
     ];
 
-    const phaseLocked = PHASES.map((_, i) => i > 0 && !phaseComplete[i - 1]);
-    const phaseEffectiveDone = phaseComplete.map((c, i) => !phaseLocked[i] && c);
+    const phaseLocked: boolean[] = [];
+    const phaseEffectiveDone: boolean[] = [];
+    phaseComplete.forEach((complete, i) => {
+      phaseLocked[i] = i > 0 && !phaseEffectiveDone[i - 1];
+      phaseEffectiveDone[i] = !phaseLocked[i] && complete;
+    });
     const curIdx = phaseEffectiveDone.findIndex(c => !c);
     const activePhaseIdx = curIdx === -1 ? PHASES.length - 1 : curIdx;
     const completedCount = phaseEffectiveDone.filter(Boolean).length;
     const progressPct = (completedCount / PHASES.length) * 100;
 
     const getStatus = (i: number): PhaseStatus => {
-      if (phaseComplete[i]) return 'done';
+      if (phaseEffectiveDone[i]) return 'done';
       if (!phaseLocked[i]) return 'active';
       return 'upcoming';
     };
