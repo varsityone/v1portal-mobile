@@ -177,7 +177,8 @@ export default function RecruitDetailScreen() {
   const toggleSave = async () => {
     if (!coach?.id || !athlete) return;
     if (isSaved && savedId) {
-      await supabase.from('coach_saved_prospects').delete().eq('id', savedId);
+      const { data, error } = await supabase.from('coach_saved_prospects').delete().eq('id', savedId).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) { setErrorNotif('Could not remove saved prospect. Please try again.'); return; }
       setIsSaved(false);
       setSavedId(null);
     } else {

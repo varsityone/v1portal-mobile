@@ -755,8 +755,10 @@ function Phase4({ athleteId, phase, onBack }: {
   }, [athleteId]);
 
   const toggleTask = async (id: string, current: boolean) => {
+    if (!athleteId) return;
     setTasks(prev => prev.map(t => t.id === id ? { ...t, is_complete: !current } : t));
-    await supabase.from('recruiting_tasks').update({ is_complete: !current }).eq('id', id);
+    const { data, error } = await supabase.from('recruiting_tasks').update({ is_complete: !current }).eq('id', id).eq('athlete_id', athleteId).select('id').single();
+    if (error || !data) setTasks(prev => prev.map(t => t.id === id ? { ...t, is_complete: current } : t));
   };
 
   const pending = tasks.filter(t => !t.is_complete);

@@ -186,8 +186,8 @@ export default function AthletePublicProfileScreen() {
   const toggleSave = async () => {
     if (!coach?.id || !profile?.athleteId) return;
     if (isSaved && savedId) {
-      const { error } = await supabase.from('coach_saved_prospects').delete().eq('id', savedId);
-      if (error) { setErrorNotif('Could not remove saved prospect. Please try again.'); return; }
+      const { data, error } = await supabase.from('coach_saved_prospects').delete().eq('id', savedId).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) { setErrorNotif('Could not remove saved prospect. Please try again.'); return; }
       setIsSaved(false);
       setSavedId(null);
     } else {

@@ -273,10 +273,10 @@ export default function CalendarScreen() {
     setSaving(true);
     try {
       const values = { title: formTitle.trim(), event_type: formType, event_date: toDateStr(formDate) };
-      const { error } = editingId
-        ? await supabase.from('events').update(values).eq('id', editingId)
-        : await supabase.from('events').insert({ athlete_id: athlete.id, ...values });
-      if (error) throw error;
+      const { data, error } = editingId
+        ? await supabase.from('events').update(values).eq('id', editingId).eq('athlete_id', athlete.id).select('id').single()
+        : await supabase.from('events').insert({ athlete_id: athlete.id, ...values }).select('id').single();
+      if (error || !data) throw error ?? new Error('Event was not saved.');
       await fetchCustomEvents();
       setModalVisible(false);
     } catch {
@@ -285,11 +285,11 @@ export default function CalendarScreen() {
   };
 
   const handleDelete = async () => {
-    if (!editingId) return;
+    if (!editingId || !athlete?.id) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('events').delete().eq('id', editingId);
-      if (error) throw error;
+      const { data, error } = await supabase.from('events').delete().eq('id', editingId).eq('athlete_id', athlete.id).select('id').single();
+      if (error || !data) throw error ?? new Error('Event was not deleted.');
       await fetchCustomEvents();
       setModalVisible(false);
     } catch {
