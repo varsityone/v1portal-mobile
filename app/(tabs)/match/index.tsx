@@ -917,8 +917,8 @@ function createStyles(C: ThemeColors) {
     scoreChipText: { fontFamily: FontFamily.body, fontSize: 11.5, color: C.textMuted, flexShrink: 1 },
     scoreChipBold: { fontFamily: FontFamily.bodyBold, color: C.text },
 
-    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text, marginBottom: 8 },
-    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 20 },
+    pickerTitle: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text, marginBottom: 8, textAlign: 'center' },
+    pickerSub: { fontFamily: FontFamily.body, fontSize: 13, color: C.textMuted, lineHeight: 19, marginBottom: 20, textAlign: 'center' },
     pickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 16, padding: 18, marginBottom: 10 },
     pickerRowGradientBorder: { borderRadius: 17, padding: 1.5, marginBottom: 10 },
     pickerRowActiveInner: { marginBottom: 0, borderRadius: 15.5 },

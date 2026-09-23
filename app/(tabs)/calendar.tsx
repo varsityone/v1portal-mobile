@@ -393,7 +393,7 @@ export default function CalendarScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={s.header}>
-          <View>
+          <View style={s.headerText}>
             <Text style={s.title}>Calendar</Text>
             <Text style={s.subtitle}>Class of {gradYear} · camps, visits, deadlines & signing days</Text>
           </View>
@@ -565,6 +565,7 @@ function createStyles(C: ThemeColors) {
     container: { paddingTop: 20, paddingBottom: 40, paddingHorizontal: 20, gap: 14 },
 
     header:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    headerText: { flex: 1, marginRight: 12 },
     title:    { fontFamily: FontFamily.headline, fontSize: 26, color: C.text, letterSpacing: -0.5 },
     subtitle: { fontFamily: FontFamily.body, fontSize: 14, color: C.textMuted },
 
@@ -575,6 +576,7 @@ function createStyles(C: ThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+      flexShrink: 0,
     },
 
     legend:     { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },

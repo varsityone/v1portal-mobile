@@ -1,6 +1,6 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -237,8 +237,6 @@ export default function CoachSearchScreen() {
     );
   }
 
-  if (loading) return <LoadingScreen />;
-
   const activeFilterChips = [
     ...filters.positions.map(p => ({ key: `pos-${p}`, label: p, clear: () => toggleArrayFilter('positions', p) })),
     ...filters.gradYears.map(y => ({ key: `yr-${y}`, label: `Class of ${y}`, clear: () => toggleGradYear(y) })),
@@ -377,8 +375,13 @@ export default function CoachSearchScreen() {
         </View>
       )}
 
-      {/* Results */}
-      {prospects.length === 0 ? (
+      {/* Results -- loading only replaces this section, never the header,
+          level picker, search bar or filters above it (those used to get
+          wiped by a screen-wide loading state on every filter/search
+          change, which is what made the whole screen feel broken). */}
+      {loading ? (
+        <View style={s.resultsLoading}><ActivityIndicator color={C.textMuted} /></View>
+      ) : prospects.length === 0 ? (
         <EmptyState icon="search" title="No prospects found" body="Try adjusting your filters or search terms." />
       ) : view === 'grid' ? (
         <View style={s.resultGrid}>
@@ -655,6 +658,7 @@ function createStyles(C: ThemeColors) {
     bulkMessageBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, overflow: 'hidden' },
     bulkMessageText: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
+    resultsLoading: { paddingVertical: 48, alignItems: 'center' },
     resultGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
     prospectCard: { width: '47%', gap: 10 },
     prospectCardSelected: { borderWidth: 1, borderColor: C.border2 },
