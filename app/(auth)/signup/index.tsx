@@ -18,7 +18,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '../../../lib/supabase';
 import { signInWithGoogle } from '../../../lib/googleAuth';
 import { signUpWithApple } from '../../../lib/appleAuth';
-import { savePendingRole, isAccountRole, ROLE_BLURBS, ROLE_HEADLINES, type AccountRole } from '../../../lib/roleStorage';
+import { savePendingRole, isAccountRole, accountRoleForInsert, ROLE_BLURBS, ROLE_HEADLINES, type AccountRole } from '../../../lib/roleStorage';
 import { AuthInput } from '../../../components/AuthInput';
 import { GoogleButton } from '../../../components/GoogleButton';
 import { GRADIENT } from '../../../constants/Colors';
@@ -85,7 +85,7 @@ export default function SignupWizardScreen() {
       user_id: authData.user.id,
       email: authData.user.email ?? email.trim().toLowerCase(),
       full_name: fullName.trim(),
-      account_role: isFlagFootball ? 'flag_football' : role,
+      account_role: accountRoleForInsert(role),
       ...(isFlagFootball && { flag_football_waitlist: true }),
     };
 

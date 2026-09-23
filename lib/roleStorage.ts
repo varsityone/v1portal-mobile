@@ -6,6 +6,16 @@ export function isAccountRole(value: string | null | undefined): value is Accoun
   return !!value && ['athlete', 'parent', 'coach', 'flag_football'].includes(value);
 }
 
+// The DB's account_role column uses 'flag_football_waitlist' for this role,
+// not the shorter 'flag_football' used everywhere else in the app (URLs,
+// this module's own AccountRole type). Mirrors web's
+// lib/roleDestinations.ts accountRoleForInsert exactly -- use this when
+// writing account_role, not the raw AccountRole, or a mobile signup lands
+// with an account_role the web admin/waitlist tooling doesn't recognize.
+export function accountRoleForInsert(role: AccountRole): string {
+  return role === 'flag_football' ? 'flag_football_waitlist' : role;
+}
+
 // Mirrors web's lib/roleDestinations.ts ROLE_BLURBS/ROLE_HEADLINES exactly.
 export const ROLE_BLURBS: Record<AccountRole, string> = {
   athlete: "You'll complete the V1 Assessment and build your profile. Your parent can be given access later from your Settings page.",

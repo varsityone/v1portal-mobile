@@ -1,6 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from './supabase';
-import type { AccountRole } from './roleStorage';
+import { accountRoleForInsert, type AccountRole } from './roleStorage';
 
 export async function signUpWithApple(role: AccountRole): Promise<{ error?: string }> {
   try {
@@ -34,7 +34,7 @@ export async function signUpWithApple(role: AccountRole): Promise<{ error?: stri
         user_id: user.id,
         email: user.email ?? '',
         full_name: fullName,
-        account_role: isFlagFootball ? 'flag_football' : role,
+        account_role: accountRoleForInsert(role),
         ...(isFlagFootball && { flag_football_waitlist: true }),
       }], { onConflict: 'user_id' });
     }

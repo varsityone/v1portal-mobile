@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
-import { readAndClearPendingRole } from './roleStorage';
+import { accountRoleForInsert, readAndClearPendingRole } from './roleStorage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,7 +35,7 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
       user_id: user.id,
       email: user.email ?? '',
       full_name: fullName,
-      account_role: isFlagFootball ? 'flag_football' : (role ?? 'athlete'),
+      account_role: accountRoleForInsert(role ?? 'athlete'),
       ...(isFlagFootball && { flag_football_waitlist: true }),
     }], { onConflict: 'user_id' });
   }
