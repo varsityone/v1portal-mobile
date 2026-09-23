@@ -26,6 +26,7 @@ import { useColors } from '../../context/ThemeContext';
 const FEATURES = [
   'Full V1 Score breakdown',
   'Swipe every program (300+), every division',
+  '400+ coach contacts',
   'No cap — unlimited swipes and matches',
   'Message coaches the moment you match',
   '3–6 month recruiting roadmap',
@@ -126,8 +127,16 @@ export default function UpgradeScreen() {
 
   // Already subscribed — this screen doubles as "Manage Subscription" from
   // Settings, so an active member should land on a manage/cancel view,
-  // not get re-prompted to buy the plan they already have.
-  const isSubscribed = athlete?.subscription_status === 'active';
+  // not get re-prompted to buy the plan they already have. Matches web's
+  // dashboard/upgrade/page.tsx gate exactly -- this used to only check
+  // subscription_status, missing the is_admin/manual_access bypass web
+  // already has, so an admin or manually-granted account with no real
+  // active subscription would see the full paywall and a purchase button
+  // for something they already had for free.
+  const isSubscribed = !!athlete && (
+    (athlete.subscription_status === 'active' && athlete.subscription_tier === 'match_plus')
+    || !!athlete.is_admin || !!athlete.manual_access
+  );
   if (isSubscribed) {
     const storeSubscriptionsUrl = Platform.OS === 'ios'
       ? 'itms-apps://apps.apple.com/account/subscriptions'

@@ -30,6 +30,9 @@ const DIVISIONS = [
 
 const NJCAA_REGIONS = ['Region I', 'Region II', 'Region III', 'Region IV', 'Region V', 'Region VI', 'Region VII', 'Region VIII', 'Region IX', 'Region X', 'Region XI', 'Region XII'];
 
+// Matches web's coach/profile/edit/page.tsx exactly -- same POSITIONS source.
+const POSITION_COACHED_OPTIONS = ['Head Coach / Admin', 'Multiple Positions', ...POSITIONS.map(p => `${p} Coach`)];
+
 export default function CoachProfileEditScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
@@ -45,6 +48,7 @@ export default function CoachProfileEditScreen() {
     phone_public: false,
     division: '',
     region: null,
+    position_coached: '',
     position_needs: [],
     level_bands: [],
     years_coaching: 0,
@@ -56,6 +60,7 @@ export default function CoachProfileEditScreen() {
 
   const [saving, setSaving] = useState(false);
   const [showTitleMenu, setShowTitleMenu] = useState(false);
+  const [showPositionCoachedMenu, setShowPositionCoachedMenu] = useState(false);
   const [showDivisionMenu, setShowDivisionMenu] = useState(false);
   const [showRegionMenu, setShowRegionMenu] = useState(false);
 
@@ -70,6 +75,7 @@ export default function CoachProfileEditScreen() {
         phone_public: coach.phone_public || false,
         division: coach.division || '',
         region: coach.region || null,
+        position_coached: coach.position_coached || '',
         position_needs: coach.position_needs || [],
         level_bands: coach.level_bands || [],
         years_coaching: coach.years_coaching || 0,
@@ -95,6 +101,7 @@ export default function CoachProfileEditScreen() {
         phone_public: formData.phone_public,
         division: formData.division,
         region: formData.division !== 'NJCAA' ? null : formData.region,
+        position_coached: formData.position_coached,
         position_needs: formData.position_needs,
         level_bands: formData.level_bands,
         min_score: minScore,
@@ -226,7 +233,16 @@ export default function CoachProfileEditScreen() {
           </View>
           <Text style={s.sectionSub}>What positions do you coach and recruit, and what athlete level are you targeting?</Text>
           <View style={s.card}>
-            <View style={s.fieldRow}>
+            <FieldSelect
+              label="Position You Coach"
+              value={formData.position_coached}
+              options={POSITION_COACHED_OPTIONS}
+              onSelect={v => setFormData({ ...formData, position_coached: v })}
+              open={showPositionCoachedMenu}
+              setOpen={setShowPositionCoachedMenu}
+              C={C}
+            />
+            <View style={[s.fieldRow, s.fieldRowBorder]}>
               <Text style={s.label}>Positions You're Recruiting</Text>
               <View style={s.chipWrap}>
                 {POSITIONS.map(pos => (
