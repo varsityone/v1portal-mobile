@@ -346,7 +346,7 @@ export default function DashboardScreen() {
               {gp.completedCount === 0
                 ? "Let's get you recruited. Start with Phase 1 below."
                 : allPhasesDone
-                ? `You've completed all ${gp.phases.length} phases. Stay active and keep pushing.`
+                ? `You've completed all ${gp.phases.length} phases.`
                 : `You're on Phase ${gp.activePhaseIdx + 1} of ${gp.phases.length}. Keep the momentum going.`}
             </Text>
 

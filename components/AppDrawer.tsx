@@ -110,7 +110,7 @@ function IconYouTube({ color }: { color: string }) {
 }
 
 const SOCIAL = [
-  { label: 'X',         url: 'https://x.com/v1portal',               Icon: IconX         },
+  { label: 'X',         url: 'https://x.com/enterv1portal',          Icon: IconX         },
   { label: 'LinkedIn',  url: 'https://www.linkedin.com/company/varsityone/',    Icon: IconLinkedIn  },
   { label: 'Facebook',  url: 'https://facebook.com/v1portal',            Icon: IconFacebook  },
   { label: 'Instagram', url: 'https://instagram.com/enterv1portal',          Icon: IconInstagram },

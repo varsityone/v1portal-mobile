@@ -93,7 +93,7 @@ export default function DrawerLayout() {
         <Drawer.Screen name="calendar"         options={{ title: 'Calendar', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="analytics"        options={{ title: 'Analytics', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="profile"          options={{ title: 'Build Profile', drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="edit-profile"     options={{ title: 'Edit Profile', drawerItemStyle: { display: 'none' } }} />
+        <Drawer.Screen name="edit-profile"     options={{ title: 'Edit Profile', drawerItemStyle: { display: 'none' }, headerShown: false }} />
         <Drawer.Screen name="settings"         options={{ title: 'Settings', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="upgrade"          options={{ title: 'Upgrade', drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="index"            options={{ title: 'Dashboard', drawerItemStyle: { display: 'none' } }} />

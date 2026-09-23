@@ -88,8 +88,6 @@ export default function CoachSetupScreen() {
           <Ionicons name="chevron-back" size={22} color={Colors.text} />
           <Text style={styles.backText}>Back</Text>
         </Pressable>
-        <Text style={styles.title}>Program Setup</Text>
-        <View style={styles.backPlaceholder} />
       </View>
 
       {Platform.OS === 'web' ? (
@@ -157,31 +155,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 56,
     paddingBottom: 12,
-    backgroundColor: Colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    backgroundColor: 'transparent',
   },
   back: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    width: 80,
   },
   backText: {
     color: Colors.text,
     fontSize: 16,
-  },
-  backPlaceholder: {
-    width: 80,
-  },
-  title: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '600',
   },
   webview: {
     flex: 1,
