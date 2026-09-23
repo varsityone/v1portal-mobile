@@ -57,7 +57,7 @@ export function GameplanNavHeader() {
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
-    root: { backgroundColor: C.background, borderBottomWidth: 1, borderBottomColor: C.border },
+    root: { backgroundColor: C.background },
     topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingTop: 6 },
     backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
