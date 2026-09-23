@@ -55,6 +55,7 @@ export default function MatchThreadScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const listRef = useRef<FlatList>(null);
 
   const loadMessages = useCallback(async () => {
@@ -97,7 +98,12 @@ export default function MatchThreadScreen() {
     const content = input.trim();
     if (!content || sending || !athlete?.id) return;
     setSending(true);
-    setInput('');
+    setSendError('');
+    // Cleared only on confirmed success below -- clearing it here meant a
+    // blocked/failed send (e.g. the coach-verification 409 from
+    // /api/match/message) silently lost whatever was typed, with no error
+    // shown and no way to recover it. "User can retry" wasn't actually
+    // possible since there was nothing left to retry.
     try {
       const res = await fetch(`${API_BASE}/api/match/message`, {
         method: 'POST',
@@ -113,9 +119,15 @@ export default function MatchThreadScreen() {
           queue_until: null,
         }),
       });
-      if (res.ok) await loadMessages();
+      if (res.ok) {
+        setInput('');
+        await loadMessages();
+      } else {
+        const body = await res.json().catch(() => null);
+        setSendError(body?.error || 'Unable to send. Please try again.');
+      }
     } catch {
-      // Message just won't send — user can retry.
+      setSendError('Unable to send. Please try again.');
     }
     setSending(false);
   };
@@ -170,6 +182,7 @@ export default function MatchThreadScreen() {
         />
 
         {/* Input */}
+        {!!sendError && <Text accessibilityRole="alert" style={s.sendError}>{sendError}</Text>}
         <View style={s.inputRow}>
           <TextInput
             value={input}
@@ -213,6 +226,7 @@ function createStyles(C: ThemeColors) {
     bubbleThemWrap: { maxWidth: '75%', borderRadius: 18, borderBottomLeftRadius: 4, backgroundColor: C.surfaceAlt, paddingHorizontal: 14, paddingVertical: 10 },
     bubbleText: { fontFamily: FontFamily.body, fontSize: 13, color: '#fff', lineHeight: 19 },
 
+    sendError: { fontFamily: FontFamily.body, fontSize: 12, color: C.error, paddingHorizontal: 16, paddingTop: 6 },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, padding: 16, paddingTop: 8 },
     input: { flex: 1, backgroundColor: C.surface, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 12, fontFamily: FontFamily.body, fontSize: 13, color: C.text, maxHeight: 100 },
     sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

@@ -3,8 +3,8 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { FontFamily } from '../constants/Fonts';
 
-export default function SaveProgramDialog({ name, saved, onSave, onClose }: {
-  name: string; saved: boolean; onSave: () => Promise<void>; onClose: () => void;
+export default function SaveProgramDialog({ name, saved, onSave, onClose, onContinueAfterSave }: {
+  name: string; saved: boolean; onSave: () => Promise<void>; onClose: () => void; onContinueAfterSave?: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -14,7 +14,7 @@ export default function SaveProgramDialog({ name, saved, onSave, onClose }: {
         <Ionicons name="bookmark" size={64} color="#fff" accessible={false} style={{ marginBottom: 20 }} />
         <Text accessibilityRole="header" style={styles.title}>Matching isn’t available yet</Text>
         <Text style={styles.body}>{name} isn’t available for matching right now. Save this program to revisit later. Saving won’t send a message or create a match.</Text>
-        {saved && <Text accessibilityLiveRegion="polite" style={[styles.body, { color: '#fff', marginTop: 16 }]}>Saved! Find it under Swipe History → Saved.</Text>}
+        {saved && <Text accessibilityLiveRegion="polite" style={[styles.body, { color: '#fff', marginTop: 16 }]}>Saved! Find it under Swipe History → My interest.</Text>}
         {!!error && <Text accessibilityRole="alert" style={[styles.body, { color: '#fca5a5', marginTop: 16 }]}>{error}</Text>}
         <View style={styles.actions}>
           {!saved && <Pressable accessibilityRole="button" accessibilityState={{ disabled: saving, busy: saving }} disabled={saving} style={[styles.primary, saving && { opacity: 0.6 }]} onPress={async () => {
@@ -22,7 +22,12 @@ export default function SaveProgramDialog({ name, saved, onSave, onClose }: {
             try { await onSave(); } catch { setError('Unable to save this program. Please try again.'); }
             finally { setSaving(false); }
           }}><Text style={styles.primaryText}>{saving ? 'Saving…' : 'Save for later'}</Text></Pressable>}
-          <Pressable accessibilityRole="button" disabled={saving} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>{saved ? 'Keep browsing' : 'Not now'}</Text></Pressable>
+          {/* Once saved, "Keep browsing" needs to actually advance to the next
+              card, not just dismiss the dialog and leave the swiped-past card
+              on screen -- onContinueAfterSave (set by the caller) does that;
+              onClose (dismiss with no side effect) is still correct for
+              "Not now" before anything's been saved. */}
+          <Pressable accessibilityRole="button" disabled={saving} onPress={saved ? (onContinueAfterSave ?? onClose) : onClose} style={styles.secondary}><Text style={styles.secondaryText}>{saved ? 'Keep browsing' : 'Not now'}</Text></Pressable>
         </View>
       </ScrollView>
     </View>

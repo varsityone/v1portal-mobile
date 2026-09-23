@@ -71,6 +71,7 @@ export default function AthleteMessageThreadScreen() {
   const [coachLastActive, setCoachLastActive] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [, setPresenceTick] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -140,9 +141,10 @@ export default function AthleteMessageThreadScreen() {
     message_type?: 'text' | 'image';
     attachment_url?: string;
     attachment_name?: string;
-  }) => {
-    if (!athlete?.id || !coachId || !conversationId) return;
+  }): Promise<boolean> => {
+    if (!athlete?.id || !coachId || !conversationId) return false;
     setSending(true);
+    setSendError('');
     try {
       const { data: msg, error } = await supabase.rpc('send_athlete_message', {
         p_conversation_id: conversationId as string,
@@ -159,8 +161,11 @@ export default function AthleteMessageThreadScreen() {
         setMessages(m => [...m, msg as Message]);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
+      return true;
     } catch (e) {
       console.error('Send error:', e);
+      setSendError('Unable to send. Please try again.');
+      return false;
     } finally {
       setSending(false);
     }
@@ -169,8 +174,11 @@ export default function AthleteMessageThreadScreen() {
   const handleSend = async () => {
     if (!text.trim() || sending) return;
     const content = text.trim();
-    setText('');
-    await appendAndSend({ content });
+    // Only clear the composer once the send actually succeeds -- clearing
+    // it first meant a failed send (network error, RPC rejection) silently
+    // lost whatever was typed, with nothing shown and no way to recover it.
+    const ok = await appendAndSend({ content });
+    if (ok) setText('');
   };
 
   const handleAttachImage = async () => {
@@ -180,12 +188,14 @@ export default function AthleteMessageThreadScreen() {
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
     setSending(true);
+    setSendError('');
     try {
       const ext = (asset.uri.split('.').pop() || 'jpg').toLowerCase();
       const url = await uploadAttachment(asset.uri, ext, 'images');
       await appendAndSend({ content: asset.fileName ?? 'Photo', message_type: 'image', attachment_url: url, attachment_name: asset.fileName ?? 'Photo' });
     } catch (e) {
       console.error('Image upload error:', e);
+      setSendError('Unable to send that photo. Please try again.');
     } finally {
       setSending(false);
     }
@@ -234,6 +244,7 @@ export default function AthleteMessageThreadScreen() {
           />
         )}
 
+        {!!sendError && <Text accessibilityRole="alert" style={s.sendError}>{sendError}</Text>}
         <View style={s.inputWrap}>
           <TextInput
             style={s.input}
@@ -350,6 +361,7 @@ function createStyles(C: ThemeColors) {
     msgFoot: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingHorizontal: 3 },
     msgTime: { fontFamily: FontFamily.mono, fontSize: 10, color: C.textDim },
 
+    sendError: { fontFamily: FontFamily.body, fontSize: 12, color: C.error, paddingHorizontal: 16, paddingTop: 6 },
     inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, paddingBottom: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
     input: { flex: 1, backgroundColor: C.surfaceAlt, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, maxHeight: 100, fontFamily: FontFamily.body, fontSize: 14, color: C.text },
     iconBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surfaceAlt },

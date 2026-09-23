@@ -64,6 +64,7 @@ export default function CoachMatchThreadScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [checkingCompliance, setCheckingCompliance] = useState(false);
   const [blocked, setBlocked] = useState<{ result: ComplianceResult; content: string } | null>(null);
   const listRef = useRef<FlatList>(null);
@@ -108,6 +109,7 @@ export default function CoachMatchThreadScreen() {
   const sendMessage = async (content: string, queueUntil: string | null) => {
     if (!coach?.id) return;
     setSending(true);
+    setSendError('');
     try {
       const res = await fetch(`${API_BASE}/api/match/message`, {
         method: 'POST',
@@ -127,9 +129,12 @@ export default function CoachMatchThreadScreen() {
         setInput('');
         setBlocked(null);
         await loadMessages();
+      } else {
+        const body = await res.json().catch(() => null);
+        setSendError(body?.error || 'Unable to send. Please try again.');
       }
     } catch {
-      // Message just won't send — user can retry.
+      setSendError('Unable to send. Please try again.');
     }
     setSending(false);
   };
@@ -248,6 +253,7 @@ export default function CoachMatchThreadScreen() {
         />
 
         {/* Input */}
+        {!!sendError && <Text accessibilityRole="alert" style={s.sendError}>{sendError}</Text>}
         <View style={s.inputRow}>
           <TextInput
             value={input}
@@ -302,6 +308,7 @@ function createStyles(C: ThemeColors) {
     queuedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
     queuedText: { fontFamily: FontFamily.mono, fontSize: 10 },
 
+    sendError: { fontFamily: FontFamily.body, fontSize: 12, color: C.error, paddingHorizontal: 16, paddingTop: 6 },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, padding: 16, paddingTop: 8 },
     input: { flex: 1, backgroundColor: C.surface, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 12, fontFamily: FontFamily.body, fontSize: 13, color: C.text, maxHeight: 100 },
     sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

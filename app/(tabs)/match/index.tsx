@@ -76,6 +76,7 @@ export default function MatchScreen() {
 
   const [loading, setLoading] = useState(true);
   const [coachCards, setCoachCards] = useState<CoachCard[]>([]);
+  const [programDirectory, setProgramDirectory] = useState<CoachCard[]>([]);
   const [savedPrograms, setSavedPrograms] = useState<string[]>([]);
   const [showSavedPrograms, setShowSavedPrograms] = useState(false);
   const [unavailableProgram, setUnavailableProgram] = useState<CoachCard | null>(null);
@@ -129,7 +130,7 @@ export default function MatchScreen() {
   }, [historyOpen, athlete?.id]);
 
   const filteredHistory = swipeHistory.filter(swipe => historyFilter === 'all' || historyFilter === 'saved' || swipe.direction === historyFilter);
-  const savedCards = coachCards.filter(c => savedPrograms.includes(c.program_id));
+  const savedCards = programDirectory.filter(c => savedPrograms.includes(c.program_id));
 
   const unsaveProgram = async (programId: string) => {
     setUnsavingId(programId);
@@ -169,6 +170,13 @@ export default function MatchScreen() {
       const swipedIds = (swiped ?? []).map(s => s.coach_id);
 
       const [programs, saved] = await Promise.all([apiGet('/api/match/programs'), apiGet('/api/match/saved-programs')]);
+      // Kept separately from coachCards (below), same split as web: this is
+      // the full, unfiltered list, used to look up a saved/interested
+      // program by id regardless of swipe history. coachCards excludes
+      // already-swiped cards for the swipeable deck -- using it for the
+      // interest list too meant a program you'd saved could silently
+      // disappear from "My interest" the moment you later passed on it.
+      setProgramDirectory(programs.cards);
       setCoachCards(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)));
       setSavedPrograms(saved.programIds);
 
@@ -476,6 +484,13 @@ export default function MatchScreen() {
     name={unavailableProgram.school_name || 'This program'}
     saved={savedPrograms.includes(unavailableProgram.program_id)}
     onClose={() => setUnavailableProgram(null)}
+    onContinueAfterSave={() => {
+      // Saving doesn't remove the card from `deck` (unlike web's swipe
+      // deck, which filters saved-but-unconfirmed programs out), so
+      // advancing the index by one is enough to move to the next card.
+      setCurrentIndex(i => i + 1);
+      setUnavailableProgram(null);
+    }}
     onSave={async () => {
       const response = await fetch(`${API_BASE}/api/match/saved-programs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
@@ -632,23 +647,39 @@ export default function MatchScreen() {
             <Pressable style={s.passBtn} onPress={() => handleSwipe('pass')} disabled={swiping}>
               <Ionicons name="close" size={22} color="#fff" />
             </Pressable>
-            <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
-              <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Ionicons name="add" size={26} color="#fff" />
-            </Pressable>
-            <Pressable
-              style={[s.messageBtnCircle, isAlreadyMatched && s.messageBtnCircleMatched]}
-              onPress={() => {
-                if (!current.match_available) { setUnavailableProgram(current); } else if (isAlreadyMatched) {
-                  router.push(existingMatchId ? (`/(tabs)/match/${existingMatchId}` as any) : ('/(tabs)/match' as any));
-                } else {
-                  handleSwipe('like');
-                }
-              }}
-              disabled={swiping}
-            >
-              <Ionicons name="chatbubble" size={18} color={isAlreadyMatched ? C.success : '#fff'} />
-            </Pressable>
+            {current.match_available ? (
+              <>
+                <Pressable style={s.likeBtnWrap} onPress={() => handleSwipe('like')} disabled={swiping}>
+                  <LinearGradient colors={SIGNAL_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                  <Ionicons name="add" size={26} color="#fff" />
+                </Pressable>
+                <Pressable
+                  style={[s.messageBtnCircle, isAlreadyMatched && s.messageBtnCircleMatched]}
+                  onPress={() => {
+                    if (isAlreadyMatched) {
+                      router.push(existingMatchId ? (`/(tabs)/match/${existingMatchId}` as any) : ('/(tabs)/match' as any));
+                    } else {
+                      handleSwipe('like');
+                    }
+                  }}
+                  disabled={swiping}
+                >
+                  <Ionicons name="chatbubble" size={18} color={isAlreadyMatched ? C.success : '#fff'} />
+                </Pressable>
+              </>
+            ) : (
+              // Not match_available: no like/message pair to show (there's no
+              // coach to like or message yet), same as web's swipe deck. A
+              // single pill replaces both, opening the same "not available"
+              // dialog either way -- previously the like/message buttons
+              // still rendered here and silently redirected into that
+              // dialog on tap, which looked like a real coach you could
+              // message when there wasn't one.
+              <Pressable style={s.addInterestBtn} onPress={() => setUnavailableProgram(current)} disabled={swiping}>
+                <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                <Text style={s.addInterestBtnText}>{savedPrograms.includes(current.program_id) ? 'Added to interest' : 'Add to interest'}</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
@@ -766,11 +797,14 @@ function SwipeHistoryDrawer({
   C: ThemeColors;
 }) {
   const s = useMemo(() => historyStyles(C), [C]);
+  // Order and label match web's swipe-history drawer exactly (My interest
+  // first, then All/Liked/Passed) -- this used to read "Saved", last in the
+  // row, which was mobile's own stale copy from before web's rename.
   const FILTERS: { key: 'all' | 'like' | 'pass' | 'saved'; label: string }[] = [
+    { key: 'saved', label: `My interest (${savedCards.length})` },
     { key: 'all', label: 'All' },
     { key: 'like', label: 'Liked' },
     { key: 'pass', label: 'Passed' },
-    { key: 'saved', label: 'Saved' },
   ];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -801,14 +835,14 @@ function SwipeHistoryDrawer({
         <ScrollView style={{ flex: 1 }}>
           {filter === 'saved' ? (
             savedCards.length === 0 ? (
-              <View style={s.centerMsg}><Text style={s.centerMsgText}>No saved programs yet</Text></View>
+              <View style={s.centerMsg}><Text style={s.centerMsgText}>Your interest list is empty. Add a program while browsing to find it here.</Text></View>
             ) : (
               savedCards.map(card => (
                 <Pressable key={card.program_id} style={s.row} onPress={() => onSelectSaved(card)}>
                   <Image source={card.profile_photo_url ? { uri: card.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.name} numberOfLines={1}>{card.school_name ?? 'Unknown'}</Text>
-                    <Text style={s.meta}>{DIVISION_LABELS[card.division as Division] ?? card.division}</Text>
+                    <Text style={s.meta}>{DIVISION_LABELS[card.division as Division] ?? card.division} · {card.match_available ? 'Verified coach available' : 'Verification pending'} · Added to interest</Text>
                   </View>
                   <Pressable
                     hitSlop={8}
@@ -954,5 +988,7 @@ function createStyles(C: ThemeColors) {
     likeBtnWrap: { width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
     messageBtnCircle: { width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
     messageBtnCircleMatched: { backgroundColor: 'rgba(113,255,126,0.16)' },
+    addInterestBtn: { paddingVertical: 16, paddingHorizontal: 24, borderRadius: 100, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    addInterestBtnText: { fontFamily: FontFamily.bodyExtraBold, fontSize: 14, color: '#fff' },
   });
 }
