@@ -21,7 +21,7 @@ const whiteCardStyles = StyleSheet.create({
 
 const TIMEFRAMES = [
   { label: 'Last 7 days', value: 'week' },
-  { label: 'Last month', value: 'month' },
+  { label: 'Last 30 days', value: 'month' },
   { label: 'All time', value: 'all' },
 ] as const;
 
@@ -29,7 +29,7 @@ export default function AnalyticsScreen() {
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const { coach, loading: coachLoading } = useCoachData();
-  const { kpis, loading, timeframe, setTimeframe } = useCoachAnalytics();
+  const { kpis, loading, error, timeframe, setTimeframe, refresh } = useCoachAnalytics();
 
   if (coachLoading || loading) {
     return <LoadingScreen />;
@@ -38,7 +38,7 @@ export default function AnalyticsScreen() {
   if (!coach?.verified) return <Redirect href="/(coach)" />;
 
   if (!kpis) {
-    return <View style={s.center}><Text style={s.errorText}>Unable to load analytics</Text></View>;
+    return <View style={s.center}><Text style={s.errorText}>{error || "Unable to load analytics"}</Text><Pressable onPress={refresh}><Text style={{ color: C.primary, marginTop: 12 }}>Retry</Text></Pressable></View>;
   }
 
   return (
@@ -69,34 +69,34 @@ export default function AnalyticsScreen() {
         {/* KPI Tiles */}
         <View style={s.kpiRow}>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.viewed}</Text>
             <Text style={s.kpiLabel}>Prospects Viewed</Text>
+            <Text style={s.kpiValue}>{kpis.viewed}</Text>
           </WhiteCard>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.liked}</Text>
             <Text style={s.kpiLabel}>Likes</Text>
+            <Text style={s.kpiValue}>{kpis.liked}</Text>
           </WhiteCard>
         </View>
 
         <View style={s.kpiRow}>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.matched}</Text>
             <Text style={s.kpiLabel}>Matches</Text>
+            <Text style={s.kpiValue}>{kpis.matched}</Text>
           </WhiteCard>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.saved}</Text>
             <Text style={s.kpiLabel}>Saved</Text>
+            <Text style={s.kpiValue}>{kpis.saved}</Text>
           </WhiteCard>
         </View>
 
         <View style={s.kpiRow}>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.messaged}</Text>
             <Text style={s.kpiLabel}>Messaged</Text>
+            <Text style={s.kpiValue}>{kpis.messaged}</Text>
           </WhiteCard>
           <WhiteCard style={s.kpiCard}>
-            <Text style={s.kpiValue}>{kpis.conversionRate}%</Text>
             <Text style={s.kpiLabel}>Conversion Rate</Text>
+            <Text style={s.kpiValue}>{kpis.conversionRate}%</Text>
           </WhiteCard>
         </View>
 
@@ -117,17 +117,17 @@ export default function AnalyticsScreen() {
           </View>
         </WhiteCard>
 
+        <View style={{ flexDirection: 'row', gap: 16 }}>
         {/* Top Positions */}
-        {kpis.topPositions.length > 0 && (
-          <WhiteCard>
+        {true && (
+          <WhiteCard style={{ flex: 1 }}>
             <Text style={s.sectionTitle}>Top Positions</Text>
             <View style={{ gap: 8 }}>
               {kpis.topPositions.map((pos, i) => (
                 <View key={i} style={s.breakdownRow}>
                   <Text style={s.breakdownLabel}>{pos.position}</Text>
                   <View style={{ flex: 1 }} />
-                  <Text style={s.breakdownValue}>{pos.count} views</Text>
-                  <Text style={s.breakdownValue}>{pos.avgScore} avg</Text>
+                  <Text style={s.breakdownValue}>{pos.count}</Text>
                 </View>
               ))}
             </View>
@@ -135,21 +135,22 @@ export default function AnalyticsScreen() {
         )}
 
         {/* Top States */}
-        {kpis.topStates.length > 0 && (
-          <WhiteCard>
+        {true && (
+          <WhiteCard style={{ flex: 1 }}>
             <Text style={s.sectionTitle}>Top States</Text>
             <View style={{ gap: 8 }}>
               {kpis.topStates.map((st, i) => (
                 <View key={i} style={s.breakdownRow}>
                   <Text style={s.breakdownLabel}>{st.state}</Text>
                   <View style={{ flex: 1 }} />
-                  <Text style={s.breakdownValue}>{st.count} views</Text>
+                  <Text style={s.breakdownValue}>{st.count}</Text>
                 </View>
               ))}
             </View>
           </WhiteCard>
         )}
 
+        </View>
         {/* Top Liked Prospects */}
         {kpis.topLiked.length > 0 && (
           <WhiteCard>
@@ -160,7 +161,7 @@ export default function AnalyticsScreen() {
                   <Avatar uri={athlete.profile_photo_url} name={athlete.full_name} size={40} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.prospectName} numberOfLines={1}>{athlete.full_name}</Text>
-                    <Text style={s.prospectMeta}>{athlete.position ?? '—'}</Text>
+                    <Text style={s.prospectMeta}>{athlete.state ?? 'Unknown'}</Text>
                   </View>
                   {athlete.v1_score != null && <Text style={s.prospectScore}>{athlete.v1_score}</Text>}
                 </View>
@@ -179,7 +180,7 @@ function createStyles(C: ThemeColors) {
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
     header: { marginBottom: 20 },
     eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, color: C.textDim, letterSpacing: 1, marginBottom: 6 },
-    title: { fontFamily: FontFamily.headline, fontSize: 28, color: C.text },
+    title: { fontFamily: FontFamily.statNumber, fontSize: 28, color: C.text },
 
     tabRow: { flexDirection: 'row', gap: 8 },
     tabActive: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 100 },
@@ -187,14 +188,14 @@ function createStyles(C: ThemeColors) {
     tabInactive: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 100 },
     tabInactiveText: { fontFamily: FontFamily.bodySemi, fontSize: 13 },
 
-    kpiRow: { flexDirection: 'row', gap: 12 },
-    kpiCard: { flex: 1, alignItems: 'center', paddingVertical: 20 },
+    kpiRow: { flexDirection: 'row', gap: 16 },
+    kpiCard: { flex: 1, alignItems: 'flex-start', padding: 20 },
     // Everything below sits on a WhiteCard (always #fff), so uses fixed
     // dark-on-white colors -- black numbers, gray labels -- rather than
     // C.text / C.textDim, which are theme-aware and would go near-white in
     // dark mode. No per-metric accent colors: one uniform black number.
-    kpiValue: { fontFamily: FontFamily.headline, fontSize: 28, color: '#1a1a1a', marginBottom: 4 },
-    kpiLabel: { fontFamily: FontFamily.body, fontSize: 12, color: '#999' },
+    kpiValue: { fontFamily: FontFamily.statNumber, fontSize: 32, color: '#1a1a1a', marginBottom: 4 },
+    kpiLabel: { fontFamily: FontFamily.bodyBold, fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
 
     sectionTitle: { fontFamily: FontFamily.bodyBold, fontSize: 14, color: '#1a1a1a', marginBottom: 10 },
     funnelBar: { flexDirection: 'row', height: 24, borderRadius: 12, overflow: 'hidden', marginBottom: 10 },
@@ -203,7 +204,7 @@ function createStyles(C: ThemeColors) {
     funnelLabel: { fontFamily: FontFamily.body, fontSize: 11, color: '#999' },
 
     breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    breakdownLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#1a1a1a', minWidth: 80 },
+    breakdownLabel: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: '#1a1a1a', minWidth: 0 },
     breakdownValue: { fontFamily: FontFamily.body, fontSize: 12, color: '#999' },
 
     prospectRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },

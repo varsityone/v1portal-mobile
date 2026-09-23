@@ -1,79 +1,37 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCoachData } from './useCoachData';
+import { deliverBulkMessages, BulkMessageProgress, BulkMessageResult } from '../lib/bulkMessageDelivery';
+export type { BulkMessageProgress, BulkMessageResult } from '../lib/bulkMessageDelivery';
 
-const API_BASE = 'https://v1portal.com';
-const CONTACT_INFO_PATTERN = /(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
-
-export interface BulkMessageProgress { total: number; sent: number; failed: number; }
-export interface BulkMessageResult { sent: number; failedIds: string[]; }
-export interface UseCoachBulkMessageResult {
-  sending: boolean;
-  progress: BulkMessageProgress;
-  send: (athleteIds: string[], templateId: string, customContent: string) => Promise<BulkMessageResult>;
-}
-
-export function useCoachBulkMessage(): UseCoachBulkMessageResult {
+export function useCoachBulkMessage() {
   const { coach } = useCoachData();
   const [sending, setSending] = useState(false);
+  const busy = useRef(false);
   const [progress, setProgress] = useState<BulkMessageProgress>({ total: 0, sent: 0, failed: 0 });
-
-  const send = useCallback(async (athleteIds: string[], templateId: string, customContent: string) => {
+  const send = useCallback(async (athleteIds: string[], templateId: string, customContent: string): Promise<BulkMessageResult> => {
     if (!coach?.id || !coach.verified) throw new Error('A verified coach account is required.');
-    const recipients = [...new Set(athleteIds)];
-    if (!recipients.length) throw new Error('Select at least one prospect.');
-    setSending(true);
-    setProgress({ total: recipients.length, sent: 0, failed: 0 });
+    if (busy.current) throw new Error('Messages are already being sent.');
+    busy.current = true; setSending(true);
+    setProgress({ total: new Set(athleteIds).size, sent: 0, failed: 0 });
     try {
       let content = customContent.trim();
       if (!content && templateId) {
-        const { data, error } = await supabase.from('coach_message_templates')
-          .select('content').eq('id', templateId).eq('coach_id', coach.id).single();
+        const { data, error } = await supabase.from('coach_message_templates').select('content').eq('id', templateId).eq('coach_id', coach.id).single();
         if (error) throw error;
-        content = data?.content?.trim() ?? '';
+        content = data?.content ?? '';
       }
-      if (!content) throw new Error('Enter a message before sending.');
-      if (CONTACT_INFO_PATTERN.test(content)) throw new Error('Remove phone numbers and email addresses before sending.');
-
-      const response = await fetch(`${API_BASE}/api/compliance/check`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coach_id: coach.id, division: coach.division, region: coach.region ?? undefined, action: 'message', athlete_id: recipients[0] }),
-      });
-      if (!response.ok) throw new Error('Could not check the recruiting contact period. Please try again.');
-      const compliance = await response.json();
-      if (compliance.allowed !== true) throw new Error('Messaging is not allowed during the current recruiting period.');
-
-      const result: BulkMessageResult = { sent: 0, failedIds: [] };
-      for (const athleteId of recipients) {
-        try {
-          const { data: existing, error: lookupError } = await supabase.from('coach_athlete_conversations')
-            .select('id').eq('coach_id', coach.id).eq('athlete_id', athleteId).maybeSingle();
-          if (lookupError) throw lookupError;
-          let conversationId = existing?.id;
-          if (!conversationId) {
-            const { data: created, error } = await supabase.from('coach_athlete_conversations')
-              .insert({ coach_id: coach.id, athlete_id: athleteId }).select().single();
-            if (error) throw error;
-            conversationId = created?.id;
-          }
-          if (!conversationId) throw new Error('Conversation could not be created.');
-          // This RPC inserts the message and updates the conversation atomically.
-          // A returned error is a failed send, never a reason to bypass the RPC.
-          const { error } = await supabase.rpc('send_coach_message', {
-            p_conversation_id: conversationId, p_coach_id: coach.id,
-            p_athlete_id: athleteId, p_content: content,
+      return await deliverBulkMessages({ db: supabase, coach: { id: coach.id, verified: !!coach.verified }, athleteIds, content, onProgress: setProgress,
+        checkCompliance: async athleteId => {
+          const response = await fetch('https://v1portal.com/api/compliance/check', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coach_id: coach.id, division: coach.division, region: coach.region, action: 'message', athlete_id: athleteId }),
           });
-          if (error) throw error;
-          result.sent += 1;
-        } catch {
-          result.failedIds.push(athleteId);
-        }
-        setProgress({ total: recipients.length, sent: result.sent, failed: result.failedIds.length });
-      }
-      return result;
-    } finally {
-      setSending(false);
-    }
+          if (!response.ok) throw new Error('Could not check the recruiting contact period. Please try again.');
+          return (await response.json()).allowed === true;
+        },
+      });
+    } finally { busy.current = false; setSending(false); }
   }, [coach]);
   return { sending, progress, send };
 }

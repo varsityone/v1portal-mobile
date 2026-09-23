@@ -28,6 +28,7 @@ import GradientRing from '../../../components/GradientRing';
 import GradientIcon from '../../../components/GradientIcon';
 import ProfileGuidance from '../../../components/ProfileGuidance';
 import ProfilePhotoEditor from '../../../components/ProfilePhotoEditor';
+import { gameplanCompletion, saveGameplanProfile } from '../../../lib/gameplanProfile';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -470,10 +471,12 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [attemptedContinue, setAttemptedContinue] = useState(false);
+  const [testsNotTaken, setTestsNotTaken] = useState(false);
 
   useEffect(() => {
     if (!athlete) return;
     const a = athlete;
+    setTestsNotTaken(!!a.test_scores_not_taken);
     setFields({
       full_name:             String(a.full_name             ?? ''),
       phone:                 String(a.phone                 ?? ''),
@@ -504,8 +507,9 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
     setSaved(false);
   };
 
-  const completed = P2_TRACKED.filter(k => { const v = fields[k]; return v !== null && v !== undefined && v !== ''; }).length;
-  const pct = Math.round((completed / P2_TRACKED.length) * 100);
+  const completion = gameplanCompletion(fields, testsNotTaken);
+  const completed = completion.count;
+  const pct = Math.round((completed / completion.total) * 100);
 
   const buildStarterBio = () => {
     const pos = fields.position || '[Position]';
@@ -518,16 +522,18 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
     set('bio')(`${pos} | ${yr} | ${sch} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity`);
   };
 
-  const handleSave = async () => {
-    if (!athleteId) return;
+  const handleSave = async (continueAfter = false) => {
+    if (!athleteId || saving) return;
+    if (continueAfter && !completion.complete) { setAttemptedContinue(true); return; }
     setSaving(true);
-    const updates: Record<string, string | number | null> = {};
-    (Object.keys(fields) as (keyof P2Fields)[]).forEach(k => { updates[k] = fields[k] || null; });
-    const { error } = await supabase.from('athletes').update(updates).eq('id', athleteId);
-    setSaving(false);
-    if (error) { Alert.alert('Error', error.message); return; }
-    await refresh();
-    setSaved(true);
+    try {
+      await saveGameplanProfile(supabase, athleteId, fields, testsNotTaken);
+      await refresh();
+      setSaved(true);
+      if (continueAfter) router.push('/(tabs)/gameplan/3' as any);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Could not save profile. Please retry.');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -559,14 +565,18 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
           </View>
         </Card>
 
-        {P2_SECTIONS.map(section => (
+        {P2_SECTIONS.map(section => {
+          const rows = section.title === 'Academic' && testsNotTaken
+            ? section.rows.filter(r => r.key !== 'sat_score' && r.key !== 'act_score')
+            : section.rows;
+          return (
           <View key={section.title} style={s.p2SectionWrap}>
             <View style={s.p2SectionHeader}>
               <GradientIcon name={section.icon} size={26} colors={['#C0007A', '#FF5341']} />
               <Text style={s.p2SectionTitle}>{section.title.toUpperCase()}</Text>
             </View>
             <Card>
-              {section.rows.map((row, idx) => {
+              {rows.map((row, idx) => {
                 const isBio = row.key === 'bio';
                 const filled = !isBio && !!fields[row.key];
                 const missing = attemptedContinue && P2_TRACKED.includes(row.key) && !fields[row.key];
@@ -600,11 +610,24 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
                   </View>
                 );
               })}
+              {section.title === 'Academic' && (
+                <Pressable
+                  style={s.p2TestsNotTakenRow}
+                  onPress={() => { setTestsNotTaken(v => !v); setSaved(false); }}
+                >
+                  <Ionicons name={testsNotTaken ? 'checkbox' : 'square-outline'} size={20} color={testsNotTaken ? C.success : C.textDim} />
+                  <Text style={s.p2Label}>I haven't taken the SAT or ACT yet</Text>
+                </Pressable>
+              )}
+              {section.title === 'Academic' && attemptedContinue && !completion.hasTestStatus && (
+                <Text style={[s.p2Hint, { color: C.error }]}>Enter a test score or select "not taken yet."</Text>
+              )}
             </Card>
           </View>
-        ))}
+          );
+        })}
 
-        <Pressable onPress={handleSave} disabled={saving} style={s.p2SaveWrap}>
+        <Pressable onPress={() => handleSave()} disabled={saving} style={s.p2SaveWrap}>
           <LinearGradient
             colors={FLAME_GRADIENT}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -615,16 +638,14 @@ function Phase2({ athlete, athleteId, phase, onBack, refresh, gp, v1Score }: {
         </Pressable>
 
         <Pressable
-          style={({ pressed }) => [s.primaryBtn, s.continueBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }]}
-          onPress={() => {
-            if (completed < P2_TRACKED.length) { setAttemptedContinue(true); return; }
-            router.push('/(tabs)/gameplan/3' as any);
-          }}
+          style={({ pressed }) => [s.primaryBtn, s.continueBtn, { marginTop: 10 }, pressed && { opacity: 0.85 }, saving && { opacity: 0.6 }]}
+          disabled={saving}
+          onPress={() => handleSave(true)}
         >
           <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           <Text style={s.primaryBtnText}>Continue to Phase 3 →</Text>
         </Pressable>
-        {attemptedContinue && completed < P2_TRACKED.length && (
+        {attemptedContinue && !completion.complete && (
           <Text style={s.p2BlockedMsg}>Fill in the highlighted fields above to unlock Phase 3.</Text>
         )}
 
@@ -938,6 +959,7 @@ function createStyles(C: ThemeColors) {
     p2InputMissing: { borderWidth: 1.5, borderColor: '#ef4444' },
     p2FieldCheck: { position: 'absolute', right: 12, top: '50%', marginTop: -8 },
     p2Hint: { fontSize: 11, color: C.textDim, marginTop: 4, lineHeight: 16 },
+    p2TestsNotTakenRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.border },
     p2BlockedMsg: { fontSize: 12.5, fontWeight: '600', color: '#ef4444', textAlign: 'center', marginTop: 10, marginBottom: 2 },
     p2StarterBtn: { backgroundColor: `${PINK_RED}22`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
     p2StarterBtnText: { fontSize: 11, fontWeight: '700', color: PINK_RED },

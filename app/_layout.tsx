@@ -176,6 +176,22 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
 
+  // Expo web renders ScrollView as an overflow:auto div, which shows the
+  // browser's native scrollbar and reads as a stray UI element over the
+  // dark shell. Scrolling itself still works; this only hides the bar.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const style = document.createElement('style');
+    style.textContent = `
+      html, body, #root { scrollbar-width: none; -ms-overflow-style: none; }
+      html::-webkit-scrollbar, body::-webkit-scrollbar, #root::-webkit-scrollbar { display: none; }
+      * { scrollbar-width: none; -ms-overflow-style: none; }
+      *::-webkit-scrollbar { display: none; }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   const showBanner = useCallback((title: string, body: string) => {
     setBanner({ title, body });
     if (dismissTimer.current) clearTimeout(dismissTimer.current);

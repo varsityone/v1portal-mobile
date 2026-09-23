@@ -1,9 +1,10 @@
 import { Redirect } from 'expo-router';
 import LoadingScreen from '../../components/LoadingScreen';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useCoachData } from '../../hooks/useCoachData';
 import { useCoachSaved } from '../../hooks/useCoachSaved';
@@ -15,6 +16,10 @@ import { useColors } from '../../context/ThemeContext';
 
 export default function BulkMessageScreen() {
   const router = useRouter();
+  const { selected: selectedParam } = useLocalSearchParams<{ selected?: string | string[] }>();
+  const selectedKey = Array.isArray(selectedParam) ? selectedParam[0] : selectedParam ?? '';
+  const [incoming, setIncoming] = useState<{ athlete_id: string; athlete: { full_name: string | null; position: string | null } }[]>([]);
+  const [incomingLoading, setIncomingLoading] = useState(false);
   const C = useColors();
   const s = useMemo(() => createStyles(C), [C]);
   const { coach, loading: coachLoading } = useCoachData();
@@ -26,10 +31,30 @@ export default function BulkMessageScreen() {
   const [message, setMessage] = useState('');
   const [templateId, setTemplateId] = useState<string | null>(null);
 
-  const selectedProspects = saved.filter(p => selectedIds.has(p.athlete_id));
+  useEffect(() => {
+    if (!coach?.verified) return;
+    let active = true;
+    const ids = [...new Set(selectedKey.split(',').filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))];
+    if (!ids.length) { setIncoming([]); setIncomingLoading(false); return; }
+    setIncomingLoading(true);
+    (async () => {
+      const { data, error } = await supabase.from('athletes').select('id, full_name, position').in('id', ids);
+      if (!active) return;
+      if (error) Alert.alert('Could not load selected recruits', 'Return to Search and try again.');
+      else {
+        setIncoming((data ?? []).map(p => ({ athlete_id: p.id, athlete: p })));
+        setSelectedIds(new Set((data ?? []).map(p => p.id)));
+      }
+      setIncomingLoading(false);
+    })().catch(() => { if (active) { setIncomingLoading(false); Alert.alert('Could not load selected recruits', 'Please try again.'); } });
+    return () => { active = false; };
+  }, [selectedKey, coach?.id, coach?.verified]);
+  const recipients = [...incoming, ...saved.filter(p => !incoming.some(i => i.athlete_id === p.athlete_id))];
+  const selectedProspects = recipients.filter(p => selectedIds.has(p.athlete_id));
   const availableToAdd = saved.filter(p => !selectedIds.has(p.athlete_id));
 
   const toggle = (athleteId: string) => {
+    if (sending) return;
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(athleteId)) next.delete(athleteId);
@@ -57,7 +82,7 @@ export default function BulkMessageScreen() {
     }
   };
 
-  if (coachLoading || savedLoading || templatesLoading) {
+  if (coachLoading || savedLoading || templatesLoading || incomingLoading) {
     return <LoadingScreen />;
   }
 
@@ -79,7 +104,7 @@ export default function BulkMessageScreen() {
         {selectedProspects.length === 0 ? (
           <View style={s.emptySelected}>
             <Text style={s.emptySelectedText}>
-              Choose from your saved prospects below to add them here
+              Select recruits in Search or add saved prospects below
             </Text>
           </View>
         ) : (
@@ -119,6 +144,7 @@ export default function BulkMessageScreen() {
             {templates.map(t => (
               <Pressable
                 key={t.id}
+                disabled={sending}
                 style={[s.chip, templateId === t.id && s.chipActive]}
                 onPress={() => {
                   const next = templateId === t.id ? null : t.id;

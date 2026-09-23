@@ -4,12 +4,16 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 
+function transpile(filePath) {
+  return ts.transpileModule(fs.readFileSync(filePath, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+}
 function harness(name, options = {}) {
-  const calls = [], states = [], callbacks = [];
+  const calls = [], states = [], callbacks = [], effects = [];
   const react = {
     useState(initial) { const index = states.length; states.push(initial); return [initial, next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }]; },
     useCallback(fn) { callbacks.push(fn); return fn; },
-    useEffect() {}, useMemo: fn => fn(),
+    useRef(initial) { return { current: initial }; },
+    useEffect(fn) { effects.push(fn); }, useMemo: fn => fn(),
   };
   const supabase = {
     from(table) {
@@ -31,16 +35,39 @@ function harness(name, options = {}) {
       return chain;
     },
     async rpc(name,args) { calls.push({ rpc: name, args }); return { error: options.failIds?.includes(args.p_athlete_id) ? { message: 'Denied' } : null }; },
+    auth: { getSession: async () => ({ data: { session: { access_token: 'test-token' } } }) },
   };
   const mocks = {
     react, '../lib/supabase': { supabase },
     './useCoachData': { useCoachData: () => ({ coach: { id:'coach', verified: options.verified !== false, division:'FBS' } }) },
     '../constants/Phases': { PHASES: [{},{},{}] },
   };
+  const libCache = {};
+  function loadLib(specifier) {
+    // Resolves a hook's `../lib/x` import to the real lib/x.ts source, so
+    // tests exercise the actual shared logic instead of a hand-written stub.
+    if (libCache[specifier]) return libCache[specifier];
+    const filePath = specifier.replace(/^\.\.\//, '') + '.ts';
+    const exp = {};
+    vm.runInNewContext(transpile(filePath), { exports: exp, require: () => ({}), console: { error(){} } });
+    return (libCache[specifier] = exp);
+  }
   const exports = {};
-  const code = ts.transpileModule(fs.readFileSync(`hooks/${name}.ts`,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-  vm.runInNewContext(code, { exports, require: name => { assert.ok(mocks[name],name); return mocks[name]; }, console: { error(){} }, fetch: async () => ({ ok: options.httpOk !== false, json: async () => ({allowed: options.allowed !== false}) }) });
-  return { api: exports[name], calls, states, callbacks };
+  const code = transpile(`hooks/${name}.ts`);
+  vm.runInNewContext(code, {
+    exports,
+    require: n => { if (mocks[n]) return mocks[n]; if (n.startsWith('../lib/')) return loadLib(n); assert.ok(false, n); },
+    console: { error(){} },
+    fetch: options.fetch ?? (async () => ({ ok: options.httpOk !== false, json: async () => ({ allowed: options.allowed !== false }) })),
+    AbortController,
+  });
+  return { api: exports[name], calls, states, callbacks, effects };
+}
+// Runs a registered useEffect and waits a macrotask so its internal async
+// IIFE (unawaited by the effect itself) has drained its microtask chain.
+function effectsSettled(h, index = 0) {
+  h.effects[index]();
+  return new Promise(resolve => setTimeout(resolve, 0));
 }
 const rejection = { message:'Database rejected write', code:'42501' };
 for (const [hook,method,args] of [
@@ -92,10 +119,28 @@ test('a scored zero still completes the assessment phase',()=>{
  const h=harness('useGameplanPhases');const gp=h.api(null,{v1_score:0},0);assert.equal(gp.completedCount,1);assert.equal(gp.getStatus(0),'done');
 });
 
-test('coach analytics recognizes stored like/pass values and keeps all match statuses',async()=>{
- const h=harness('useCoachAnalytics',{query:q=>({error:null,data:q.table==='swipes'?[{athlete_id:'a',direction:'like'},{athlete_id:'b',direction:'pass'}]:q.table==='athletes'?[{id:'a',position:'QB',state:'TX',v1_score:80},{id:'b',position:'WR',state:'FL',v1_score:70}]:[{id:'one'}]})});
- h.api();await h.callbacks[0]();
- assert.equal(h.states[0].viewed,2);assert.equal(h.states[0].liked,1);assert.equal(h.states[0].matched,1);assert.equal(h.states[0].topLiked[0].id,'a');
- const swipes=h.calls.find(q=>q.table==='swipes');assert.ok(swipes.filters.some(f=>f[1]==='swiped_by'&&f[2]==='coach'));
- const matches=h.calls.find(q=>q.table==='mutual_matches');assert.equal(matches.filters.some(f=>f[1]==='status'),false);
+test('coach analytics fetches the shared endpoint with the session token and timeframe, and stores the response',async()=>{
+ const payload={viewed:2,liked:1,matched:1,saved:0,messaged:0,conversionRate:50,funnelViewed:2,funnelLiked:1,funnelMatched:1,topPositions:[],topStates:[],topLiked:[{id:'a'}]};
+ let requestUrl,requestHeaders;
+ const h=harness('useCoachAnalytics',{fetch: async (url,init)=>{ requestUrl=url; requestHeaders=init?.headers; return { ok:true, json: async ()=>payload }; }});
+ h.api();
+ await effectsSettled(h);
+ assert.ok(String(requestUrl).includes('/api/coach/analytics?timeframe=month'));
+ assert.equal(requestHeaders.Authorization,'Bearer test-token');
+ assert.deepEqual(h.states[0],payload);
+ assert.equal(h.states[1],false); // loading
+});
+test('coach analytics surfaces a fetch failure instead of stale or fabricated data',async()=>{
+ const h=harness('useCoachAnalytics',{fetch: async ()=>({ ok:false, json: async ()=>({}) })});
+ h.api();
+ await effectsSettled(h);
+ assert.equal(h.states[0],null);
+ assert.ok(h.states[2]);
+});
+test('coach analytics skips the request for an unverified coach',async()=>{
+ const h=harness('useCoachAnalytics',{verified:false, fetch: async ()=>{ throw new Error('should not fetch'); }});
+ h.api();
+ await effectsSettled(h);
+ assert.equal(h.states[0],null);
+ assert.equal(h.states[1],false);
 });
