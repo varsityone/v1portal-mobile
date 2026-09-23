@@ -76,13 +76,6 @@ export default function AssessmentScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.back} hitSlop={12}>
-          <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          <Text style={styles.backText}>Back</Text>
-        </Pressable>
-      </View>
-
       {Platform.OS === 'web' ? (
         // Web preview can't inject auth into a cross-origin iframe.
         // The assessment must be completed in the native mobile app.
@@ -141,23 +134,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 12,
-    backgroundColor: 'transparent',
-  },
-  back: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  backText: {
-    color: Colors.text,
-    fontSize: 16,
   },
   webview: {
     flex: 1,
