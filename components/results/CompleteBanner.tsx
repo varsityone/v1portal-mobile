@@ -13,12 +13,16 @@ export default function CompleteBanner({ isPremium, onUpgrade }: CompleteBannerP
 
   return (
     <View style={s.card}>
-      <Text style={s.title}>Assessment Complete — Phase 1 of 3</Text>
-      <Text style={s.body}>
-        {isPremium
-          ? 'Your full score breakdown is unlocked. Build your profile next.'
-          : 'Your score and tier are set. Upgrade to Match+ to see your full breakdown and matched programs.'}
-      </Text>
+      <Text style={s.title}>Assessment Complete (Phase 1 of 3)</Text>
+      {isPremium ? (
+        <Text style={s.body}>
+          Your full score breakdown is unlocked.{'\n'}Build your profile next.
+        </Text>
+      ) : (
+        <Text style={s.body}>
+          Your score and tier are set. Upgrade to Match+ to see your full breakdown and matched programs.
+        </Text>
+      )}
       <View style={s.row}>
         {!isPremium && (
           <Pressable onPress={onUpgrade}>

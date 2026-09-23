@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../context/ThemeContext';
 import { FontFamily } from '../../constants/Fonts';
 
@@ -55,7 +56,7 @@ export default function RealityCheckCard({ scoreBreakdown, gateResults, developm
       {topStrengthLabel && (
         <View style={[s.strengthCard, { backgroundColor: C.surface, marginBottom: hasSecondary ? 14 : 0 }]}>
           <View style={s.strengthIcon}>
-            <Text style={s.strengthArrow}>↑</Text>
+            <Ionicons name="arrow-up-circle" size={30} color="#71ff7e" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.strengthEyebrow}>Top Strength</Text>
@@ -73,38 +74,42 @@ export default function RealityCheckCard({ scoreBreakdown, gateResults, developm
         <View style={s.secondaryGrid}>
           {keyFlag && (
             <View style={[s.secondaryCard, { backgroundColor: C.surface }]}>
-              <View style={s.flagIcon}><Text style={s.flagGlyph}>⚑</Text></View>
-              <Text style={s.flagEyebrow}>Key Flag{keyFlagCategory ? ` — ${keyFlagCategory}` : ''}</Text>
-              <Text style={[s.secondaryValue, { color: C.text }]}>{keyFlag}</Text>
-              <Text style={[s.secondaryBody, { color: C.textDim, marginBottom: otherKeyFlags.length ? 10 : 0 }]}>
-                This is the single biggest gap between where you are and where coaches need you to be. Address it first.
-              </Text>
-              {otherKeyFlags.length > 0 && (
-                <View style={s.flagBox}>
-                  <Text style={s.flagBoxLabel}>Also Flagged</Text>
-                  {otherKeyFlags.map((f, i) => (
-                    <Text key={i} style={[s.flagBoxItem, { color: C.text, marginTop: i > 0 ? 2 : 0 }]}>{f}</Text>
-                  ))}
-                </View>
-              )}
+              <Ionicons name="flag" size={22} color="#e63535" style={s.secondaryIcon} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.flagEyebrow}>Key Flag{keyFlagCategory ? ` — ${keyFlagCategory}` : ''}</Text>
+                <Text style={[s.secondaryValue, { color: C.text }]}>{keyFlag}</Text>
+                <Text style={[s.secondaryBody, { color: C.textDim, marginBottom: otherKeyFlags.length ? 10 : 0 }]}>
+                  This is the single biggest gap between where you are and where coaches need you to be. Address it first.
+                </Text>
+                {otherKeyFlags.length > 0 && (
+                  <View style={s.flagBox}>
+                    <Text style={s.flagBoxLabel}>Also Flagged</Text>
+                    {otherKeyFlags.map((f, i) => (
+                      <Text key={i} style={[s.flagBoxItem, { color: C.text, marginTop: i > 0 ? 2 : 0 }]}>{f}</Text>
+                    ))}
+                  </View>
+                )}
+              </View>
             </View>
           )}
 
           {(devTrajectory || topPriority) && (
             <View style={[s.secondaryCard, { backgroundColor: C.surface }]}>
-              <View style={s.devIcon}><Text style={s.devGlyph}>→</Text></View>
-              <Text style={s.devEyebrow}>Development Path</Text>
-              {devTrajectory && <Text style={[s.secondaryValue, { color: C.text }]}>{devTrajectory}</Text>}
-              {devRecommendation && (
-                <Text style={[s.secondaryBody, { color: C.textDim, marginBottom: topPriority ? 10 : 0 }]}>{devRecommendation}</Text>
-              )}
-              {topPriority && (
-                <View style={s.devBox}>
-                  <Text style={s.devBoxLabel}>Top Priority</Text>
-                  <Text style={[s.devBoxTitle, { color: C.text }]}>{topPriority.area}</Text>
-                  <Text style={[s.devBoxBody, { color: C.textDim }]}>{topPriority.target}</Text>
-                </View>
-              )}
+              <Ionicons name="arrow-forward-circle" size={22} color="#ffd000" style={s.secondaryIcon} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.devEyebrow}>Development Path</Text>
+                {devTrajectory && <Text style={[s.secondaryValue, { color: C.text }]}>{devTrajectory}</Text>}
+                {devRecommendation && (
+                  <Text style={[s.secondaryBody, { color: C.textDim, marginBottom: topPriority ? 10 : 0 }]}>{devRecommendation}</Text>
+                )}
+                {topPriority && (
+                  <View style={s.devBox}>
+                    <Text style={s.devBoxLabel}>Top Priority</Text>
+                    <Text style={[s.devBoxTitle, { color: C.text }]}>{topPriority.area}</Text>
+                    <Text style={[s.devBoxBody, { color: C.textDim }]}>{topPriority.target}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -115,26 +120,22 @@ export default function RealityCheckCard({ scoreBreakdown, gateResults, developm
 
 const s = StyleSheet.create({
   strengthCard: { borderRadius: 16, padding: 26, flexDirection: 'row', alignItems: 'center', gap: 22 },
-  strengthIcon: { width: 56, height: 56, borderRadius: 14, backgroundColor: 'rgba(113,255,126,0.12)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  strengthArrow: { fontSize: 24, color: '#71ff7e' },
+  strengthIcon: { flexShrink: 0 },
   strengthEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#71ff7e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
   strengthValue: { fontFamily: FontFamily.statNumber, fontSize: 22, marginBottom: 4 },
   strengthBody: { fontFamily: FontFamily.body, fontSize: 12.5, lineHeight: 18 },
 
-  secondaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
-  secondaryCard: { flexBasis: '46%', flexGrow: 1, borderRadius: 14, padding: 18 },
+  secondaryGrid: { gap: 14 },
+  secondaryCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, borderRadius: 14, padding: 18 },
+  secondaryIcon: { flexShrink: 0, marginTop: 2 },
   secondaryValue: { fontFamily: FontFamily.statNumber, fontSize: 22, marginBottom: 4 },
   secondaryBody: { fontFamily: FontFamily.body, fontSize: 11, lineHeight: 16 },
 
-  flagIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: 'rgba(230,53,53,0.14)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  flagGlyph: { fontSize: 13, color: '#e63535' },
   flagEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#e63535', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
   flagBox: { backgroundColor: 'rgba(230,53,53,0.14)', borderRadius: 8, padding: 12 },
   flagBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: '#e63535', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   flagBoxItem: { fontFamily: FontFamily.bodyBold, fontSize: 12 },
 
-  devIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: 'rgba(255,208,0,0.16)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  devGlyph: { fontSize: 13, color: '#ffd000' },
   devEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#ffd000', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
   devBox: { backgroundColor: 'rgba(255,208,0,0.14)', borderRadius: 8, padding: 12 },
   devBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: '#ffd000', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },

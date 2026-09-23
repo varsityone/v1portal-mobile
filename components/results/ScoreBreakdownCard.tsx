@@ -21,6 +21,9 @@ const CATEGORIES = [
 ];
 
 const TIERS = ['Low', 'Fair', 'Good', 'Strong', 'Elite'];
+// Bold ("active") weight pushes "Strong" wide enough to wrap in the narrow
+// column -- shorten just that state, not the resting label.
+const TIER_LABELS_ACTIVE: Record<string, string> = { Strong: 'Strg' };
 
 function tierIndex(value: number): number {
   if (value >= 80) return 4;
@@ -36,7 +39,7 @@ function StatTierBar({ activeIndex }: { activeIndex: number }) {
       {TIERS.map((t, i) => (
         <View key={t} style={s.tierCol}>
           <View style={[s.tierBar, { backgroundColor: i <= activeIndex ? '#000' : '#eee' }]} />
-          <Text style={[s.tierLabel, { color: i === activeIndex ? '#000' : '#ccc' }, i === activeIndex && s.tierLabelActive]}>{t}</Text>
+          <Text style={[s.tierLabel, { color: i === activeIndex ? '#000' : '#ccc' }, i === activeIndex && s.tierLabelActive]} numberOfLines={1}>{i === activeIndex ? (TIER_LABELS_ACTIVE[t] ?? t) : t}</Text>
         </View>
       ))}
     </View>
