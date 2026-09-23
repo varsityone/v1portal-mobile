@@ -4,6 +4,7 @@ import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { useAthleteData } from '../../hooks/useAthleteData';
 import { registerForPushNotifications } from '../../lib/notifications';
 import AppDrawer from '../../components/AppDrawer';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -32,6 +33,7 @@ function HeaderLogo() {
 
 export default function DrawerLayout() {
   const { session, loading } = useAuth();
+  const { athlete } = useAthleteData();
   const router = useRouter();
   const { theme: scheme } = useTheme();
   const C = useColors();
@@ -45,10 +47,16 @@ export default function DrawerLayout() {
     if (!loading && !session) {
       router.replace('/(auth)/login');
     }
-    if (!loading && session) {
+  }, [session, loading]);
+
+  // Ask for notifications once there's a real reason to want them -- right
+  // after the athlete has a score and can start hearing from coaches --
+  // rather than blind on first login, before they've seen any value.
+  useEffect(() => {
+    if (session && athlete?.assessment_completed) {
       registerForPushNotifications(session).catch(() => {});
     }
-  }, [session, loading]);
+  }, [session, athlete?.assessment_completed]);
 
   if (loading) return <LoadingScreen />;
 

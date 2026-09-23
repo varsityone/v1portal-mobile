@@ -4,6 +4,7 @@ import { Drawer } from 'expo-router/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { useCoachData } from '../../hooks/useCoachData';
 import { registerForPushNotifications } from '../../lib/notifications';
 import CoachDrawer from '../../components/CoachDrawer';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -28,6 +29,7 @@ function HeaderLogo() {
 
 export default function CoachDrawerLayout() {
   const { session, loading } = useAuth();
+  const { coach } = useCoachData();
   const router = useRouter();
   const { theme: scheme } = useTheme();
   const C = useColors();
@@ -41,10 +43,16 @@ export default function CoachDrawerLayout() {
     if (!loading && !session) {
       router.replace('/(auth)/login');
     }
-    if (!loading && session) {
+  }, [session, loading]);
+
+  // Ask for notifications once the coach is actually verified and can
+  // receive matches/messages, rather than blind on first login while
+  // they're still pending review and have nothing to be notified about.
+  useEffect(() => {
+    if (session && coach?.verified) {
       registerForPushNotifications(session).catch(() => {});
     }
-  }, [session, loading]);
+  }, [session, coach?.verified]);
 
   if (loading) return <LoadingScreen />;
 
