@@ -77,15 +77,16 @@ export function useCoachCalendarEvents(): UseCoachCalendarEventsResult {
   );
 
   const delete_ = useCallback(async (id: string) => {
+    if (!coach?.id) throw new Error('A verified coach account is required.');
     try {
-      const { error } = await supabase.from('recruiting_calendar_events').delete().eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.from('recruiting_calendar_events').delete().eq('id', id).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) throw error ?? new Error('Event was not deleted.');
       setEvents(prev => prev.filter(e => e.id !== id));
     } catch (e) {
       console.error('Calendar event delete error:', e);
       throw e;
     }
-  }, []);
+  }, [coach?.id]);
 
   useEffect(() => {
     fetch();

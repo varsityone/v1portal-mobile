@@ -80,6 +80,7 @@ export function useCoachPipeline(): UseCoachPipelineResult {
 
   const updateStatus = useCallback(
     async (prospectId: string, status: PipelineStatus) => {
+      if (!coach?.id) throw new Error('A verified coach account is required.');
       try {
         const update = {
           status,
@@ -87,18 +88,21 @@ export function useCoachPipeline(): UseCoachPipelineResult {
           signed_at: status === 'signed' ? new Date().toISOString() : null,
         };
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('coach_recruit_pipeline')
           .update(update)
-          .eq('id', prospectId);
-        if (error) throw error;
+          .eq('id', prospectId)
+          .eq('coach_id', coach.id)
+          .select('id')
+          .single();
+        if (error || !data) throw error ?? new Error('Status was not updated.');
         await fetch();
       } catch (e) {
         console.error('Pipeline status update error:', e);
         throw e;
       }
     },
-    [fetch],
+    [coach?.id, fetch],
   );
 
   useEffect(() => {

@@ -64,22 +64,28 @@ export function useCoachSaved(): UseCoachSavedResult {
   }, [fetch]);
 
   const remove = useCallback(async (id: string) => {
+    if (!coach?.id) throw new Error('A verified coach account is required.');
     try {
-      await supabase.from('coach_saved_prospects').delete().eq('id', id);
+      const { data, error } = await supabase.from('coach_saved_prospects').delete().eq('id', id).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) throw error ?? new Error('Could not remove this prospect.');
       setSaved(s => s.filter(x => x.id !== id));
     } catch (e) {
       console.error('Remove error:', e);
+      throw e;
     }
-  }, []);
+  }, [coach?.id]);
 
   const updateNotes = useCallback(async (id: string, notes: string) => {
+    if (!coach?.id) throw new Error('A verified coach account is required.');
     try {
-      await supabase.from('coach_saved_prospects').update({ notes }).eq('id', id);
+      const { data, error } = await supabase.from('coach_saved_prospects').update({ notes }).eq('id', id).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) throw error ?? new Error('Could not save this note.');
       setSaved(s => s.map(x => x.id === id ? { ...x, notes } : x));
     } catch (e) {
       console.error('Update notes error:', e);
+      throw e;
     }
-  }, []);
+  }, [coach?.id]);
 
   return { saved, loading, sort, setSort, remove, refresh: fetch, updateNotes };
 }

@@ -67,30 +67,35 @@ export function useCoachTemplates(): UseCoachTemplatesResult {
   );
 
   const update = useCallback(async (id: string, title: string, category: string, content: string) => {
+    if (!coach?.id) throw new Error('A verified coach account is required.');
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('coach_message_templates')
         .update({ title, category, content })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('coach_id', coach.id)
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (error || !data) throw error ?? new Error('Template was not saved.');
       setTemplates(prev => prev.map(t => (t.id === id ? { ...t, title, category, content } : t)));
     } catch (e) {
       console.error('Template update error:', e);
       throw e;
     }
-  }, []);
+  }, [coach?.id]);
 
   const delete_ = useCallback(async (id: string) => {
+    if (!coach?.id) throw new Error('A verified coach account is required.');
     try {
-      const { error } = await supabase.from('coach_message_templates').delete().eq('id', id);
-      if (error) throw error;
+      const { data, error } = await supabase.from('coach_message_templates').delete().eq('id', id).eq('coach_id', coach.id).select('id').single();
+      if (error || !data) throw error ?? new Error('Template was not deleted.');
       setTemplates(prev => prev.filter(t => t.id !== id));
     } catch (e) {
       console.error('Template delete error:', e);
       throw e;
     }
-  }, []);
+  }, [coach?.id]);
 
   useEffect(() => {
     fetch();

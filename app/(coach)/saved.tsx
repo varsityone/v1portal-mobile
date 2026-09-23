@@ -1,6 +1,6 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -25,8 +25,13 @@ export default function SavedProspectsScreen() {
 
   const handleRemove = async (id: string) => {
     setRemoving(id);
-    await remove(id);
-    setRemoving(null);
+    try {
+      await remove(id);
+    } catch {
+      Alert.alert('Could not remove this prospect', 'Please try again.');
+    } finally {
+      setRemoving(null);
+    }
   };
 
   return (
