@@ -105,8 +105,8 @@ export default function RealityCheckCard({ scoreBreakdown, gateResults, developm
                 {topPriority && (
                   <View style={s.devBox}>
                     <Text style={s.devBoxLabel}>Top Priority</Text>
-                    <Text style={[s.devBoxTitle, { color: C.text }]}>{topPriority.area}</Text>
-                    <Text style={[s.devBoxBody, { color: C.textDim }]}>{topPriority.target}</Text>
+                    <Text style={s.devBoxTitle}>{topPriority.area}</Text>
+                    <Text style={s.devBoxBody}>{topPriority.target}</Text>
                   </View>
                 )}
               </View>
@@ -137,8 +137,8 @@ const s = StyleSheet.create({
   flagBoxItem: { fontFamily: FontFamily.bodyBold, fontSize: 12 },
 
   devEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#ffd000', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  devBox: { backgroundColor: 'rgba(255,208,0,0.14)', borderRadius: 8, padding: 12 },
-  devBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: '#ffd000', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  devBoxTitle: { fontFamily: FontFamily.bodyBold, fontSize: 12.5, marginBottom: 2 },
-  devBoxBody: { fontFamily: FontFamily.body, fontSize: 11.5, lineHeight: 16 },
+  devBox: { backgroundColor: '#ffb400', borderRadius: 8, padding: 12 },
+  devBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: 'rgba(0,0,0,0.65)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  devBoxTitle: { fontFamily: FontFamily.bodyBold, fontSize: 12.5, color: '#111', marginBottom: 2 },
+  devBoxBody: { fontFamily: FontFamily.body, fontSize: 11.5, lineHeight: 16, color: 'rgba(0,0,0,0.75)' },
 });
