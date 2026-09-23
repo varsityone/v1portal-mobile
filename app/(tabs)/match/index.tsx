@@ -869,7 +869,10 @@ function SwipeHistoryDrawer({
                   <Image source={coach?.profile_photo_url ? { uri: coach?.profile_photo_url } : DEFAULT_PROFILE_IMAGE} style={s.avatar} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.name} numberOfLines={1}>{coach?.school_name ?? 'Unknown'}</Text>
-                    <Text style={s.meta}>{swipe.direction === 'like' ? '❤️ Liked' : '✕ Passed'} · {dateStr}</Text>
+                    <View style={s.metaRow}>
+                      <Ionicons name={swipe.direction === 'like' ? 'heart' : 'close'} size={11} color={swipe.direction === 'like' ? BRAND_GREEN : C.textDim} />
+                      <Text style={s.meta}>{swipe.direction === 'like' ? 'Liked' : 'Passed'} · {dateStr}</Text>
+                    </View>
                   </View>
                 </View>
               );
@@ -895,7 +898,8 @@ function historyStyles(C: ThemeColors) {
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
     avatar: { width: 44, height: 44, borderRadius: 8 },
     name: { fontFamily: FontFamily.bodyBold, fontSize: 13, color: C.text },
-    meta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim, marginTop: 2 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    meta: { fontFamily: FontFamily.body, fontSize: 11, color: C.textDim },
   });
 }
 

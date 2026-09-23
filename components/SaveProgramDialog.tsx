@@ -22,7 +22,9 @@ export default function SaveProgramDialog({ name, saved, onSave, onClose, onCont
         <View style={styles.backdrop}>
           <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.successPanel}>
             <ScrollView contentContainerStyle={styles.content} accessibilityViewIsModal>
-              <Ionicons name="checkmark-circle" size={64} color="#fff" accessible={false} style={{ marginBottom: 20 }} />
+              <View style={styles.successBadge} accessible={false}>
+                <Ionicons name="checkmark" size={34} color="#EA0C5F" />
+              </View>
               <Text accessibilityRole="header" style={styles.title}>Successfully added to your interest</Text>
               <Text style={[styles.body, { color: '#fff' }]}>Find it under My interest in the Swipe History drawer.</Text>
               <View style={styles.actions}>
@@ -62,6 +64,7 @@ const styles = StyleSheet.create({
   panel: { flexGrow: 0, width: '100%', maxWidth: 420, maxHeight: '90%', backgroundColor: '#000', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   successPanel: { width: '100%', maxWidth: 420, maxHeight: '90%', borderRadius: 20 },
   content: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 },
+  successBadge: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   eyebrow: { fontFamily: FontFamily.mono, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', color: '#fff', marginBottom: 10 },
   title: { fontFamily: FontFamily.headline, fontSize: 32, lineHeight: 36, color: '#fff', textAlign: 'center', marginBottom: 14 },
   body: { fontFamily: FontFamily.body, fontSize: 14, lineHeight: 23, color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
