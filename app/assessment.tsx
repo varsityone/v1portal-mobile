@@ -115,11 +115,15 @@ export default function AssessmentScreen() {
                   url.includes('/funnel/recruiting') ||
                   url.includes('/dashboard')
                 ) {
+                  // Only a real submission gets the score reveal; Save & Exit
+                  // also lands on /dashboard, including mid-retake when an
+                  // older score already exists.
+                  const submitted = !url.includes('/dashboard');
                   void (async () => {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (!session) { router.replace('/(auth)/login'); return; }
                     const { data, error } = await supabase.from('athletes').select('v1_score').or(`user_id.eq.${session.user.id},linked_user_id.eq.${session.user.id}`).maybeSingle();
-                    router.replace(!error && data?.v1_score != null ? '/(tabs)' : '/assessment-paused');
+                    router.replace(!error && data?.v1_score != null ? (submitted ? '/score-reveal' : '/(tabs)') : '/assessment-paused');
                   })();
                 }
               }}
