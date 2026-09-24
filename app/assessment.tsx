@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { supabase } from '../lib/supabase';
@@ -15,9 +16,12 @@ import LoadingScreen from '../components/LoadingScreen';
 
 const ASSESSMENT_URL = 'https://v1portal.com/assessment';
 const COOKIE_KEY = 'sb-swsjuxsbvfdejeuilhzk-auth-token';
+// The web assessment's own --bg, so the strip under the status bar blends in.
+const PAGE_BG = '#18191d';
 
 export default function AssessmentScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const [injectedJs, setInjectedJs] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,8 +78,10 @@ export default function AssessmentScreen() {
     return <LoadingScreen />;
   }
 
+  // No native header here, so keep the page's own header (logo, progress,
+  // Save & Exit) below the status bar and Dynamic Island.
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {Platform.OS === 'web' ? (
         // Web preview can't inject auth into a cross-origin iframe.
         // The assessment must be completed in the native mobile app.
@@ -142,7 +148,7 @@ export default function AssessmentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: PAGE_BG,
   },
   webview: {
     flex: 1,
