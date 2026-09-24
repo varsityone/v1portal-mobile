@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 
@@ -81,6 +81,13 @@ export interface AthleteData {
   refresh: () => Promise<Athlete | null>;
 }
 
+// Every screen gets its own hook instance, so a refresh on one screen (a
+// purchase or restore on Upgrade, a save on Edit Profile) used to leave the
+// dashboard, drawer, and other mounted tabs showing stale data, e.g. still
+// "Free" after upgrading to Match+. A refresh now tells every other mounted
+// instance to refetch too, quietly, without flipping them back to loading.
+const refreshListeners = new Set<() => void>();
+
 export function useAthleteData(): AthleteData {
   const { session } = useAuth();
   const [athlete, setAthlete] = useState<Athlete | null>(null);
@@ -88,9 +95,9 @@ export function useAthleteData(): AthleteData {
   const [percentile, setPercentile] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async (): Promise<Athlete | null> => {
+  const fetchData = useCallback(async (silent = false): Promise<Athlete | null> => {
     if (!session?.user) return null;
-    setLoading(true);
+    if (!silent) setLoading(true);
 
     const userId = session.user.id;
 
@@ -131,6 +138,21 @@ export function useAthleteData(): AthleteData {
     fetchData();
   }, [fetchData]);
 
+  const ownListener = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const listener = () => { void fetchData(true); };
+    ownListener.current = listener;
+    refreshListeners.add(listener);
+    return () => { refreshListeners.delete(listener); };
+  }, [fetchData]);
+
+  const refresh = useCallback(async (): Promise<Athlete | null> => {
+    const result = await fetchData();
+    refreshListeners.forEach(listener => { if (listener !== ownListener.current) listener(); });
+    return result;
+  }, [fetchData]);
+
   const now = new Date();
   const isPremium = !!(
     athlete?.is_admin || athlete?.manual_access ||
@@ -138,5 +160,5 @@ export function useAthleteData(): AthleteData {
     (athlete?.subscription_status === 'trial' &&
       (!athlete.trial_ends_at || new Date(athlete.trial_ends_at) > now))
   );
-  return { athlete, assessment, percentile, isPremium, loading, refresh: fetchData };
+  return { athlete, assessment, percentile, isPremium, loading, refresh };
 }
