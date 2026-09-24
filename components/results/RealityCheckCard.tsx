@@ -85,7 +85,7 @@ export default function RealityCheckCard({ scoreBreakdown, gateResults, developm
                   <View style={s.flagBox}>
                     <Text style={s.flagBoxLabel}>Also Flagged</Text>
                     {otherKeyFlags.map((f, i) => (
-                      <Text key={i} style={[s.flagBoxItem, { color: C.text, marginTop: i > 0 ? 2 : 0 }]}>{f}</Text>
+                      <Text key={i} style={[s.flagBoxItem, { marginTop: i > 0 ? 2 : 0 }]}>{f}</Text>
                     ))}
                   </View>
                 )}
@@ -132,9 +132,9 @@ const s = StyleSheet.create({
   secondaryBody: { fontFamily: FontFamily.body, fontSize: 11, lineHeight: 16 },
 
   flagEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#e63535', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  flagBox: { backgroundColor: 'rgba(230,53,53,0.14)', borderRadius: 8, padding: 12 },
-  flagBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: '#e63535', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  flagBoxItem: { fontFamily: FontFamily.bodyBold, fontSize: 12 },
+  flagBox: { backgroundColor: '#e63535', borderRadius: 8, padding: 12 },
+  flagBoxLabel: { fontFamily: FontFamily.bodyBold, fontSize: 9.5, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  flagBoxItem: { fontFamily: FontFamily.bodyBold, fontSize: 12, color: '#fff' },
 
   devEyebrow: { fontFamily: FontFamily.bodyExtraBold, fontSize: 10, color: '#ffd000', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
   devBox: { backgroundColor: '#ffb400', borderRadius: 8, padding: 12 },
