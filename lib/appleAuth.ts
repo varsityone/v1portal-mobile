@@ -1,9 +1,11 @@
+import { ensureAthleteProfile } from './ensureAthleteProfile';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from './supabase';
-import { accountRoleForInsert, type AccountRole } from './roleStorage';
+import { accountRoleForInsert, savePendingRole, type AccountRole } from './roleStorage';
 
 export async function signUpWithApple(role: AccountRole): Promise<{ error?: string }> {
   try {
+    await savePendingRole(role);
     const credential = await AppleAuthentication.signInAsync({
       requestedScopes: [
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -22,21 +24,7 @@ export async function signUpWithApple(role: AccountRole): Promise<{ error?: stri
 
     if (session?.user) {
       const user = session.user;
-      const firstName = credential.fullName?.givenName ?? '';
-      const lastName = credential.fullName?.familyName ?? '';
-      const fullName =
-        [firstName, lastName].filter(Boolean).join(' ') ||
-        user.user_metadata?.full_name ||
-        '';
-      const isFlagFootball = role === 'flag_football';
-
-      await supabase.from('athletes').upsert([{
-        user_id: user.id,
-        email: user.email ?? '',
-        full_name: fullName,
-        account_role: accountRoleForInsert(role),
-        ...(isFlagFootball && { flag_football_waitlist: true }),
-      }], { onConflict: 'user_id' });
+      await ensureAthleteProfile(user.id);
     }
 
     return {};

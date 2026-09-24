@@ -115,7 +115,12 @@ export default function AssessmentScreen() {
                   url.includes('/funnel/recruiting') ||
                   url.includes('/dashboard')
                 ) {
-                  router.replace('/(tabs)');
+                  void (async () => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) { router.replace('/(auth)/login'); return; }
+                    const { data, error } = await supabase.from('athletes').select('v1_score').or(`user_id.eq.${session.user.id},linked_user_id.eq.${session.user.id}`).maybeSingle();
+                    router.replace(!error && data?.v1_score != null ? '/(tabs)' : '/assessment-paused');
+                  })();
                 }
               }}
               style={styles.webview}

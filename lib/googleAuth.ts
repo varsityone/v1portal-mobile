@@ -1,7 +1,7 @@
+import { ensureAthleteProfile } from './ensureAthleteProfile';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
-import { accountRoleForInsert, readAndClearPendingRole } from './roleStorage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -27,17 +27,7 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
 
   if (sessionData?.user) {
     const user = sessionData.user;
-    const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
-    const role = await readAndClearPendingRole();
-    const isFlagFootball = role === 'flag_football';
-
-    await supabase.from('athletes').upsert([{
-      user_id: user.id,
-      email: user.email ?? '',
-      full_name: fullName,
-      account_role: accountRoleForInsert(role ?? 'athlete'),
-      ...(isFlagFootball && { flag_football_waitlist: true }),
-    }], { onConflict: 'user_id' });
+      await ensureAthleteProfile(user.id);
   }
 
   return {};

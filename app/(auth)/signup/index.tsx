@@ -66,7 +66,7 @@ export default function SignupWizardScreen() {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { data: { full_name: fullName.trim() } },
+      options: { data: { full_name: fullName.trim(), account_role: role } },
     });
 
     if (authError) {
@@ -80,25 +80,11 @@ export default function SignupWizardScreen() {
       return;
     }
 
-    const isFlagFootball = role === 'flag_football';
-    const athleteRow = {
-      user_id: authData.user.id,
-      email: authData.user.email ?? email.trim().toLowerCase(),
-      full_name: fullName.trim(),
-      account_role: accountRoleForInsert(role),
-      ...(isFlagFootball && { flag_football_waitlist: true }),
-    };
-
-    let { error: athleteError } = await supabase.from('athletes').upsert([athleteRow], { onConflict: 'user_id' });
-    if (athleteError) {
-      await new Promise(r => setTimeout(r, 1000));
-      ({ error: athleteError } = await supabase.from('athletes').upsert([athleteRow], { onConflict: 'user_id' }));
-    }
-
     setLoading(false);
-
-    if (athleteError) {
-      setError("Your account was created, but we couldn't finish setting up your profile. Please try logging in — if this keeps happening, contact support@v1portal.com.");
+    // Profile creation and navigation are owned by resolveHomeRoute after
+    // SIGNED_IN, including when email confirmation completes on another device.
+    if (!authData.session) {
+      setError('Check your email to confirm your account, then sign in to continue.');
       return;
     }
 

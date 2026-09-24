@@ -185,12 +185,12 @@ export default function ProfileGuidance({ athlete, v1Score }: { athlete: Athlete
           </LinearGradient>
           <Text style={s.lockTitle}>Unlock Your Profile Optimization</Text>
           <Text style={s.lockDesc}>
-            Your profile info is saved. Upgrade to Pro to get personalized film guidance, academic positioning,
+            Your profile info is saved. Upgrade to Match+ to get personalized film guidance, academic positioning,
             contact setup, and tier-specific optimization built around your V1 Score.
           </Text>
           <Pressable onPress={() => router.push('/(tabs)/upgrade' as any)}>
             <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.upgradeBtn}>
-              <Text style={s.upgradeBtnText}>Upgrade to Pro →</Text>
+              <Text style={s.upgradeBtnText}>Upgrade to Match+ →</Text>
             </LinearGradient>
           </Pressable>
         </View>

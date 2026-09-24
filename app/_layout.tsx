@@ -216,7 +216,6 @@ export default function RootLayout() {
       try {
         const start = Date.now();
         const { data: { session } } = await supabase.auth.getSession();
-        const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
         if (session?.user?.id) configurePurchases(session.user.id);
 
         // Always show loader at least 2s so the animation is visible
@@ -225,8 +224,7 @@ export default function RootLayout() {
 
         if (!session) {
           router.replace('/(auth)/login');
-        } else if (!seen) {
-          router.replace('/onboarding');
+
         } else {
           router.replace(await resolveHomeRoute(session.user.id) as any);
         }
@@ -293,8 +291,7 @@ export default function RootLayout() {
             setAppReady(false);
             try {
               configurePurchases(session.user.id);
-              const seen = await AsyncStorage.getItem('v1portal_onboarding_seen');
-              const dest = seen ? await resolveHomeRoute(session.user.id) : '/onboarding';
+              const dest = await resolveHomeRoute(session.user.id);
               router.replace(dest as any);
             } catch (error) {
               console.warn('Unable to finish sign-in:', error);

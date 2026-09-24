@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
-import { resolveHomeRoute } from '../lib/resolveHomeRoute';
+import { resolveHomeRoute, onboardingKey } from '../lib/resolveHomeRoute';
 import { supabase } from '../lib/supabase';
 import { GRADIENT, SCORE_GRADIENT, PINK_RED } from '../constants/Colors';
 
@@ -897,13 +897,13 @@ export default function OnboardingScreen() {
   const isLast = index === SLIDES.length - 1;
 
   const finish = async () => {
-    await AsyncStorage.setItem('v1portal_onboarding_seen', '1');
-    const dest = session?.user?.id ? await resolveHomeRoute(session.user.id) : '/(tabs)';
+    if (!session?.user?.id) { router.replace('/(auth)/login'); return; }
+    await AsyncStorage.setItem(onboardingKey(session.user.id), '1');
+    const dest = await resolveHomeRoute(session.user.id, true);
     router.replace(dest as any);
   };
 
   const goLogin = async () => {
-    await AsyncStorage.setItem('v1portal_onboarding_seen', '1');
     router.replace('/(auth)/login');
   };
 

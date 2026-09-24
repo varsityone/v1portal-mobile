@@ -308,11 +308,11 @@ export default function DashboardScreen() {
   if (loading) return <LoadingScreen />;
 
   if (!athlete) {
-    return <View style={s.container}><EmptyState icon="person" title="Complete Setup" body="Finish your profile to get started." /></View>;
+    return <View style={s.container}><EmptyState icon="person" title="Complete Setup" body="Finish your profile to get started." /><Pressable accessibilityRole="button" onPress={() => router.replace('/onboarding')}><Text style={{ color: C.text, textAlign: 'center', padding: 20 }}>Continue Setup →</Text></Pressable></View>;
   }
 
   const currentScore = Math.round(athlete.v1_score ?? 0);
-  const band = getRecruitingLevelBand(currentScore);
+  const band = athlete.v1_score == null ? null : getRecruitingLevelBand(currentScore);
   const firstName = athlete.full_name?.split(' ')[0] || 'Athlete';
   const allPhasesDone = gp.completedCount >= gp.phases.length;
   const progressPct = (gp.completedCount / gp.phases.length) * 100;
@@ -365,8 +365,9 @@ export default function DashboardScreen() {
               ) : null}
             </View>
 
-            <Pressable ref={profileRef} collapsable={false} style={s.viewProfileBtn} onPress={() => router.push('/(tabs)/profile' as any)}>
-              <Text style={s.viewProfileText}>View Profile</Text>
+            {athlete.v1_score == null && <Text style={s.subtitle}>Complete your assessment to discover your recruiting level.</Text>}
+            <Pressable ref={profileRef} collapsable={false} style={s.viewProfileBtn} onPress={() => router.push(athlete.v1_score == null ? '/assessment' : '/(tabs)/profile' as any)}>
+              <Text style={s.viewProfileText}>{athlete.v1_score == null ? 'Start Assessment' : 'View Profile'}</Text>
               <Ionicons name="arrow-forward" size={12} color={PROFILE_ARROW_COLOR} />
             </Pressable>
           </View>
