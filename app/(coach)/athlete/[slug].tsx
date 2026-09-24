@@ -14,6 +14,7 @@ import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import { Card } from '../../../components/ui/Card';
 import { ScoreRing } from '../../../components/ui/ScoreRing';
+import ReportBlockButton from '../../../components/ReportBlockButton';
 
 const API_BASE = 'https://v1portal.com';
 
@@ -301,10 +302,13 @@ export default function AthletePublicProfileScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: C.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <Pressable style={s.backLink} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={14} color="#fff" />
-          <Text style={s.backLinkText}>Back</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 12 }}>
+          <Pressable style={s.backLink} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={14} color="#fff" />
+            <Text style={s.backLinkText}>Back</Text>
+          </Pressable>
+          <ReportBlockButton targetId={profile.athleteId} targetName={profile.name} context="profile" onBlocked={() => router.back()} />
+        </View>
 
         {/* Hero */}
         <View style={s.hero}>

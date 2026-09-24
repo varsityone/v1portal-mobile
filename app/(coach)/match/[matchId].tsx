@@ -21,6 +21,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { GRADIENT, ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
+import ReportBlockButton from '../../../components/ReportBlockButton';
 
 const API_BASE = 'https://v1portal.com';
 
@@ -195,6 +196,7 @@ export default function CoachMatchThreadScreen() {
           <View style={s.matchedBadge}>
             <Text style={s.matchedBadgeText}>MATCHED</Text>
           </View>
+          <ReportBlockButton targetId={athleteId} targetName={otherParty?.full_name} context="match_message" color={C.text} onBlocked={() => router.replace('/(coach)/matches' as any)} />
         </View>
 
         {/* Compliance block card */}

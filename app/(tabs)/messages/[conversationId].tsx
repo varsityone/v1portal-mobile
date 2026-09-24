@@ -10,6 +10,7 @@ import { useAthleteData } from '../../../hooks/useAthleteData';
 import { FLAME_GRADIENT, PINK_RED, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
+import ReportBlockButton from '../../../components/ReportBlockButton';
 
 const PRESENCE_TOUCH_INTERVAL_MS = 60_000;
 const ONLINE_WINDOW_MIN = 2;
@@ -225,6 +226,7 @@ export default function AthleteMessageThreadScreen() {
             <Text style={s.headerTitle} numberOfLines={1}>{coachName}</Text>
             <Text style={[s.headerSub, online && s.headerSubOnline]} numberOfLines={1}>{presenceLabel(coachLastActive) || ' '}</Text>
           </View>
+          <ReportBlockButton targetId={coachId} targetName={coachName} context="message" onBlocked={() => router.replace('/(tabs)/messages' as any)} />
         </View>
 
         {messages.length === 0 ? (

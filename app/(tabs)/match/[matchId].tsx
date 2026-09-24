@@ -21,6 +21,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { GRADIENT, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
+import ReportBlockButton from '../../../components/ReportBlockButton';
 
 const API_BASE = 'https://v1portal.com';
 
@@ -51,6 +52,7 @@ export default function MatchThreadScreen() {
   const s = useMemo(() => createStyles(C), [C]);
 
   const [otherParty, setOtherParty] = useState<CoachParty | null>(null);
+  const [coachId, setCoachId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,7 @@ export default function MatchThreadScreen() {
         .eq('id', matchId)
         .single();
       if (!matchData) { router.back(); return; }
+      setCoachId(matchData.coach_id);
 
       const { data: coachData } = await supabase
         .from('coach_accounts')
@@ -154,6 +157,7 @@ export default function MatchThreadScreen() {
           <View style={s.matchedBadge}>
             <Text style={s.matchedBadgeText}>MATCHED</Text>
           </View>
+          <ReportBlockButton targetId={coachId} targetName={otherParty?.full_name || otherParty?.school_name} context="match_message" color={C.text} onBlocked={() => router.replace('/(tabs)/match' as any)} />
         </View>
 
         {/* Messages */}

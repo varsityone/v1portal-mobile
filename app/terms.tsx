@@ -50,6 +50,11 @@ export default function TermsScreen() {
 
         <View style={styles.divider} />
 
+        <Text style={styles.sectionTitle}>Community Standards</Text>
+        <Text style={styles.body}>
+          V1Portal has zero tolerance for objectionable content or abusive users. Do not send or post anything abusive, threatening, hateful, or sexual, do not impersonate anyone, and do not contact a minor for any purpose other than legitimate recruiting. Any message or profile can be reported, and any user can be blocked, from the menu in the conversation or on the profile. We review every report within 24 hours and remove offending content and accounts.
+        </Text>
+
         <Text style={styles.sectionTitle}>Account Deletion</Text>
         <Text style={styles.body}>
           You can permanently delete your account and personal data anytime from
