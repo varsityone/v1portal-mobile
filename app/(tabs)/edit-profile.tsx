@@ -1,6 +1,7 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import NudgeModal from '../../components/NudgeModal';
+import { buildAthleteBio } from '../../lib/athleteBio';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -190,8 +191,8 @@ const SECTIONS: Section[] = [
       { label: 'Phone',               key: 'phone',              keyboardType: 'phone-pad' },
       { label: 'Recruitment Status',  key: 'recruitment_status', placeholder: 'e.g. Uncommitted, Committed, Signed' },
       { label: 'Bio',                 key: 'bio',                multi: true,
-        placeholder: "QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity",
-        hint: 'Keep it short and keyword-rich — works for Twitter/X and Instagram too.' },
+        placeholder: "QB | Class of 2026\nLincoln HS | Dallas, TX\n6'2\", 205 lbs | 4.6 40 | 3.8 GPA\nIntended major: Business",
+        hint: 'Keep it short and keyword-rich. Works for Twitter/X and Instagram too.' },
     ],
   },
   {
@@ -345,6 +346,8 @@ export default function EditProfileScreen() {
   const [copied, setCopied] = useState(false);
   // Second position just picked; prompts for film at that position.
   const [filmPrompt, setFilmPrompt] = useState<string | null>(null);
+  // True while the bio is the auto-built one (athletes.bio_auto).
+  const [bioAuto, setBioAuto] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const filmSectionY = useRef(0);
   const profileSlug = (athlete as any)?.profile_slug ?? null;
@@ -424,12 +427,15 @@ export default function EditProfileScreen() {
       twitter_handle:         a.twitter_handle         ?? '',
       instagram_handle:       a.instagram_handle       ?? '',
     });
+    setBioAuto(!!a.bio_auto);
     setIsPublic(a.is_profile_public ?? true);
     setTestScoresNotTaken(a.test_scores_not_taken ?? false);
     setLoading(false);
   }, [athlete]);
 
   const set = (k: keyof Fields) => (v: string) => setFields(f => ({ ...f, [k]: v }));
+  // While auto, the bio follows the profile fields as they're edited.
+  const bio = bioAuto ? buildAthleteBio(fields, statResponses.intended_major) : fields.bio;
   const setStat = (id: string) => (v: string) => setStatResponses(r => ({ ...r, [id]: v }));
 
   const currentGrade = deriveGradeFromGradYear(fields.graduation_year ? parseInt(fields.graduation_year) : 0);
@@ -456,6 +462,8 @@ export default function EditProfileScreen() {
     });
     // Never store a second position that repeats the primary.
     if (updates.secondary_position && updates.secondary_position === fields.position) updates.secondary_position = null;
+    updates.bio = bio || null;
+    updates.bio_auto = bioAuto;
     updates.is_profile_public = isPublic;
     updates.test_scores_not_taken = testScoresNotTaken;
     if (testScoresNotTaken) { updates.sat_score = null; updates.act_score = null; }
@@ -483,19 +491,6 @@ export default function EditProfileScreen() {
     if (error) { Alert.alert('Error', error.message); return; }
     await refresh();
     router.back();
-  };
-
-  const buildStarterBio = () => {
-    const pos = fields.position || '[Position]';
-    const yr  = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
-    const sch = fields.high_school || '[High School]';
-    const loc = fields.city && fields.state
-      ? `${fields.city}, ${fields.state}`
-      : fields.city || fields.state || '[City, State]';
-    const ht  = fields.height || '[Height]';
-    const wt  = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
-    const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
-    set('bio')(`${pos} | ${yr} | ${sch} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity every day`);
   };
 
   if (loading) {
@@ -626,17 +621,17 @@ export default function EditProfileScreen() {
                   <View key={row.key} style={[s.fieldRow, (idx > 0 || section.title === 'Athletic') && s.fieldRowBorder]}>
                     <View style={s.fieldLabelRow}>
                       <Text style={s.label}>{row.label}</Text>
-                      {isBio && (
-                        <Pressable onPress={buildStarterBio} style={s.starterBioBtn}>
-                          <Text style={s.starterBioBtnText}>✦ Starter Bio</Text>
+                      {isBio && !bioAuto && (
+                        <Pressable onPress={() => setBioAuto(true)} style={s.starterBioBtn}>
+                          <Text style={s.starterBioBtnText}>Rebuild from my profile</Text>
                         </Pressable>
                       )}
                     </View>
                     <View style={s.inputWrap}>
                       <TextInput
                         style={[s.input, !isBio && s.inputBoxed, isBio && s.inputMulti, filled && s.inputFilled]}
-                        value={fields[row.key as keyof Fields]}
-                        onChangeText={set(row.key as keyof Fields)}
+                        value={isBio ? bio : fields[row.key as keyof Fields]}
+                        onChangeText={isBio ? v => { setBioAuto(false); set('bio')(v); } : set(row.key as keyof Fields)}
                         placeholder={row.placeholder ?? row.label}
                         placeholderTextColor={isBio ? C.textDim : '#9a9a9a'}
                         multiline={isBio}
@@ -649,7 +644,7 @@ export default function EditProfileScreen() {
                       )}
                     </View>
                     {row.hint && (
-                      <Text style={s.hint}>{row.hint}</Text>
+                      <Text style={s.hint}>{isBio && bioAuto ? 'Built from your profile and kept up to date as your info changes. Edit it anytime to make it your own.' : row.hint}</Text>
                     )}
                   </View>
                 );

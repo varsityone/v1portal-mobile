@@ -2,17 +2,15 @@ import { DEFAULT_PROFILE_IMAGE } from '../../constants/ProfileImage';
 import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
 import { useProfilePhoto } from '../../lib/profilePhotos';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
-  Alert,
   Image,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,152 +85,6 @@ interface TopFitProgram {
   tag: string;
 }
 
-// ── Edit Modal ────────────────────────────────────────────────────────────────
-
-function EditModal({ data, onSave, onClose }: {
-  data: ProfileData;
-  onSave: (updates: Partial<ProfileData>) => Promise<void>;
-  onClose: () => void;
-}) {
-  const C = useColors();
-  const em = useMemo(() => createEmStyles(C), [C]);
-
-  const [fields, setFields] = useState({
-    full_name:       data.full_name       ?? '',
-    position:        data.position        ?? '',
-    height:          data.height          ?? '',
-    weight:          data.weight          ?? '',
-    gpa:             data.gpa             ?? '',
-    graduation_year: data.graduation_year ?? '',
-    high_school:     data.high_school     ?? '',
-    city:            data.city            ?? '',
-    state:           data.state           ?? '',
-    forty_yard:      data.forty_yard      ?? '',
-    vertical_jump:   data.vertical_jump   ?? '',
-    bio:             data.bio             ?? '',
-    hudl_video_link: data.hudl_video_link ?? '',
-    youtube_link:    data.youtube_link    ?? '',
-    twitter_handle:  data.twitter_handle  ?? '',
-    instagram_handle:data.instagram_handle ?? '',
-  });
-  const [saving, setSaving] = useState(false);
-
-  const set = (k: keyof typeof fields) => (v: string) => setFields(f => ({ ...f, [k]: v }));
-
-  const handleSave = async () => {
-    setSaving(true);
-    const updates: Partial<ProfileData> = {};
-    (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
-      (updates as any)[k] = (fields[k] as string) || null;
-    });
-    await onSave(updates);
-    setSaving(false);
-    onClose();
-  };
-
-  const SECTIONS = [
-    { title: 'Personal', rows: [
-      { label: 'Full Name', key: 'full_name' as const },
-      { label: 'Bio', key: 'bio' as const, multi: true },
-    ]},
-    { title: 'Athletic', rows: [
-      { label: 'Position', key: 'position' as const },
-      { label: "Height (e.g. 6'1\")", key: 'height' as const },
-      { label: 'Weight (lbs)', key: 'weight' as const },
-      { label: '40-Yard (s)', key: 'forty_yard' as const },
-      { label: 'Vertical (in)', key: 'vertical_jump' as const },
-    ]},
-    { title: 'Academic', rows: [
-      { label: 'GPA', key: 'gpa' as const },
-      { label: 'Grad Year', key: 'graduation_year' as const },
-      { label: 'High School', key: 'high_school' as const },
-    ]},
-    { title: 'Location', rows: [
-      { label: 'City', key: 'city' as const },
-      { label: 'State', key: 'state' as const },
-    ]},
-    { title: 'Film & Social', rows: [
-      { label: 'Hudl Video URL', key: 'hudl_video_link' as const },
-      { label: 'YouTube URL', key: 'youtube_link' as const },
-      { label: 'Twitter Handle', key: 'twitter_handle' as const },
-      { label: 'Instagram Handle', key: 'instagram_handle' as const },
-    ]},
-  ];
-
-  return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={em.root}>
-        <View style={em.nav}>
-          <Pressable onPress={onClose} hitSlop={8}><Text style={em.cancel}>Cancel</Text></Pressable>
-          <Text style={em.navTitle}>Edit Profile</Text>
-          <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
-            <Text style={[em.save, saving && { opacity: 0.5 }]}>{saving ? 'Saving…' : 'Save'}</Text>
-          </Pressable>
-        </View>
-        <ScrollView style={em.scroll} contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-          <ProfilePhotoEditor table="athletes" profileId={data.id} photoUrl={data.profile_photo_url} />
-          {SECTIONS.map(section => (
-            <View key={section.title} style={em.section}>
-              <Text style={em.sectionTitle}>{section.title}</Text>
-              {section.rows.map(row => (
-                <View key={row.key} style={em.fieldWrap}>
-                  {row.key === 'bio' ? (
-                    <>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text style={em.label}>{row.label}</Text>
-                        <Pressable
-                          onPress={() => {
-                            const pos = fields.position || '[Position]';
-                            const yr = fields.graduation_year ? `Class of ${fields.graduation_year}` : '[Class Year]';
-                            const school = fields.high_school || '[High School]';
-                            const loc = fields.city && fields.state
-                              ? `${fields.city}, ${fields.state}`
-                              : fields.city || fields.state || '[City, State]';
-                            const ht = fields.height || '[Height]';
-                            const wt = fields.weight ? `${fields.weight} lbs` : '[Weight] lbs';
-                            const gpa = fields.gpa ? `${fields.gpa} GPA` : '[GPA] GPA';
-                            set('bio')(`${pos} | ${yr} | ${school} | ${loc}\n${ht} / ${wt} | ${gpa}\nUncommitted | Earning my opportunity every day`);
-                          }}
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${C.primary}18`, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: `${C.primary}35` }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: C.primary }}>✦ Starter Bio</Text>
-                        </Pressable>
-                      </View>
-                      <TextInput
-                        style={[em.input, { height: 90, textAlignVertical: 'top', paddingTop: 10 }]}
-                        value={fields.bio}
-                        onChangeText={set('bio')}
-                        placeholder={"QB | Class of 2026 | Lincoln HS | Dallas, TX\n6'2\" / 205 lbs | 3.8 GPA\nUncommitted | Earning my opportunity"}
-                        placeholderTextColor={C.textDim}
-                        multiline
-                      />
-                      <Text style={{ fontSize: 11, color: C.textDim, marginTop: 5, lineHeight: 16 }}>
-                        Keep it short and keyword-rich — works for Twitter/X and Instagram too.
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={em.label}>{row.label}</Text>
-                      <TextInput
-                        style={[em.input, (row as any).multi && { height: 72, textAlignVertical: 'top', paddingTop: 10 }]}
-                        value={fields[row.key]}
-                        onChangeText={set(row.key)}
-                        placeholder={row.label}
-                        placeholderTextColor={C.textDim}
-                        multiline={!!(row as any).multi}
-                      />
-                    </>
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
@@ -246,7 +98,11 @@ export default function ProfileScreen() {
   const [seasonStats,setSeasonStats]= useState<Record<string, any>>({});
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState<Tab>('Overview');
-  const [editing,    setEditing]    = useState(false);
+  // Bumped each time the tab regains focus, so edits made on Edit Profile show.
+  const [reloadKey,  setReloadKey]  = useState(0);
+  const router = useRouter();
+  useFocusEffect(useCallback(() => { setReloadKey(k => k + 1); }, []));
+  const loadedOnce = useRef(false);
 
   // Computed/derived display fields — all sourced from the same public
   // /api/profile/[slug] endpoint web's own public profile uses (career stats,
@@ -269,7 +125,7 @@ export default function ProfileScreen() {
     if (!userId) return;
 
     async function load() {
-      setLoading(true);
+      if (!loadedOnce.current) setLoading(true);
 
       let athleteRow: ProfileData | null = null;
       const { data: byUser } = await supabase
@@ -318,18 +174,12 @@ export default function ProfileScreen() {
         }
       }
 
+      loadedOnce.current = true;
       setLoading(false);
     }
 
     load();
-  }, [session?.user?.id]);
-
-  const handleSave = async (updates: Partial<ProfileData>) => {
-    if (!profile?.id) return;
-    const { error } = await supabase.from('athletes').update(updates).eq('id', profile.id);
-    if (error) { Alert.alert('Error', error.message); return; }
-    setProfile(prev => prev ? { ...prev, ...updates } : prev);
-  };
+  }, [session?.user?.id, reloadKey]);
 
   if (loading) {
     return (
@@ -380,7 +230,7 @@ export default function ProfileScreen() {
           <View style={s.heroScrim} />
 
           <View style={s.heroTopRow}>
-            <Pressable style={s.editBtn} onPress={() => setEditing(true)}>
+            <Pressable style={s.editBtn} onPress={() => router.push('/(tabs)/edit-profile' as any)}>
               <Ionicons name="create-outline" size={13} color="#fff" />
               <Text style={s.editBtnText}>Edit Profile</Text>
             </Pressable>
@@ -595,7 +445,7 @@ export default function ProfileScreen() {
                 <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 12, textAlign: 'center' }}>
                   No film links added yet.
                 </Text>
-                <Pressable style={s.addFilmBtn} onPress={() => setEditing(true)}>
+                <Pressable style={s.addFilmBtn} onPress={() => router.push('/(tabs)/edit-profile' as any)}>
                   <Text style={s.addFilmText}>Add Film Links</Text>
                 </Pressable>
               </View>
@@ -671,30 +521,11 @@ export default function ProfileScreen() {
         )}
       </ScrollView>
 
-      {editing && profile ? (
-        <EditModal data={profile} onSave={handleSave} onClose={() => setEditing(false)} />
-      ) : null}
     </>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-
-function createEmStyles(C: ThemeColors) {
-  return StyleSheet.create({
-    root: { flex: 1, backgroundColor: C.background },
-    nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: C.border },
-    navTitle: { fontSize: 16, fontWeight: '700', color: C.text },
-    cancel: { fontSize: 15, color: C.textMuted },
-    save: { fontSize: 15, fontWeight: '700', color: C.primary },
-    scroll: { flex: 1, paddingHorizontal: 20 },
-    section: { marginTop: 28 },
-    sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: C.textDim, marginBottom: 10 },
-    fieldWrap: { marginBottom: 14 },
-    label: { fontSize: 12, fontWeight: '500', color: C.textMuted, marginBottom: 6 },
-    input: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: C.text },
-  });
-}
 
 function createStyles(C: ThemeColors) {
   return StyleSheet.create({
