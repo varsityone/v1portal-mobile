@@ -8,10 +8,10 @@ export default function Copyright() {
   return (
     <View style={s.wrap}>
       <Text style={[s.line, { color: C.textDim }]}>
-        V1Portal® uses patented-pending V1OS AI-powered technology and may make mistakes. Please double-check important details such as dates, stats and personal information for accuracy.
+        V1Portal™ uses patented-pending V1IQ AI-powered technology and may make mistakes. Please double-check important details such as dates, stats and personal information for accuracy.
       </Text>
       <Text style={[s.line, { color: C.textDim }]}>
-        © {new Date().getFullYear()} V1Portal®. All rights reserved. A registered trademark of VarsityOne Group LLC
+        © 2026 V1OS LLC. All rights reserved.
       </Text>
     </View>
   );

@@ -90,7 +90,7 @@ export default function LoginScreen() {
         {/* Heading */}
         <View style={styles.heading}>
           <Text style={styles.title}>Welcome back.</Text>
-          <Text style={styles.subtitle}>Log in to your V1Portal® account</Text>
+          <Text style={styles.subtitle}>Log in to your V1Portal™ account</Text>
         </View>
 
         {/* Error */}

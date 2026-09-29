@@ -25,10 +25,12 @@ export default function TermsScreen() {
       <View style={styles.hero}>
         <Ionicons name="document-text" size={44} color="#fff" style={styles.heroIcon} />
         <Text style={styles.title}>Terms of Service</Text>
-        <Text style={styles.subtitle}>Last updated June 2026</Text>
+        <Text style={styles.subtitle}>Last updated September 28, 2026</Text>
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.body}>V1OS LLC is a subsidiary of VarsityOne Group LLC.</Text>
+        <Text style={styles.body}>V1Portal™, Match+™, V1IQ™, Koda AI™, and PORTER™ are trademarks of V1OS LLC.</Text>
         <Text style={styles.body}>
           By using V1Portal you agree to these Terms. V1Portal is a mutual-matching
           platform connecting high school football athletes with college coaches — a

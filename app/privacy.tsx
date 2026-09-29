@@ -25,10 +25,12 @@ export default function PrivacyScreen() {
       <View style={styles.hero}>
         <Ionicons name="shield-checkmark" size={44} color="#fff" style={styles.heroIcon} />
         <Text style={styles.title}>Privacy Policy</Text>
-        <Text style={styles.subtitle}>Last updated June 2025</Text>
+        <Text style={styles.subtitle}>Last updated September 28, 2026</Text>
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.body}>V1OS LLC is a subsidiary of VarsityOne Group LLC.</Text>
+        <Text style={styles.body}>V1Portal™, Match+™, V1IQ™, Koda AI™, and PORTER™ are trademarks of V1OS LLC.</Text>
         <Text style={styles.body}>
           V1Portal is committed to protecting your privacy. Your data powers your
           recruiting profile and is never sold for monetary compensation. See the full
