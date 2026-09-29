@@ -11,7 +11,7 @@ export default function Copyright() {
         V1Portal™ uses patented-pending V1IQ AI-powered technology and may make mistakes. Please double-check important details such as dates, stats and personal information for accuracy.
       </Text>
       <Text style={[s.line, { color: C.textDim }]}>
-        © 2026 V1OS LLC. All rights reserved.
+        © 2026 V1Portal by V1OS LLC. All rights reserved.
       </Text>
     </View>
   );
