@@ -20,6 +20,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../../lib/supabase';
 import { needsNcaaRegistration } from '../../../lib/profileCompleteness';
+import { buildProgramDeck, limitToPrograms } from '../../../lib/programDeck';
 import { useAthleteData } from '../../../hooks/useAthleteData';
 import { useAuth } from '../../../hooks/useAuth';
 import { GRADIENT, SIGNAL_GRADIENT, FLAME_GRADIENT, PINK_RED, BRAND_GREEN, ThemeColors } from '../../../constants/Colors';
@@ -34,7 +35,7 @@ import {
 } from '../../../constants/RecruitingLevels';
 
 const API_BASE = 'https://v1portal.com';
-const FREE_ATHLETE_CARD_LIMIT = 3;
+const FREE_ATHLETE_PROGRAM_LIMIT = 3;
 
 interface CoachCard {
   id: string;
@@ -50,16 +51,6 @@ interface CoachCard {
   min_score: number | null;
   profile_slug: string | null;
   twitter: string | null;
-}
-
-// Coaches recruiting the athlete's position first, same order as web's
-// dashboard/match/page.tsx. Nothing is hidden, only reordered.
-function sortByAthletePosition(cards: CoachCard[], position: string | null | undefined): CoachCard[] {
-  if (!position) return cards;
-  return [
-    ...cards.filter(c => (c.position_needs ?? []).includes(position)),
-    ...cards.filter(c => !(c.position_needs ?? []).includes(position)),
-  ];
 }
 
 function isProfileComplete(athlete: any): boolean {
@@ -90,6 +81,8 @@ export default function MatchScreen() {
   const [savedPrograms, setSavedPrograms] = useState<string[]>([]);
   const [showSavedPrograms, setShowSavedPrograms] = useState(false);
   const [unavailableProgram, setUnavailableProgram] = useState<CoachCard | null>(null);
+  // Programs where the athlete asked to see coaches beyond their position.
+  const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
   const apiGet = useCallback(async (path: string) => {
     const response = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` } });
     if (!response.ok) throw new Error('Unable to load programs. Please try again.');
@@ -163,8 +156,8 @@ export default function MatchScreen() {
   const goToSavedProgram = (card: CoachCard) => {
     setHistoryOpen(false);
     setSelectedDivision(card.division as Division);
-    const divCards = coachCards.filter(c => c.division === card.division);
-    const idx = divCards.findIndex(c => c.id === card.id);
+    const divCards = buildProgramDeck(coachCards.filter(c => c.division === card.division && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms);
+    const idx = divCards.findIndex(c => c.program_id === card.program_id);
     setCurrentIndex(idx >= 0 ? idx : 0);
   };
 
@@ -187,7 +180,7 @@ export default function MatchScreen() {
       // interest list too meant a program you'd saved could silently
       // disappear from "My interest" the moment you later passed on it.
       setProgramDirectory(programs.cards);
-      setCoachCards(sortByAthletePosition(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)), athlete!.position));
+      setCoachCards(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)));
       setSavedPrograms(saved.programIds);
 
       // No status filter -- matches web's dashboard/match/page.tsx exactly
@@ -211,8 +204,10 @@ export default function MatchScreen() {
   );
 
   const activeDivision: Division | null = selectedDivision ?? (!isPremium ? athleteLevel : null);
-  const rawDeck = activeDivision ? coachCards.filter(c => c.division === activeDivision && (!showSavedPrograms || savedPrograms.includes(c.program_id))) : [];
-  const deck = (!isPremium) ? rawDeck.slice(0, FREE_ATHLETE_CARD_LIMIT) : rawDeck;
+  const rawDeck = activeDivision
+    ? buildProgramDeck(coachCards.filter(c => c.division === activeDivision && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms)
+    : [];
+  const deck = (!isPremium) ? limitToPrograms(rawDeck, FREE_ATHLETE_PROGRAM_LIMIT) : rawDeck;
 
   const current = deck[currentIndex];
   const totalCards = deck.length;
@@ -333,7 +328,7 @@ export default function MatchScreen() {
         })
       ));
 
-      setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...sortByAthletePosition(divisionCards, athlete.position)]);
+      setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...divisionCards]);
       setCurrentIndex(0);
     } catch {
       setSwipeErrorNotif('Unable to reload programs. Please try again.');
@@ -616,6 +611,16 @@ export default function MatchScreen() {
           <Text style={s.cardCoach}>
             {current.match_available ? [current.position_coached, current.full_name].filter(Boolean).join(' · ') : 'Program directory'}
           </Text>
+          {current.match_available && (current.group_size > 1 || current.hidden_count > 0) && (
+            <View style={s.groupRow}>
+              {current.group_size > 1 && <Text style={s.groupText}>Coach {current.group_position} of {current.group_size}</Text>}
+              {current.hidden_count > 0 && (
+                <Pressable style={s.posTag} onPress={() => setExpandedPrograms(prev => new Set([...prev, current.program_id]))}>
+                  <Text style={s.seeOthersText}>See {current.hidden_count} other {current.hidden_count === 1 ? 'coach' : 'coaches'} here</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
           {(() => {
             const displayMinScore = current?.min_score ?? (current?.division ? getBandFloorForDivision(current.division as Division) : null);
             const isTypical = current?.min_score == null;
@@ -989,6 +994,9 @@ function createStyles(C: ThemeColors) {
     cardSchool: { fontFamily: FontFamily.headline, fontSize: 28, color: '#fff' },
     cardCoach: { fontFamily: FontFamily.bodySemi, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8 },
     tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+    groupRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
+    groupText: { fontFamily: FontFamily.mono, fontSize: 11, color: 'rgba(255,255,255,0.6)' },
+    seeOthersText: { fontFamily: FontFamily.bodyBold, fontSize: 11, color: '#fff' },
     posTag: { backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 100, paddingVertical: 5, paddingHorizontal: 11 },
     posTagText: { fontFamily: FontFamily.mono, fontSize: 10, color: '#fff', letterSpacing: 0.4 },
     minScoreTag: { backgroundColor: 'rgba(113,255,126,0.16)', borderRadius: 100, paddingVertical: 5, paddingHorizontal: 11 },
