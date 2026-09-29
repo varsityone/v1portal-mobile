@@ -52,6 +52,16 @@ interface CoachCard {
   twitter: string | null;
 }
 
+// Coaches recruiting the athlete's position first, same order as web's
+// dashboard/match/page.tsx. Nothing is hidden, only reordered.
+function sortByAthletePosition(cards: CoachCard[], position: string | null | undefined): CoachCard[] {
+  if (!position) return cards;
+  return [
+    ...cards.filter(c => (c.position_needs ?? []).includes(position)),
+    ...cards.filter(c => !(c.position_needs ?? []).includes(position)),
+  ];
+}
+
 function isProfileComplete(athlete: any): boolean {
   return !!(
     athlete?.full_name && athlete?.phone && athlete?.bio &&
@@ -177,7 +187,7 @@ export default function MatchScreen() {
       // interest list too meant a program you'd saved could silently
       // disappear from "My interest" the moment you later passed on it.
       setProgramDirectory(programs.cards);
-      setCoachCards(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)));
+      setCoachCards(sortByAthletePosition(programs.cards.filter((c: CoachCard) => !swipedIds.includes(c.id)), athlete!.position));
       setSavedPrograms(saved.programIds);
 
       // No status filter -- matches web's dashboard/match/page.tsx exactly
@@ -323,7 +333,7 @@ export default function MatchScreen() {
         })
       ));
 
-      setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...divisionCards]);
+      setCoachCards(prev => [...prev.filter(c => c.division !== activeDivision), ...sortByAthletePosition(divisionCards, athlete.position)]);
       setCurrentIndex(0);
     } catch {
       setSwipeErrorNotif('Unable to reload programs. Please try again.');
