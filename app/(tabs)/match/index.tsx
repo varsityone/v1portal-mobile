@@ -156,7 +156,7 @@ export default function MatchScreen() {
   const goToSavedProgram = (card: CoachCard) => {
     setHistoryOpen(false);
     setSelectedDivision(card.division as Division);
-    const divCards = buildProgramDeck(coachCards.filter(c => c.division === card.division && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms);
+    const divCards = buildProgramDeck(coachCards.filter(c => c.division === card.division && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms, athlete?.secondary_position);
     const idx = divCards.findIndex(c => c.program_id === card.program_id);
     setCurrentIndex(idx >= 0 ? idx : 0);
   };
@@ -205,7 +205,7 @@ export default function MatchScreen() {
 
   const activeDivision: Division | null = selectedDivision ?? (!isPremium ? athleteLevel : null);
   const rawDeck = activeDivision
-    ? buildProgramDeck(coachCards.filter(c => c.division === activeDivision && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms)
+    ? buildProgramDeck(coachCards.filter(c => c.division === activeDivision && (!showSavedPrograms || savedPrograms.includes(c.program_id))), athlete?.position, expandedPrograms, athlete?.secondary_position)
     : [];
   const deck = (!isPremium) ? limitToPrograms(rawDeck, FREE_ATHLETE_PROGRAM_LIMIT) : rawDeck;
 
@@ -428,7 +428,7 @@ export default function MatchScreen() {
           Pick a division to start swiping. You can browse any level — programs above your range just come with a heads-up before you send interest.
         </Text>
         {DIVISION_ORDER.map(div => {
-          const count = coachCards.filter(c => c.division === div).length;
+          const count = new Set(coachCards.filter(c => c.division === div).map(c => c.program_id)).size;
           const isYourLevel = div === athleteLevel;
           const isReach = DIVISION_ORDER.indexOf(div) < DIVISION_ORDER.indexOf(athleteLevel);
           const floor = getBandFloorForDivision(div);

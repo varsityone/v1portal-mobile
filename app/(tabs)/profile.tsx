@@ -55,6 +55,7 @@ interface ProfileData {
   id: string;
   full_name: string | null;
   position: string | null;
+  secondary_position: string | null;
   height: string | null;
   weight: string | null;
   gpa: string | null;
@@ -273,7 +274,7 @@ export default function ProfileScreen() {
       let athleteRow: ProfileData | null = null;
       const { data: byUser } = await supabase
         .from('athletes')
-        .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
+        .select('id, full_name, position, secondary_position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
         .eq('user_id', userId)
         .maybeSingle();
       athleteRow = byUser as ProfileData | null;
@@ -281,7 +282,7 @@ export default function ProfileScreen() {
       if (!athleteRow) {
         const { data: byLinked } = await supabase
           .from('athletes')
-          .select('id, full_name, position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
+          .select('id, full_name, position, secondary_position, height, weight, gpa, graduation_year, high_school, city, state, forty_yard, vertical_jump, pro_shuttle, three_cone, broad_jump, bio, profile_photo_url, hudl_video_link, youtube_link, twitter_handle, instagram_handle, v1_score, profile_slug')
           .eq('linked_user_id', userId)
           .maybeSingle();
         athleteRow = byLinked as ProfileData | null;
@@ -360,7 +361,8 @@ export default function ProfileScreen() {
 
   const careerStatsEntries = Object.entries(careerStats).filter(([k]) => k !== 'seasonsTracked');
 
-  const metaParts = [profile?.position, profile?.height, profile?.weight ? `${profile.weight} lbs` : null, profile?.graduation_year ? `Class of ${profile.graduation_year}` : null].filter(Boolean);
+  const positionLabel = [profile?.position, profile?.secondary_position].filter(Boolean).join(' / ');
+  const metaParts = [positionLabel, profile?.height, profile?.weight ? `${profile.weight} lbs` : null, profile?.graduation_year ? `Class of ${profile.graduation_year}` : null].filter(Boolean);
   const locationText = [profile?.city, profile?.state].filter(Boolean).join(', ');
 
   const combineStats = [
@@ -394,7 +396,7 @@ export default function ProfileScreen() {
                 <LinearGradient colors={SCORE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.scoreRingGradient}>
                   <View style={s.scoreRingInner}>
                     <Text style={s.scoreNum}>{score}</Text>
-                    <Text style={s.scoreLabel}>V1 SCORE</Text>
+                    <Text style={s.scoreLabel}>{profile?.secondary_position && profile?.position ? `V1 SCORE (${profile.position})` : 'V1 SCORE'}</Text>
                   </View>
                 </LinearGradient>
               </View>
@@ -531,7 +533,7 @@ export default function ProfileScreen() {
             <View style={s.card}>
               <Text style={s.cardTitle}>Quick Info</Text>
               {[
-                { label: 'Position',    value: profile?.position },
+                { label: 'Position',    value: positionLabel },
                 { label: 'Height',      value: profile?.height },
                 { label: 'Weight',      value: profile?.weight ? `${profile.weight} lbs` : null },
                 { label: '40-Yard',     value: fortyYard ? `${fortyYard}s` : null },

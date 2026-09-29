@@ -1,6 +1,7 @@
 import LoadingScreen from '../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../components/ProfilePhotoEditor';
-import { useEffect, useMemo, useState } from 'react';
+import NudgeModal from '../../components/NudgeModal';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Clipboard,
@@ -268,10 +269,16 @@ const SECTIONS: Section[] = [
   },
 ];
 
+const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'OL', 'DL', 'LB', 'CB', 'S', 'K', 'P', 'ATH'];
+const POSITION_NAMES: Record<string, string> = {
+  QB: 'quarterback', RB: 'running back', WR: 'wide receiver', TE: 'tight end', OL: 'offensive line',
+  DL: 'defensive line', LB: 'linebacker', CB: 'cornerback', S: 'safety', K: 'kicker', P: 'punter', ATH: 'athlete',
+};
+
 // All editable keys as a flat type
 type Fields = {
   full_name: string; phone: string; recruitment_status: string; bio: string;
-  position: string; height: string; weight: string;
+  position: string; secondary_position: string; height: string; weight: string;
   forty_yard: string; vertical_jump: string; pro_shuttle: string;
   three_cone: string; broad_jump: string; bench_press: string;
   squat: string; power_clean: string; deadlift: string;
@@ -288,7 +295,7 @@ type Fields = {
 
 const EMPTY: Fields = {
   full_name: '', phone: '', recruitment_status: '', bio: '',
-  position: '', height: '', weight: '',
+  position: '', secondary_position: '', height: '', weight: '',
   forty_yard: '', vertical_jump: '', pro_shuttle: '',
   three_cone: '', broad_jump: '', bench_press: '',
   squat: '', power_clean: '', deadlift: '',
@@ -306,7 +313,7 @@ const EMPTY: Fields = {
 // Columns that map 1-to-1 to athlete table columns
 const DIRECT_COLS = new Set([
   'full_name', 'phone', 'recruitment_status', 'bio',
-  'position', 'height', 'weight',
+  'position', 'secondary_position', 'height', 'weight',
   'forty_yard', 'vertical_jump', 'pro_shuttle',
   'three_cone', 'broad_jump', 'bench_press',
   'squat', 'power_clean', 'deadlift',
@@ -337,6 +344,10 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  // Second position just picked; prompts for film at that position.
+  const [filmPrompt, setFilmPrompt] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const filmSectionY = useRef(0);
   const profileSlug = (athlete as any)?.profile_slug ?? null;
 
   const [statResponses, setStatResponses] = useState<Record<string, string>>({});
@@ -378,6 +389,7 @@ export default function EditProfileScreen() {
       recruitment_status:     a.recruitment_status     ?? '',
       bio:                    a.bio                    ?? '',
       position:               a.position               ?? '',
+      secondary_position:     a.secondary_position     ?? '',
       height:                 a.height                 ?? '',
       weight:                 a.weight != null          ? String(a.weight) : '',
       forty_yard:             a.forty_yard != null      ? String(a.forty_yard) : '',
@@ -443,6 +455,8 @@ export default function EditProfileScreen() {
         updates[k] = fields[k] || null;
       }
     });
+    // Primary is free text here; drop a second position that repeats it.
+    if (updates.secondary_position && updates.secondary_position === fields.position.trim().toUpperCase()) updates.secondary_position = null;
     updates.is_profile_public = isPublic;
     updates.test_scores_not_taken = testScoresNotTaken;
     if (testScoresNotTaken) { updates.sat_score = null; updates.act_score = null; }
@@ -509,7 +523,20 @@ export default function EditProfileScreen() {
       {/* ── Gradient accent bar ── */}
       <LinearGradient colors={FLAME_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.accentBar} />
 
+      <NudgeModal
+        visible={!!filmPrompt}
+        icon="videocam-outline"
+        eyebrow="Second position"
+        title={filmPrompt ? `Add film at ${POSITION_NAMES[filmPrompt] ?? filmPrompt}.` : ''}
+        body={filmPrompt ? `Coaches recruiting ${filmPrompt} will see you now. Your V1 score is built on ${fields.position || 'your main position'}, so film of your ${POSITION_NAMES[filmPrompt] ?? filmPrompt} reps is what shows them you can play there.` : ''}
+        primaryLabel="Add film"
+        secondaryLabel="Maybe later"
+        onPrimary={() => { setFilmPrompt(null); scrollRef.current?.scrollTo({ y: filmSectionY.current, animated: true }); }}
+        onSecondary={() => setFilmPrompt(null)}
+      />
+
       <ScrollView
+        ref={scrollRef}
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -543,7 +570,7 @@ export default function EditProfileScreen() {
         ) : null}
 
         {SECTIONS.map(section => (
-          <View key={section.title} style={s.sectionWrap}>
+          <View key={section.title} style={s.sectionWrap} onLayout={section.title === 'Film & Social' ? e => { filmSectionY.current = e.nativeEvent.layout.y; } : undefined}>
             <View style={s.sectionHeader}>
               <Ionicons name={section.icon} size={14} color="#fff" />
               <Text style={s.sectionTitle}>{section.title.toUpperCase()}</Text>
@@ -587,6 +614,28 @@ export default function EditProfileScreen() {
                   </View>
                 );
               })}
+              {section.title === 'Athletic' && (
+                <View style={[s.fieldRow, s.fieldRowBorder]}>
+                  <Text style={s.label}>Second Position (optional)</Text>
+                  <View style={s.chipWrap}>
+                    {['', ...POSITIONS.filter(pos => pos !== fields.position.trim().toUpperCase())].map(pos => {
+                      const active = fields.secondary_position === pos;
+                      return (
+                        <Pressable
+                          key={pos || 'none'}
+                          style={[s.chip, active && s.chipActive]}
+                          onPress={() => {
+                            set('secondary_position')(pos);
+                            if (pos && !active) setFilmPrompt(pos);
+                          }}
+                        >
+                          <Text style={[s.chipText, active && s.chipTextActive]}>{pos || 'None'}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
               {section.title === 'Academic' && (
                 <View style={[s.fieldRow, s.fieldRowBorder, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
                   <View style={{ flex: 1, marginRight: 12 }}>
