@@ -22,6 +22,8 @@ import { GRADIENT, ThemeColors, PINK_RED } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import ReportBlockButton from '../../../components/ReportBlockButton';
+import NudgeModal from '../../../components/NudgeModal';
+import { preSendVariant, PreSendVariant } from '../../../lib/preSend';
 
 const API_BASE = 'https://v1portal.com';
 
@@ -68,6 +70,14 @@ export default function CoachMatchThreadScreen() {
   const [sendError, setSendError] = useState('');
   const [checkingCompliance, setCheckingCompliance] = useState(false);
   const [blocked, setBlocked] = useState<{ result: ComplianceResult; content: string } | null>(null);
+  const [preSend, setPreSend] = useState<{ variant: PreSendVariant; content: string; queueUntil: string | null } | null>(null);
+
+  // Same order as web: contact-info warning, then the first-message nudge.
+  const confirmThenSend = (content: string, queueUntil: string | null) => {
+    const variant = preSendVariant(content, messages.length);
+    if (variant) { setPreSend({ variant, content, queueUntil }); return; }
+    sendMessage(content, queueUntil);
+  };
   const listRef = useRef<FlatList>(null);
 
   const loadMessages = useCallback(async () => {
@@ -169,7 +179,7 @@ export default function CoachMatchThreadScreen() {
       // we don't want a network blip to silently eat a coach's message.
     }
     setCheckingCompliance(false);
-    await sendMessage(content, null);
+    confirmThenSend(content, null);
   };
 
   if (loading) {
@@ -180,6 +190,31 @@ export default function CoachMatchThreadScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <NudgeModal
+        visible={!!preSend}
+        tone={preSend?.variant === 'warn' ? 'warn' : 'positive'}
+        icon={preSend?.variant === 'warn' ? 'warning-outline' : 'chatbubble-outline'}
+        eyebrow={preSend?.variant === 'warn' ? 'Contact info detected' : 'First message'}
+        title={preSend?.variant === 'warn' ? "Looks like you're sharing contact info." : `${otherParty?.full_name?.split(' ')[0] || 'Your recruit'}'s first message from you.`}
+        body={preSend?.variant === 'warn'
+          ? "Keep it on V1Portal for now. You can share this once you're both ready."
+          : 'Reference something specific from their profile. Generic outreach reads as a form letter.'}
+        primaryLabel={preSend?.variant === 'warn' ? 'Edit message' : 'Send message'}
+        secondaryLabel={preSend?.variant === 'warn' ? 'Send anyway' : 'Edit draft'}
+        busy={sending}
+        onPrimary={() => {
+          const current = preSend;
+          setPreSend(null);
+          if (current?.variant === 'nudge') sendMessage(current.content, current.queueUntil);
+          else if (current) setInput(current.content);
+        }}
+        onSecondary={() => {
+          const current = preSend;
+          setPreSend(null);
+          if (current?.variant === 'warn') sendMessage(current.content, current.queueUntil);
+          else if (current) setInput(current.content);
+        }}
+      />
       <View style={s.root}>
         {/* Header */}
         <View style={s.header}>
@@ -208,7 +243,7 @@ export default function CoachMatchThreadScreen() {
               {blocked.result.queue_until && (
                 <Pressable
                   style={s.complianceQueueBtn}
-                  onPress={() => sendMessage(blocked.content, blocked.result.queue_until)}
+                  onPress={() => { const b = blocked; setBlocked(null); confirmThenSend(b.content, b.result.queue_until); }}
                   disabled={sending}
                 >
                   <Text style={s.complianceQueueText}>{sending ? 'Queuing…' : 'Queue Message'}</Text>

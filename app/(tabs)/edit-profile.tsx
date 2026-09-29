@@ -198,7 +198,6 @@ const SECTIONS: Section[] = [
     title: 'Athletic',
     icon: 'football',
     rows: [
-      { label: 'Position',        key: 'position' },
       { label: "Height (e.g. 6'2\")", key: 'height' },
       { label: 'Weight (lbs)',    key: 'weight',       keyboardType: 'numeric' },
       { label: '40-Yard (sec)',   key: 'forty_yard',   keyboardType: 'decimal-pad' },
@@ -388,7 +387,7 @@ export default function EditProfileScreen() {
       phone:                  a.phone                  ?? '',
       recruitment_status:     a.recruitment_status     ?? '',
       bio:                    a.bio                    ?? '',
-      position:               a.position               ?? '',
+      position:               (a.position ?? '').trim().toUpperCase(),
       secondary_position:     a.secondary_position     ?? '',
       height:                 a.height                 ?? '',
       weight:                 a.weight != null          ? String(a.weight) : '',
@@ -455,8 +454,8 @@ export default function EditProfileScreen() {
         updates[k] = fields[k] || null;
       }
     });
-    // Primary is free text here; drop a second position that repeats it.
-    if (updates.secondary_position && updates.secondary_position === fields.position.trim().toUpperCase()) updates.secondary_position = null;
+    // Never store a second position that repeats the primary.
+    if (updates.secondary_position && updates.secondary_position === fields.position) updates.secondary_position = null;
     updates.is_profile_public = isPublic;
     updates.test_scores_not_taken = testScoresNotTaken;
     if (testScoresNotTaken) { updates.sat_score = null; updates.act_score = null; }
@@ -577,13 +576,54 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={s.card}>
+              {section.title === 'Athletic' && (
+                <>
+                  <View style={s.fieldRow}>
+                    <Text style={s.label}>Position</Text>
+                    <View style={s.chipWrap}>
+                      {POSITIONS.map(pos => {
+                        const active = fields.position === pos;
+                        return (
+                          <Pressable
+                            key={pos}
+                            style={[s.chip, active && s.chipActive]}
+                            onPress={() => setFields(f => ({ ...f, position: pos, secondary_position: f.secondary_position === pos ? '' : f.secondary_position }))}
+                          >
+                            <Text style={[s.chipText, active && s.chipTextActive]}>{pos}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                  <View style={[s.fieldRow, s.fieldRowBorder]}>
+                    <Text style={s.label}>Second Position (optional)</Text>
+                    <View style={s.chipWrap}>
+                      {['', ...POSITIONS.filter(pos => pos !== fields.position)].map(pos => {
+                        const active = fields.secondary_position === pos;
+                        return (
+                          <Pressable
+                            key={pos || 'none'}
+                            style={[s.chip, active && s.chipActive]}
+                            onPress={() => {
+                              set('secondary_position')(pos);
+                              if (pos && !active) setFilmPrompt(pos);
+                            }}
+                          >
+                            <Text style={[s.chipText, active && s.chipTextActive]}>{pos || 'None'}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </>
+              )}
               {section.rows
                 .filter(row => !(testScoresNotTaken && (row.key === 'sat_score' || row.key === 'act_score')))
                 .map((row, idx) => {
                 const isBio = row.key === 'bio';
                 const filled = !isBio && !!fields[row.key as keyof Fields];
                 return (
-                  <View key={row.key} style={[s.fieldRow, idx > 0 && s.fieldRowBorder]}>
+                  <View key={row.key} style={[s.fieldRow, (idx > 0 || section.title === 'Athletic') && s.fieldRowBorder]}>
                     <View style={s.fieldLabelRow}>
                       <Text style={s.label}>{row.label}</Text>
                       {isBio && (
@@ -614,28 +654,6 @@ export default function EditProfileScreen() {
                   </View>
                 );
               })}
-              {section.title === 'Athletic' && (
-                <View style={[s.fieldRow, s.fieldRowBorder]}>
-                  <Text style={s.label}>Second Position (optional)</Text>
-                  <View style={s.chipWrap}>
-                    {['', ...POSITIONS.filter(pos => pos !== fields.position.trim().toUpperCase())].map(pos => {
-                      const active = fields.secondary_position === pos;
-                      return (
-                        <Pressable
-                          key={pos || 'none'}
-                          style={[s.chip, active && s.chipActive]}
-                          onPress={() => {
-                            set('secondary_position')(pos);
-                            if (pos && !active) setFilmPrompt(pos);
-                          }}
-                        >
-                          <Text style={[s.chipText, active && s.chipTextActive]}>{pos || 'None'}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
               {section.title === 'Academic' && (
                 <View style={[s.fieldRow, s.fieldRowBorder, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
                   <View style={{ flex: 1, marginRight: 12 }}>

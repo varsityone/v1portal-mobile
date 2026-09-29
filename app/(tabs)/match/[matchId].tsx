@@ -22,6 +22,8 @@ import { GRADIENT, ThemeColors } from '../../../constants/Colors';
 import { FontFamily } from '../../../constants/Fonts';
 import { useColors } from '../../../context/ThemeContext';
 import ReportBlockButton from '../../../components/ReportBlockButton';
+import NudgeModal from '../../../components/NudgeModal';
+import { preSendVariant, PreSendVariant } from '../../../lib/preSend';
 
 const API_BASE = 'https://v1portal.com';
 
@@ -58,6 +60,7 @@ export default function MatchThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [preSend, setPreSend] = useState<{ variant: PreSendVariant; content: string } | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const loadMessages = useCallback(async () => {
@@ -97,9 +100,16 @@ export default function MatchThreadScreen() {
     return () => clearInterval(interval);
   }, [loadMessages]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const content = input.trim();
     if (!content || sending || !athlete?.id) return;
+    const variant = preSendVariant(content, messages.length);
+    if (variant) { setPreSend({ variant, content }); return; }
+    sendMessage(content);
+  };
+
+  const sendMessage = async (content: string) => {
+    if (!athlete?.id) return;
     setSending(true);
     setSendError('');
     // Cleared only on confirmed success below -- clearing it here meant a
@@ -143,6 +153,29 @@ export default function MatchThreadScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <NudgeModal
+        visible={!!preSend}
+        tone={preSend?.variant === 'warn' ? 'warn' : 'positive'}
+        icon={preSend?.variant === 'warn' ? 'warning-outline' : 'chatbubble-outline'}
+        eyebrow={preSend?.variant === 'warn' ? 'Contact info detected' : 'First message'}
+        title={preSend?.variant === 'warn' ? "Looks like you're sharing contact info." : 'One shot at a first impression.'}
+        body={preSend?.variant === 'warn'
+          ? "Keep it on V1Portal for now. You can share this once you're both ready."
+          : `Mention something specific about ${otherParty?.full_name ? otherParty.full_name + "'s" : 'their'} program, not something you'd send to any coach.`}
+        primaryLabel={preSend?.variant === 'warn' ? 'Edit message' : 'Send message'}
+        secondaryLabel={preSend?.variant === 'warn' ? 'Send anyway' : 'Edit draft'}
+        busy={sending}
+        onPrimary={() => {
+          const current = preSend;
+          setPreSend(null);
+          if (current?.variant === 'nudge') sendMessage(current.content);
+        }}
+        onSecondary={() => {
+          const current = preSend;
+          setPreSend(null);
+          if (current?.variant === 'warn') sendMessage(current.content);
+        }}
+      />
       <View style={s.root}>
         {/* Header */}
         <View style={s.header}>
