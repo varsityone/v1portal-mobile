@@ -696,7 +696,7 @@ function Phase3({ athleteId, phase, onBack, gp }: {
             <Text style={s.p3HeroBody}>
               {matchCount > 0
                 ? 'A coach matched back — that means real interest. Head in and start the conversation.'
-                : "Swipe on programs that fit your level. When a coach swipes back, that's a real mutual match — and messaging opens up. No cold emails, no guessing who to contact."}
+                : "Swipe on programs that fit your level. When a coach says yes back, that's a real mutual match and messaging opens up. No cold emails, no guessing who to contact."}
             </Text>
             <Pressable style={s.p3HeroBtn} onPress={() => router.push('/(tabs)/match' as any)}>
               <Text style={s.p3HeroBtnText}>{matchCount > 0 ? 'View My Matches' : 'Start Swiping'}</Text>
