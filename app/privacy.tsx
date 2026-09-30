@@ -69,6 +69,15 @@ export default function PrivacyScreen() {
 
         <View style={styles.divider} />
 
+        <Text style={styles.sectionTitle}>Subscription Processing</Text>
+        <Text style={styles.body}>
+          Apple processes iOS in-app payments. RevenueCat processes your app account
+          identifier, purchase transactions, and subscription status to verify purchases,
+          restore access, and manage Match+ entitlements. Website payments use Stripe.
+        </Text>
+
+        <View style={styles.divider} />
+
         <Text style={styles.sectionTitle}>Full Policy</Text>
         <Text style={styles.body}>
           For complete details including data retention, deletion requests, and your

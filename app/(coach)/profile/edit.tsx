@@ -1,7 +1,7 @@
 import LoadingScreen from '../../../components/LoadingScreen';
 import ProfilePhotoEditor from '../../../components/ProfilePhotoEditor';
 import { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -112,10 +112,13 @@ export default function CoachProfileEditScreen() {
         twitter: formData.twitter,
       };
 
-      await supabase.from('coach_accounts').update(data).eq('id', coach.id);
+      const { error } = await supabase.from('coach_accounts').update(data).eq('id', coach.id).select('id').single();
+      if (error) throw error;
       router.back();
     } catch (e) {
       console.error('Save error:', e);
+      const message = e && typeof e === 'object' && 'message' in e ? String(e.message) : 'Please try again.';
+      Alert.alert('Could not save profile', message);
     } finally {
       setSaving(false);
     }

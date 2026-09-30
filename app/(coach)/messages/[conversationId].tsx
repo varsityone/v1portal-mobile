@@ -1,3 +1,4 @@
+import { messageSendError } from '../../../lib/moderationErrors';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -165,7 +166,7 @@ export default function CoachMessageThreadScreen() {
       return true;
     } catch (e) {
       console.error('Send error:', e);
-      setSendError('Unable to send. Please try again.');
+      setSendError(messageSendError(e));
       return false;
     } finally {
       setSending(false);
