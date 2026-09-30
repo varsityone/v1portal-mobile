@@ -2,7 +2,6 @@ import LoadingScreen from '../../../components/LoadingScreen';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
@@ -80,12 +79,6 @@ const SCORE_CATEGORIES: { label: string; key: string; fallback?: string; color: 
   { label: 'Academic', key: 'academic', color: '#3b82f6' },
   { label: 'Intangibles', key: 'intangibles', color: '#a78bfa' },
 ];
-
-function getYouTubeId(url: string | null): string | null {
-  if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-  return match ? match[1] : null;
-}
 
 function humanizeKey(k: string): string {
   return k.replace(/([A-Z])/g, ' $1').trim().replace(/^./, c => c.toUpperCase());
@@ -274,7 +267,6 @@ export default function AthletePublicProfileScreen() {
   const starCount = profile.starRatingNum ?? 0;
   const metaParts = [profile.position, profile.height, profile.weight ? `${profile.weight} lbs` : null, profile.graduationYear ? `Class of ${profile.graduationYear}` : null].filter(Boolean);
   const locationText = [profile.city, profile.state].filter(Boolean).join(', ');
-  const youtubeId = getYouTubeId(profile.youtubeLink);
 
   const careerStatsEntries = profile.careerStats ? Object.entries(profile.careerStats).filter(([k]) => k !== 'seasonsTracked') : [];
   const scoreBreakdownRows = profile.scoreBreakdown
@@ -510,14 +502,7 @@ export default function AthletePublicProfileScreen() {
                 </Pressable>
               )}
 
-              {youtubeId ? (
-                <View>
-                  <Text style={s.sectionTitleSm}>YouTube Highlights</Text>
-                  <View style={s.videoBox}>
-                    <WebView source={{ uri: `https://www.youtube.com/embed/${youtubeId}` }} allowsFullscreenVideo style={{ flex: 1, backgroundColor: 'transparent' }} />
-                  </View>
-                </View>
-              ) : profile.youtubeLink ? (
+              {profile.youtubeLink ? (
                 <Pressable style={s.filmPromo} onPress={() => Linking.openURL(profile.youtubeLink!)}>
                   <LinearGradient colors={['#1a1a2e', '#0a0a0c']} style={StyleSheet.absoluteFill} />
                   <View style={s.filmPlayCircle}>

@@ -25,7 +25,7 @@ export default function PrivacyScreen() {
       <View style={styles.hero}>
         <Ionicons name="shield-checkmark" size={44} color="#fff" style={styles.heroIcon} />
         <Text style={styles.title}>Privacy Policy</Text>
-        <Text style={styles.subtitle}>Last updated September 28, 2026</Text>
+        <Text style={styles.subtitle}>Last updated September 30, 2026</Text>
       </View>
 
       <View style={styles.card}>
@@ -34,7 +34,7 @@ export default function PrivacyScreen() {
         <Text style={styles.body}>
           V1Portal is committed to protecting your privacy. Your data powers your
           recruiting profile and is never sold for monetary compensation. See the full
-          policy below for how analytics/advertising sharing and California privacy
+          policy below for data processing and California privacy
           rights (CCPA) apply.
         </Text>
 
@@ -55,6 +55,16 @@ export default function PrivacyScreen() {
           Your data powers your V1 Score, program matching, and in-app messaging with
           coaches. We send push notifications only for recruiting-relevant alerts — task
           reminders, new match notifications, and coach message notifications.
+        </Text>
+
+        <View style={styles.divider} />
+
+        <Text style={styles.sectionTitle}>Cookies and External Content</Text>
+        <Text style={styles.body}>
+          Google Analytics and Meta Pixel are disabled on V1Portal, including its
+          in-app web pages. Functional storage supports sign-in, preferences, and
+          saved progress. Highlight video links open external services with their
+          own privacy practices.
         </Text>
 
         <View style={styles.divider} />
